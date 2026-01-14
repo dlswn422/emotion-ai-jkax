@@ -37,7 +37,7 @@ const MOCK_STORES: Record<string, any> = {
 
 type SyncResult = "idle" | "success" | "error";
 
-/* ✅ 컴포넌트 밖에서 API BASE 고정 */
+/* ✅ 환경변수 기반 API BASE */
 const API_BASE =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -66,7 +66,7 @@ export default function StoreDetailPage() {
     const checkLogin = async () => {
       try {
         const res = await fetch(`${API_BASE}/auth/status`, {
-          credentials: "include", // ⭐ 핵심
+          credentials: "include",
         });
         const data = await res.json();
 
@@ -97,7 +97,7 @@ export default function StoreDetailPage() {
 
       const res = await fetch(`${API_BASE}/reviews/sync`, {
         method: "POST",
-        credentials: "include", // ⭐ 필수
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ store_id: storeId }),
       });
@@ -118,11 +118,13 @@ export default function StoreDetailPage() {
   /* ================= 리뷰 분석 시작 ================= */
   const handleAnalyze = () => {
     if (!fromDate || !toDate) return;
+
     router.push(
       `/cx-dashboard?storeId=${storeId}&from=${fromDate}&to=${toDate}`
     );
   };
 
+  /* ================= 로딩 ================= */
   if (checking) {
     return (
       <main className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -142,7 +144,7 @@ export default function StoreDetailPage() {
   return (
     <main className="min-h-screen bg-gray-50 px-6 py-20">
       <div className="max-w-5xl mx-auto space-y-14">
-        {/* Top */}
+        {/* ================= Top ================= */}
         <div className="flex items-center justify-between">
           <h1 className="text-3xl font-extrabold">🏪 매장 상세</h1>
           <button
@@ -154,7 +156,7 @@ export default function StoreDetailPage() {
           </button>
         </div>
 
-        {/* Hero */}
+        {/* ================= Hero ================= */}
         <section className="bg-white rounded-3xl p-10 shadow-lg">
           <div className="flex items-start gap-6">
             <div className="w-16 h-16 rounded-2xl bg-blue-100 flex items-center justify-center">
@@ -173,14 +175,14 @@ export default function StoreDetailPage() {
           </div>
         </section>
 
-        {/* Metrics */}
+        {/* ================= Metrics ================= */}
         <section className="grid grid-cols-1 md:grid-cols-3 gap-8">
           <Metric icon={<Star className="w-6 h-6 text-yellow-400" />} label="평균 평점" value={store.rating} />
           <Metric icon={<MessageSquare className="w-6 h-6 text-green-500" />} label="리뷰 수" value={`${store.reviews}개`} />
           <Metric icon={<Sparkles className="w-6 h-6 text-purple-500" />} label="분석 항목" value="감성 · 키워드 · 요약" />
         </section>
 
-        {/* CTA */}
+        {/* ================= CTA ================= */}
         <section className="bg-gradient-to-br from-blue-50 to-white rounded-3xl p-12 text-center shadow-lg">
           <h3 className="text-2xl font-extrabold mb-4">
             이 매장의 리뷰를 분석해보세요
@@ -220,7 +222,125 @@ export default function StoreDetailPage() {
         </section>
       </div>
 
-      {/* 이하 모달 UI는 기존 코드 그대로 유지 */}
+      {/* ================= 분석 기간 모달 ================= */}
+      {showAnalyzeModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div
+            className="absolute inset-0 bg-black/40"
+            onClick={() => setShowAnalyzeModal(false)}
+          />
+          <div className="relative bg-white rounded-3xl w-full max-w-md p-8">
+            <h3 className="text-xl font-extrabold mb-4 flex items-center gap-2">
+              <Calendar className="w-5 h-5 text-blue-600" />
+              분석 기간 선택
+            </h3>
+
+            <div className="space-y-4 mb-6">
+              <div>
+                <label className="block text-sm font-semibold mb-1">시작일</label>
+                <input
+                  type="date"
+                  value={fromDate}
+                  onChange={(e) => setFromDate(e.target.value)}
+                  className="w-full border rounded-xl px-4 py-2"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold mb-1">종료일</label>
+                <input
+                  type="date"
+                  value={toDate}
+                  onChange={(e) => setToDate(e.target.value)}
+                  className="w-full border rounded-xl px-4 py-2"
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setShowAnalyzeModal(false)}
+                className="px-5 py-2 text-gray-600 font-semibold"
+              >
+                취소
+              </button>
+              <button
+                onClick={handleAnalyze}
+                disabled={!fromDate || !toDate}
+                className="px-6 py-2 bg-blue-600 text-white rounded-xl font-semibold disabled:opacity-50"
+              >
+                분석 시작
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ================= 리뷰 최신화 모달 ================= */}
+      {showSyncModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/40" />
+          <div className="relative bg-white rounded-3xl w-full max-w-md p-8">
+            {syncing && (
+              <div className="text-center py-10">
+                <RefreshCw className="w-8 h-8 animate-spin mx-auto mb-4 text-blue-600" />
+                <p className="font-semibold">동기화 중입니다…</p>
+              </div>
+            )}
+
+            {!syncing && syncResult === "idle" && (
+              <>
+                <h3 className="text-xl font-extrabold mb-4">Google 리뷰 최신화</h3>
+                <p className="text-gray-600 mb-6">Google 리뷰를 최신화합니다.</p>
+                <div className="flex justify-end gap-3">
+                  <button
+                    onClick={() => setShowSyncModal(false)}
+                    className="px-5 py-2 text-gray-600 font-semibold"
+                  >
+                    취소
+                  </button>
+                  <button
+                    onClick={handleSyncReviews}
+                    className="px-6 py-2 bg-blue-600 text-white rounded-xl font-semibold"
+                  >
+                    확인
+                  </button>
+                </div>
+              </>
+            )}
+
+            {syncResult === "success" && (
+              <div className="text-center py-8">
+                <CheckCircle className="w-10 h-10 text-green-600 mx-auto mb-4" />
+                <p className="font-bold text-lg mb-2">리뷰 최신화 완료</p>
+                <p className="text-gray-600 mb-6">
+                  신규 리뷰 {insertedCount}건이 저장되었습니다.
+                </p>
+                <button
+                  onClick={() => setShowSyncModal(false)}
+                  className="px-6 py-2 bg-blue-600 text-white rounded-xl font-semibold"
+                >
+                  확인
+                </button>
+              </div>
+            )}
+
+            {syncResult === "error" && (
+              <div className="text-center py-8">
+                <AlertTriangle className="w-10 h-10 text-red-500 mx-auto mb-4" />
+                <p className="font-bold text-lg mb-2">리뷰 최신화 실패</p>
+                <p className="text-gray-600 mb-6">{errorMessage}</p>
+                <button
+                  onClick={() => setShowSyncModal(false)}
+                  className="px-6 py-2 bg-gray-700 text-white rounded-xl font-semibold"
+                >
+                  닫기
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </main>
   );
 }
