@@ -51,7 +51,7 @@ const MOCK = {
   ],
 };
 
-/* ✅ 컴포넌트 밖에서 API BASE 고정 */
+/* ================= API ================= */
 const API_BASE =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -90,12 +90,10 @@ export default function CustomersPage() {
     };
   }, [router]);
 
-  /* ================= MOCK 로드 ================= */
   useEffect(() => {
     if (!checking) setData(MOCK);
   }, [checking]);
 
-  /* ================= 로그아웃 ================= */
   const handleLogout = async () => {
     await fetch(`${API_BASE}/auth/logout`, {
       method: "POST",
@@ -114,12 +112,12 @@ export default function CustomersPage() {
 
   return (
     <main className="min-h-screen bg-gray-50">
-      {/* ================= Header (공통 스타일) ================= */}
+      {/* ================= Header ================= */}
       <header className="bg-white/80 backdrop-blur border-b">
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
           <button
             onClick={() => router.push(`/stores/${storeId}`)}
-            className="flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-blue-600 transition"
+            className="flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-blue-600"
           >
             <ArrowLeft className="w-4 h-4" />
             매장 상세
@@ -127,7 +125,7 @@ export default function CustomersPage() {
 
           <button
             onClick={handleLogout}
-            className="flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-red-500 transition"
+            className="flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-red-500"
           >
             <LogOut className="w-4 h-4" />
             로그아웃
@@ -136,85 +134,98 @@ export default function CustomersPage() {
       </header>
 
       {/* ================= Content ================= */}
-      <section className="max-w-6xl mx-auto px-6 py-16 space-y-16">
-        {/* Page Title */}
+      <section className="max-w-6xl mx-auto px-6 py-20 space-y-20">
+        {/* Title */}
         <div>
-          <h1 className="text-3xl font-extrabold">
+          <h1 className="text-4xl font-extrabold tracking-tight">
             고객 분석
           </h1>
-          <p className="text-gray-500 mt-1">
-            리뷰 작성 고객의 성향 및 이탈 위험도 분석
+          <p className="text-gray-500 mt-3 text-base">
+            리뷰 작성 고객의 성향과 이탈 위험도를 종합 분석합니다
           </p>
         </div>
 
         {/* KPI */}
-        <section className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <section className="grid grid-cols-1 md:grid-cols-3 gap-10">
           <Kpi
-            icon={<Users className="text-blue-600" />}
+            icon={<Users className="w-6 h-6 text-blue-600" />}
             label="전체 고객"
             value={`${data.summary.total_customers}명`}
           />
           <Kpi
-            icon={<AlertTriangle className="text-red-500" />}
+            icon={<AlertTriangle className="w-6 h-6 text-red-500" />}
             label="이탈 위험 고객"
             value={`${data.summary.risky_customers}명`}
           />
           <Kpi
-            icon={<TrendingDown className="text-purple-500" />}
+            icon={<TrendingDown className="w-6 h-6 text-purple-500" />}
             label="평균 만족도"
             value={data.summary.avg_sentiment_score}
           />
         </section>
 
-        {/* Table */}
+        {/* ================= Customers List (개선된 부분) ================= */}
         <section className="bg-white rounded-3xl shadow-lg overflow-hidden">
-          <div className="px-8 py-6 border-b">
-            <h2 className="text-xl font-extrabold">
+          <div className="px-10 py-8 border-b">
+            <h2 className="text-2xl font-extrabold">
               고객 목록
             </h2>
-            <p className="text-sm text-gray-500 mt-1">
-              고객별 리뷰 행동 및 이탈 위험도
+            <p className="text-sm text-gray-500 mt-2">
+              고객별 리뷰 활동 및 이탈 위험 지표
             </p>
           </div>
 
-          <div className="overflow-auto">
-            <table className="min-w-full text-sm">
-              <thead className="bg-gray-50">
-                <tr>
-                  <Th>고객</Th>
-                  <Th>리뷰</Th>
-                  <Th>평점</Th>
-                  <Th>최근 활동</Th>
-                  <Th>감성</Th>
-                  <Th>이탈 확률</Th>
-                  <Th>위험</Th>
-                </tr>
-              </thead>
-              <tbody>
-                {data.customers.map((c: any, idx: number) => (
-                  <tr
-                    key={idx}
-                    className="border-t hover:bg-gray-50 transition"
-                  >
-                    <Td className="font-semibold">
-                      {c.author_name}
-                    </Td>
-                    <Td>{c.total_reviews}</Td>
-                    <Td>{c.avg_rating}</Td>
-                    <Td>{c.last_review_at}</Td>
-                    <Td>
-                      <Sentiment sentiment={c.sentiment} />
-                    </Td>
-                    <Td className="font-semibold">
-                      {(c.churn_probability * 100).toFixed(0)}%
-                    </Td>
-                    <Td>
-                      <Risk level={c.risk_level} />
-                    </Td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div className="divide-y">
+            {data.customers.map((c: any, idx: number) => (
+              <div
+                key={idx}
+                className="
+                  px-10 py-6
+                  grid grid-cols-1 md:grid-cols-7 gap-6
+                  items-center
+                  hover:bg-gray-50 transition
+                "
+              >
+                {/* 고객 */}
+                <div className="md:col-span-2">
+                  <p className="font-semibold text-gray-900 text-base">
+                    {c.author_name}
+                  </p>
+                  <p className="text-sm text-gray-500 mt-1">
+                    리뷰 {c.total_reviews}회
+                  </p>
+                </div>
+
+                {/* 평점 */}
+                <InfoBlock label="평점" value={c.avg_rating} />
+
+                {/* 최근 활동 */}
+                <InfoBlock
+                  label="최근 활동"
+                  value={c.last_review_at}
+                />
+
+                {/* 감성 */}
+                <div>
+                  <p className="text-sm text-gray-500 mb-1">
+                    감성
+                  </p>
+                  <Sentiment sentiment={c.sentiment} />
+                </div>
+
+                {/* 이탈 확률 */}
+                <InfoBlock
+                  label="이탈 확률"
+                  value={`${(c.churn_probability * 100).toFixed(0)}%`}
+                  bold
+                />
+
+                {/* 위험도 */}
+                <div className="flex justify-start md:justify-end">
+                  <Risk level={c.risk_level} />
+                </div>
+              </div>
+            ))}
           </div>
         </section>
       </section>
@@ -226,35 +237,44 @@ export default function CustomersPage() {
 
 function Kpi({ icon, label, value }: any) {
   return (
-    <div className="bg-white rounded-3xl p-8 shadow-md hover:shadow-lg transition">
-      <div className="flex items-center gap-4 mb-4">
-        <div className="w-12 h-12 rounded-2xl bg-gray-100 flex items-center justify-center">
+    <div className="bg-white rounded-3xl p-10 shadow-md hover:shadow-xl transition">
+      <div className="flex items-center gap-4 mb-6">
+        <div className="w-14 h-14 rounded-2xl bg-gray-100 flex items-center justify-center">
           {icon}
         </div>
         <p className="text-gray-500 font-semibold">
           {label}
         </p>
       </div>
-      <p className="text-3xl font-extrabold text-gray-900">
+      <p className="text-4xl font-extrabold tracking-tight text-gray-900">
         {value}
       </p>
     </div>
   );
 }
 
-function Th({ children }: any) {
+function InfoBlock({
+  label,
+  value,
+  bold = false,
+}: {
+  label: string;
+  value: string | number;
+  bold?: boolean;
+}) {
   return (
-    <th className="px-6 py-4 text-left text-gray-600 font-semibold">
-      {children}
-    </th>
-  );
-}
-
-function Td({ children, className = "" }: any) {
-  return (
-    <td className={`px-6 py-4 text-gray-700 ${className}`}>
-      {children}
-    </td>
+    <div>
+      <p className="text-sm text-gray-500 mb-1">
+        {label}
+      </p>
+      <p
+        className={`${
+          bold ? "font-extrabold" : "font-semibold"
+        } text-gray-900`}
+      >
+        {value}
+      </p>
+    </div>
   );
 }
 
@@ -267,7 +287,7 @@ function Risk({ level }: any) {
 
   return (
     <span
-      className={`px-3 py-1 rounded-full text-xs font-bold ${map[level]}`}
+      className={`px-3 py-1.5 rounded-full text-xs font-bold ${map[level]}`}
     >
       {level}
     </span>
@@ -292,7 +312,7 @@ function Sentiment({ sentiment }: any) {
 
   return (
     <div
-      className={`flex items-center gap-1 font-semibold ${map[sentiment].color}`}
+      className={`flex items-center gap-1.5 font-semibold ${map[sentiment].color}`}
     >
       {map[sentiment].icon}
       {sentiment}
