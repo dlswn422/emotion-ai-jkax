@@ -74,7 +74,9 @@ export default function CxDashboardPage() {
     <Suspense
       fallback={
         <main className="min-h-screen flex items-center justify-center bg-gray-100">
-          <p className="text-gray-400 text-sm">대시보드 로딩 중...</p>
+          <p className="text-gray-400 text-sm">
+            대시보드 로딩 중...
+          </p>
         </main>
       }
     >
@@ -88,6 +90,10 @@ function CxDashboardInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
+  // ✅ 환경변수 기반 API URL
+  const API_URL =
+    process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+
   const from = searchParams.get("from");
   const to = searchParams.get("to");
   const storeId = searchParams.get("storeId");
@@ -100,10 +106,9 @@ function CxDashboardInner() {
 
     const checkLogin = async () => {
       try {
-        const res = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000"}/auth/status`,
-          { credentials: "include" }
-        );
+        const res = await fetch(`${API_URL}/auth/status`, {
+          credentials: "include",
+        });
         const auth = await res.json();
 
         if (!cancelled && !auth.logged_in) {
@@ -120,17 +125,20 @@ function CxDashboardInner() {
     return () => {
       cancelled = true;
     };
-  }, [router]);
+  }, [router, API_URL]);
 
   if (checking) {
     return (
       <main className="min-h-screen flex items-center justify-center bg-gray-100">
-        <p className="text-gray-400 text-sm">로그인 상태 확인 중...</p>
+        <p className="text-gray-400 text-sm">
+          로그인 상태 확인 중...
+        </p>
       </main>
     );
   }
 
-  const periodLabel = from && to ? `${from} ~ ${to}` : "전체 기간";
+  const periodLabel =
+    from && to ? `${from} ~ ${to}` : "전체 기간";
 
   return (
     <main className="min-h-screen bg-gray-100 px-6 py-12">
@@ -197,8 +205,16 @@ function CxDashboardInner() {
 
         {/* Drivers / Improvements */}
         <section className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          <ProgressBlock title="🔥 Key Drivers of Satisfaction" items={MOCK.drivers} color="blue" />
-          <ProgressBlock title="🛠 Areas for Improvement" items={MOCK.improvements} color="gray" />
+          <ProgressBlock
+            title="🔥 Key Drivers of Satisfaction"
+            items={MOCK.drivers}
+            color="blue"
+          />
+          <ProgressBlock
+            title="🛠 Areas for Improvement"
+            items={MOCK.improvements}
+            color="gray"
+          />
         </section>
 
         {/* Insights / Risk */}

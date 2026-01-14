@@ -8,13 +8,17 @@ export default function Home() {
   const router = useRouter();
   const [checking, setChecking] = useState(true);
 
+  // ✅ 환경변수 기반 API URL (로컬 / 배포 자동 분기)
+  const API_URL =
+    process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+
   useEffect(() => {
     let cancelled = false;
 
     const checkLogin = async () => {
       try {
-        const res = await fetch("http://localhost:8000/auth/status", {
-          credentials: "include",
+        const res = await fetch(`${API_URL}/auth/status`, {
+          credentials: "include", // ⭐⭐⭐ 쿠키 인증 핵심
         });
 
         const data = await res.json();
@@ -40,7 +44,7 @@ export default function Home() {
     return () => {
       cancelled = true;
     };
-  }, []); // ✅ dependency 비움
+  }, [router, API_URL]);
 
   if (checking) {
     return (
@@ -51,7 +55,7 @@ export default function Home() {
   }
 
   const handleLogout = async () => {
-    await fetch("http://localhost:8000/auth/logout", {
+    await fetch(`${API_URL}/auth/logout`, {
       method: "POST",
       credentials: "include",
     });
@@ -80,12 +84,14 @@ export default function Home() {
       {/* Hero */}
       <section className="max-w-7xl mx-auto px-6 py-28 text-center">
         <h1 className="text-5xl font-extrabold mb-6 leading-tight">
-          리뷰 데이터를<br />
+          리뷰 데이터를
+          <br />
           <span className="text-blue-600">인사이트</span>로 바꾸세요
         </h1>
 
         <p className="text-gray-600 text-lg max-w-2xl mx-auto mb-14">
-          설문(CSV) 또는 Google 리뷰를 기반으로<br />
+          설문(CSV) 또는 Google 리뷰를 기반으로
+          <br />
           AI가 고객 경험을 자동으로 분석합니다.
         </p>
 

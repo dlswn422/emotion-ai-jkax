@@ -40,6 +40,10 @@ export default function DashboardPage() {
   const [data, setData] = useState<AnalysisResult | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // ✅ 환경변수 기반 API URL (로컬 / 배포 자동 분기)
+  const API_URL =
+    process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+
   /* =========================
      로그인 가드
   ========================= */
@@ -48,7 +52,7 @@ export default function DashboardPage() {
 
     const checkLogin = async () => {
       try {
-        const res = await fetch("http://localhost:8000/auth/status", {
+        const res = await fetch(`${API_URL}/auth/status`, {
           credentials: "include",
         });
         const auth = await res.json();
@@ -74,7 +78,7 @@ export default function DashboardPage() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [router, API_URL]);
 
   /* =========================
      분석 결과 로드
@@ -146,15 +150,20 @@ export default function DashboardPage() {
             <ScoreGauge score={data.score} />
             <p className="text-gray-600">
               AI가 전체 리뷰를 분석하여 <br />
-              <b className="text-gray-900">{data.score}점 / 10점</b>으로
-              평가했습니다.
+              <b className="text-gray-900">
+                {data.score}점 / 10점
+              </b>
+              으로 평가했습니다.
             </p>
           </div>
         </Section>
 
         {/* 차트 */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-10 mb-14">
-          <Section title="감성 분포" icon={<BarChart3 className="w-5 h-5" />}>
+          <Section
+            title="감성 분포"
+            icon={<BarChart3 className="w-5 h-5" />}
+          >
             <ResponsiveContainer width="100%" height={260}>
               <BarChart data={chartData}>
                 <XAxis dataKey="name" />
@@ -169,7 +178,10 @@ export default function DashboardPage() {
             </ResponsiveContainer>
           </Section>
 
-          <Section title="감성 비율" icon={<PieIcon className="w-5 h-5" />}>
+          <Section
+            title="감성 비율"
+            icon={<PieIcon className="w-5 h-5" />}
+          >
             <ResponsiveContainer width="100%" height={260}>
               <PieChart>
                 <Pie
@@ -244,7 +256,13 @@ function Section({
   );
 }
 
-function KpiCard({ label, value }: { label: string; value: number }) {
+function KpiCard({
+  label,
+  value,
+}: {
+  label: string;
+  value: number;
+}) {
   return (
     <div className="bg-white rounded-2xl p-6 shadow-sm">
       <div className="text-sm text-gray-500 mb-2">{label}</div>
@@ -275,7 +293,9 @@ function ScoreGauge({ score }: { score: number }) {
           strokeWidth="12"
           fill="none"
           strokeDasharray={440}
-          strokeDashoffset={440 - (440 * percent) / 100}
+          strokeDashoffset={
+            440 - (440 * percent) / 100
+          }
           strokeLinecap="round"
         />
       </svg>

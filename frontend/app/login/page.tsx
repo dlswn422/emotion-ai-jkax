@@ -6,11 +6,15 @@ import { useRouter } from "next/navigation";
 export default function GoogleLoginPage() {
   const router = useRouter();
 
+  // ✅ 환경변수 기반 API URL (로컬 / 배포 자동 분기)
+  const API_URL =
+    process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+
   useEffect(() => {
     const checkAlreadyLoggedIn = async () => {
       try {
-        const res = await fetch("http://localhost:8000/auth/status", {
-          credentials: "include", // ⭐⭐⭐ 이게 핵심
+        const res = await fetch(`${API_URL}/auth/status`, {
+          credentials: "include", // ⭐⭐⭐ 쿠키 인증 핵심
         });
         const data = await res.json();
 
@@ -19,18 +23,17 @@ export default function GoogleLoginPage() {
           router.replace("/");
         }
       } catch (e) {
-        // 네트워크 오류 시에는 그냥 로그인 화면 유지
+        // 네트워크 오류 시 로그인 화면 유지
         console.error(e);
       }
     };
 
     checkAlreadyLoggedIn();
-  }, []); // router dependency 제거
+  }, [router, API_URL]);
 
   const handleGoogleLogin = () => {
-    // FastAPI Google OAuth 엔드포인트로 이동
-    window.location.href =
-      "http://localhost:8000/auth/google/login";
+    // ✅ Google OAuth는 fetch ❌ → 브라우저 이동 ⭕
+    window.location.href = `${API_URL}/auth/google/login`;
   };
 
   return (
@@ -41,7 +44,8 @@ export default function GoogleLoginPage() {
         </h1>
 
         <p className="text-gray-600 mb-8">
-          본인 매장의 리뷰를 분석하려면<br />
+          본인 매장의 리뷰를 분석하려면
+          <br />
           Google 비즈니스 계정으로 로그인하세요
         </p>
 

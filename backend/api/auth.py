@@ -1,21 +1,25 @@
 import os
 import pickle
+
 from fastapi import APIRouter
 from fastapi.responses import RedirectResponse
 from google_auth_oauthlib.flow import Flow
 
+from backend.settings import (
+    FRONTEND_URL,
+    BACKEND_URL,
+    CLIENT_SECRET_FILE,
+    TOKEN_FILE,
+)
+
 router = APIRouter(prefix="/auth", tags=["auth"])
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-CLIENT_SECRET_FILE = os.path.join(
-    BASE_DIR, "..", "collectors", "client_secret.json"
-)
-TOKEN_FILE = os.path.join(
-    BASE_DIR, "..", "collectors", "token.pickle"
-)
-
+# ===============================
+# Google OAuth Config
+# ===============================
 SCOPES = ["https://www.googleapis.com/auth/business.manage"]
-REDIRECT_URI = "http://localhost:8000/auth/google/callback"
+
+REDIRECT_URI = f"{BACKEND_URL}/auth/google/callback"
 
 
 @router.get("/google/login")
@@ -47,7 +51,8 @@ def google_callback(code: str):
     with open(TOKEN_FILE, "wb") as f:
         pickle.dump(flow.credentials, f)
 
-    return RedirectResponse("http://localhost:3000/")
+    # ✅ 로그인 성공 후 프론트로 이동 (환경별 자동 분기)
+    return RedirectResponse(FRONTEND_URL)
 
 
 @router.get("/status")

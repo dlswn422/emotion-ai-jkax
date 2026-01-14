@@ -54,12 +54,49 @@ export default function CustomersPage() {
   const { storeId } = useParams();
   const router = useRouter();
   const [data, setData] = useState<any>(null);
+  const [checking, setChecking] = useState(true);
 
+  // ✅ 환경변수 기반 API URL
+  const API_URL =
+    process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+
+  /* ================= 로그인 가드 ================= */
   useEffect(() => {
-    setData(MOCK);
-  }, []);
+    let cancelled = false;
 
-  if (!data) {
+    const checkLogin = async () => {
+      try {
+        const res = await fetch(`${API_URL}/auth/status`, {
+          credentials: "include",
+        });
+        const auth = await res.json();
+
+        if (!cancelled && !auth.logged_in) {
+          router.replace("/login");
+          return;
+        }
+      } catch {
+        if (!cancelled) router.replace("/login");
+        return;
+      } finally {
+        if (!cancelled) setChecking(false);
+      }
+    };
+
+    checkLogin();
+    return () => {
+      cancelled = true;
+    };
+  }, [router, API_URL]);
+
+  /* ================= MOCK 데이터 로드 ================= */
+  useEffect(() => {
+    if (!checking) {
+      setData(MOCK);
+    }
+  }, [checking]);
+
+  if (checking || !data) {
     return (
       <main className="min-h-screen flex items-center justify-center bg-gray-50">
         로딩 중...
@@ -110,9 +147,7 @@ export default function CustomersPage() {
         {/* Table */}
         <section className="bg-white rounded-3xl shadow-lg overflow-hidden">
           <div className="px-8 py-6 border-b">
-            <h2 className="text-xl font-extrabold">
-              고객 목록
-            </h2>
+            <h2 className="text-xl font-extrabold">고객 목록</h2>
             <p className="text-sm text-gray-500 mt-1">
               고객별 리뷰 행동 및 이탈 위험도
             </p>
@@ -226,7 +261,9 @@ function Sentiment({ sentiment }: any) {
   };
 
   return (
-    <div className={`flex items-center gap-1 font-semibold ${map[sentiment].color}`}>
+    <div
+      className={`flex items-center gap-1 font-semibold ${map[sentiment].color}`}
+    >
       {map[sentiment].icon}
       {sentiment}
     </div>

@@ -16,6 +16,10 @@ import {
 export default function UploadPage() {
   const router = useRouter();
 
+  // ✅ 환경변수 기반 API URL (로컬 / 배포 자동 분기)
+  const API_URL =
+    process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+
   /* =========================
      모든 상태는 최상단
   ========================= */
@@ -34,7 +38,7 @@ export default function UploadPage() {
 
     const checkLogin = async () => {
       try {
-        const res = await fetch("http://localhost:8000/auth/status", {
+        const res = await fetch(`${API_URL}/auth/status`, {
           credentials: "include",
         });
         const data = await res.json();
@@ -59,7 +63,7 @@ export default function UploadPage() {
     return () => {
       cancelled = true;
     };
-  }, [router]);
+  }, [router, API_URL]);
 
   /* =========================
      파일 업로드 & 미리보기
@@ -102,7 +106,7 @@ export default function UploadPage() {
 
     try {
       const res = await axios.post(
-         "http://localhost:8000/analysis/file",
+        `${API_URL}/analysis/file`,
         formData,
         { withCredentials: true }
       );
@@ -139,8 +143,10 @@ export default function UploadPage() {
     <main className="min-h-screen bg-gray-50 px-6 py-16 relative">
       {/* 로딩 오버레이 */}
       {loading && (
-        <div className="absolute inset-0 z-50 bg-white/80
-                        flex flex-col items-center justify-center">
+        <div
+          className="absolute inset-0 z-50 bg-white/80
+                     flex flex-col items-center justify-center"
+        >
           <Loader2 className="w-10 h-10 text-blue-600 animate-spin mb-4" />
           <p className="text-gray-700 font-semibold">
             AI가 리뷰를 분석 중입니다…
@@ -191,8 +197,10 @@ export default function UploadPage() {
         {/* 파일 요약 카드 */}
         {file && (
           <div className="mt-10 bg-white rounded-3xl p-8 shadow-sm">
-            <div className="flex flex-col md:flex-row
-                            md:items-center md:justify-between gap-6">
+            <div
+              className="flex flex-col md:flex-row
+                         md:items-center md:justify-between gap-6"
+            >
               <div>
                 <p className="text-lg font-semibold">{file.name}</p>
                 <p className="text-sm text-gray-500 mt-1">

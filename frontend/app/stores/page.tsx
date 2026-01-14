@@ -10,6 +10,7 @@ import {
   ArrowLeft,
 } from "lucide-react";
 
+/* ================= MOCK ================= */
 const MOCK_STORES = [
   {
     id: "store_1",
@@ -30,18 +31,37 @@ const MOCK_STORES = [
 export default function StoresPage() {
   const router = useRouter();
 
-  useEffect(() => {
-    const checkLogin = async () => {
-      const res = await fetch("http://localhost:8000/auth/status");
-      const data = await res.json();
+  // ✅ 환경변수 기반 API URL
+  const API_URL =
+    process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
-      if (!data.logged_in) {
-        router.replace("/login");
+  /* ================= 로그인 가드 ================= */
+  useEffect(() => {
+    let cancelled = false;
+
+    const checkLogin = async () => {
+      try {
+        const res = await fetch(`${API_URL}/auth/status`, {
+          credentials: "include",
+        });
+        const data = await res.json();
+
+        if (!cancelled && !data.logged_in) {
+          router.replace("/login");
+        }
+      } catch {
+        if (!cancelled) {
+          router.replace("/login");
+        }
       }
     };
 
     checkLogin();
-  }, [router]);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [router, API_URL]);
 
   return (
     <main className="min-h-screen bg-gray-50 px-6 py-16">
@@ -86,8 +106,12 @@ export default function StoresPage() {
               {/* Title */}
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-2xl
-                                  bg-blue-50 flex items-center justify-center">
+                  <div
+                    className="
+                      w-12 h-12 rounded-2xl
+                      bg-blue-50 flex items-center justify-center
+                    "
+                  >
                     <Store className="w-6 h-6 text-blue-600" />
                   </div>
                   <div>
@@ -139,7 +163,6 @@ export default function StoresPage() {
                 이 매장 리뷰 분석하기
                 <ArrowRight className="w-5 h-5" />
               </button>
-           \
             </div>
           ))}
         </div>
