@@ -6,10 +6,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.sessions import SessionMiddleware
 import os
 
-# API 라우터
 from backend.api import auth, analysis, reviews, stores
 
 app = FastAPI(title="Emotion AI Backend")
+
+ENV = os.getenv("ENV", "local")
 
 # =========================
 # Session (쿠키 기반 인증)
@@ -17,12 +18,12 @@ app = FastAPI(title="Emotion AI Backend")
 app.add_middleware(
     SessionMiddleware,
     secret_key=os.getenv("SESSION_SECRET_KEY", "dev-secret-key"),
-    same_site="none",      # ⭐ Vercel ↔ Render 필수
-    https_only=True,       # ⭐ 배포 환경 필수
+    same_site="none" if ENV != "local" else "lax",
+    https_only=False if ENV == "local" else True,
 )
 
 # =========================
-# CORS 설정 (쿠키 허용)
+# CORS 설정
 # =========================
 app.add_middleware(
     CORSMiddleware,
@@ -30,15 +31,15 @@ app.add_middleware(
         "http://localhost:3000",
         "https://emotion-ai-jkax-wqsd.vercel.app",
     ],
-    allow_credentials=True,   # ⭐⭐⭐ 핵심
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 # =========================
-# API Router 등록
+# Routers
 # =========================
-app.include_router(auth.router)       # 로그인 / 로그아웃 / 상태
-app.include_router(stores.router)     # 매장 목록 / 매장 정보
-app.include_router(reviews.router)    # Google 리뷰 원본 조회
-app.include_router(analysis.router)   # 분석 / CX 대시보드
+app.include_router(auth.router)
+app.include_router(stores.router)
+app.include_router(reviews.router)
+app.include_router(analysis.router)
