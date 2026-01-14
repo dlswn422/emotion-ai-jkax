@@ -4,21 +4,21 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { UploadCloud, MapPin } from "lucide-react";
 
+/* ✅ 컴포넌트 밖에서 API_BASE 고정 */
+const API_BASE =
+  process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
 export default function Home() {
   const router = useRouter();
   const [checking, setChecking] = useState(true);
-
-  // ✅ 환경변수 기반 API URL (로컬 / 배포 자동 분기)
-  const API_URL =
-    process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
   useEffect(() => {
     let cancelled = false;
 
     const checkLogin = async () => {
       try {
-        const res = await fetch(`${API_URL}/auth/status`, {
-          credentials: "include", // ⭐⭐⭐ 쿠키 인증 핵심
+        const res = await fetch(`${API_BASE}/auth/status`, {
+          credentials: "include", // ⭐ 쿠키 인증 핵심
         });
 
         const data = await res.json();
@@ -27,7 +27,7 @@ export default function Home() {
           router.replace("/login");
           return;
         }
-      } catch {
+      } catch (e) {
         if (!cancelled) {
           router.replace("/login");
         }
@@ -44,7 +44,7 @@ export default function Home() {
     return () => {
       cancelled = true;
     };
-  }, [router, API_URL]);
+  }, [router]); // ✅ API_BASE 제거 (중요!)
 
   if (checking) {
     return (
@@ -55,7 +55,7 @@ export default function Home() {
   }
 
   const handleLogout = async () => {
-    await fetch(`${API_URL}/auth/logout`, {
+    await fetch(`${API_BASE}/auth/logout`, {
       method: "POST",
       credentials: "include",
     });
