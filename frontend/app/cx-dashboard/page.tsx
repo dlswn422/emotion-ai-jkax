@@ -1,5 +1,8 @@
 "use client";
 
+/* ✅ prerender / SSG 완전 차단 (Vercel 빌드 에러 해결 핵심) */
+export const dynamic = "force-dynamic";
+
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
@@ -76,17 +79,16 @@ export default function CxDashboardPage() {
 
   const [checking, setChecking] = useState(true);
 
-  /* =========================
-     로그인 가드
-  ========================= */
+  /* ================= 로그인 가드 ================= */
   useEffect(() => {
     let cancelled = false;
 
     const checkLogin = async () => {
       try {
-        const res = await fetch("http://localhost:8000/auth/status", {
-          credentials: "include",
-        });
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000"}/auth/status`,
+          { credentials: "include" }
+        );
         const auth = await res.json();
 
         if (!cancelled && !auth.logged_in) {
@@ -94,23 +96,17 @@ export default function CxDashboardPage() {
           return;
         }
       } catch {
-        if (!cancelled) {
-          router.replace("/login");
-        }
-        return;
+        if (!cancelled) router.replace("/login");
       } finally {
-        if (!cancelled) {
-          setChecking(false);
-        }
+        if (!cancelled) setChecking(false);
       }
     };
 
     checkLogin();
-
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [router]);
 
   if (checking) {
     return (
@@ -120,8 +116,7 @@ export default function CxDashboardPage() {
     );
   }
 
-  const periodLabel =
-    from && to ? `${from} ~ ${to}` : "전체 기간";
+  const periodLabel = from && to ? `${from} ~ ${to}` : "전체 기간";
 
   return (
     <main className="min-h-screen bg-gray-100 px-6 py-12">
@@ -188,16 +183,8 @@ export default function CxDashboardPage() {
 
         {/* Drivers / Improvements */}
         <section className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          <ProgressBlock
-            title="🔥 Key Drivers of Satisfaction"
-            items={MOCK.drivers}
-            color="blue"
-          />
-          <ProgressBlock
-            title="🛠 Areas for Improvement"
-            items={MOCK.improvements}
-            color="gray"
-          />
+          <ProgressBlock title="🔥 Key Drivers of Satisfaction" items={MOCK.drivers} color="blue" />
+          <ProgressBlock title="🛠 Areas for Improvement" items={MOCK.improvements} color="gray" />
         </section>
 
         {/* Insights / Risk */}
@@ -214,7 +201,6 @@ export default function CxDashboardPage() {
     </main>
   );
 }
-
 /* ================= Shared Components ================= */
 
 function Card({ children }: { children: React.ReactNode }) {
