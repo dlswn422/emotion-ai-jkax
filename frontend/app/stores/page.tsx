@@ -42,7 +42,6 @@ export default function StoresPage() {
     const checkLogin = async () => {
       try {
         const res = await fetch(`${API_URL}/auth/status`, {
-          credentials: "include",
         });
         const data = await res.json();
 

@@ -53,7 +53,6 @@ export default function DashboardPage() {
     const checkLogin = async () => {
       try {
         const res = await fetch(`${API_URL}/auth/status`, {
-          credentials: "include",
         });
         const auth = await res.json();
 

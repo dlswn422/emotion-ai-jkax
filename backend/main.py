@@ -14,8 +14,10 @@ app = FastAPI(title="Emotion AI Backend")
 # =========================
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
-    allow_credentials=True,
+    allow_origins=[
+        "http://localhost:3000",
+        "https://emotion-ai-jkax-wqsd.vercel.app",
+    ],
     allow_methods=["*"],
     allow_headers=["*"],
 )

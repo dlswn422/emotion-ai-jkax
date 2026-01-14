@@ -67,7 +67,6 @@ export default function CustomersPage() {
     const checkLogin = async () => {
       try {
         const res = await fetch(`${API_URL}/auth/status`, {
-          credentials: "include",
         });
         const auth = await res.json();
 

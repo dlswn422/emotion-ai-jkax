@@ -39,7 +39,6 @@ export default function UploadPage() {
     const checkLogin = async () => {
       try {
         const res = await fetch(`${API_URL}/auth/status`, {
-          credentials: "include",
         });
         const data = await res.json();
 
@@ -107,8 +106,7 @@ export default function UploadPage() {
     try {
       const res = await axios.post(
         `${API_URL}/analysis/file`,
-        formData,
-        { withCredentials: true }
+        formData
       );
 
       sessionStorage.setItem(

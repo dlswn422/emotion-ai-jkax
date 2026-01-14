@@ -18,7 +18,6 @@ export default function Home() {
     const checkLogin = async () => {
       try {
         const res = await fetch(`${API_BASE}/auth/status`, {
-          credentials: "include", // ⭐ 쿠키 인증 핵심
         });
 
         const data = await res.json();
@@ -56,8 +55,7 @@ export default function Home() {
 
   const handleLogout = async () => {
     await fetch(`${API_BASE}/auth/logout`, {
-      method: "POST",
-      credentials: "include",
+      method: "POST"
     });
 
     router.replace("/login");

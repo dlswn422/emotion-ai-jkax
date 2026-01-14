@@ -14,7 +14,6 @@ export default function GoogleLoginPage() {
     const checkAlreadyLoggedIn = async () => {
       try {
         const res = await fetch(`${API_BASE}/auth/status`, {
-          credentials: "include", // ⭐ 쿠키 인증 필수
         });
 
         const data = await res.json();

@@ -60,7 +60,6 @@ export default function StoreDetailPage() {
     const checkLogin = async () => {
       try {
         const res = await fetch("http://localhost:8000/auth/status", {
-          credentials: "include",
         });
         const data = await res.json();
         if (!data.logged_in) router.replace("/login");
