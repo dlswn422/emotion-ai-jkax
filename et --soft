@@ -1,0 +1,215 @@
+[33mcommit 44714c057284cf46b1b7fff36e735df0bcdbf76a[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m)[m
+Author: INJU MOON <injoo.mun@jkax.co.kr>
+Date:   Wed Jan 14 10:15:05 2026 +0900
+
+    init: clean repository for emotion-ai-jkax
+
+[1mdiff --git a/.gitattributes b/.gitattributes[m
+[1mnew file mode 100644[m
+[1mindex 0000000..94f480d[m
+[1m--- /dev/null[m
+[1m+++ b/.gitattributes[m
+[36m@@ -0,0 +1 @@[m
+[32m+[m[32m* text=auto eol=lf[m
+\ No newline at end of file[m
+[1mdiff --git a/.gitignore b/.gitignore[m
+[1mnew file mode 100644[m
+[1mindex 0000000..1e33426[m
+[1m--- /dev/null[m
+[1m+++ b/.gitignore[m
+[36m@@ -0,0 +1,15 @@[m
+[32m+[m[32m# Python[m
+[32m+[m[32m__pycache__/[m
+[32m+[m[32m.venv/[m
+[32m+[m[32m*.pyc[m
+[32m+[m[32m.env[m
+[32m+[m
+[32m+[m[32m# Next.js[m
+[32m+[m[32mnode_modules/[m
+[32m+[m[32m.next/[m
+[32m+[m[32mout/[m
+[32m+[m[32m*.log[m
+[32m+[m
+[32m+[m[32m# OS[m
+[32m+[m[32m.DS_Store[m
+[32m+[m[32mThumbs.db[m
+[1mdiff --git a/README.md b/README.md[m
+[1mnew file mode 100644[m
+[1mindex 0000000..e9bfa6d[m
+[1m--- /dev/null[m
+[1m+++ b/README.md[m
+[36m@@ -0,0 +1,26 @@[m
+[32m+[m[32m# 📊 Emotion AI – Review Insight Platform[m
+[32m+[m
+[32m+[m[32m고객 리뷰 및 설문 데이터를 업로드하면[m[41m  [m
+[32m+[m[32mAI가 감성 분석, 핵심 키워드, 종합 요약을 제공하는 웹 서비스입니다.[m
+[32m+[m
+[32m+[m[32m---[m
+[32m+[m
+[32m+[m[32m## 🧩 프로젝트 구성[m
+[32m+[m
+[32m+[m[32m```text[m
+[32m+[m[32memotion-ai/[m
+[32m+[m[32m├── backend/        # FastAPI + GPT 분석[m
+[32m+[m[32m│   ├── main.py[m
+[32m+[m[32m│   ├── analysis.py[m
+[32m+[m[32m│   ├── file_parser.py[m
+[32m+[m[32m│   └── requirements.txt[m
+[32m+[m[32m│[m
+[32m+[m[32m├── frontend/       # Next.js (App Router)[m
+[32m+[m[32m│   ├── app/[m
+[32m+[m[32m│   │   ├── page.tsx        # 메인[m
+[32m+[m[32m│   │   ├── upload/page.tsx # 업로드[m
+[32m+[m[32m│   │   └── dashboard/page.tsx[m
+[32m+[m[32m│   ├── package.json[m
+[32m+[m[32m│   └── tailwind.config.js[m
+[32m+[m[32m│[m
+[32m+[m[32m└── README.md[m
+[1mdiff --git a/backend/__init__.py b/backend/__init__.py[m
+[1mnew file mode 100644[m
+[1mindex 0000000..e69de29[m
+[1mdiff --git a/backend/analysis/__init__.py b/backend/analysis/__init__.py[m
+[1mnew file mode 100644[m
+[1mindex 0000000..e69de29[m
+[1mdiff --git a/backend/analysis/review_insight.py b/backend/analysis/review_insight.py[m
+[1mnew file mode 100644[m
+[1mindex 0000000..7ed7527[m
+[1m--- /dev/null[m
+[1m+++ b/backend/analysis/review_insight.py[m
+[36m@@ -0,0 +1,59 @@[m
+[32m+[m[32mimport json[m
+[32m+[m[32mimport re[m
+[32m+[m[32mfrom openai import OpenAI[m
+[32m+[m
+[32m+[m[32mclient = OpenAI()[m
+[32m+[m
+[32m+[m
+[32m+[m[32mdef analyze_review_insight(reviews: list[str]) -> dict:[m
+[32m+[m[32m    """[m
+[32m+[m[32m    고객 리뷰를 주제/감정 단위로 묶어[m
+[32m+[m[32m    CX 인사이트 리포트 생성[m
+[32m+[m[32m    """[m
+[32m+[m[32m    if not reviews:[m
+[32m+[m[32m        return {[m
+[32m+[m[32m            "total": 0,[m
+[32m+[m[32m            "items": [],[m
+[32m+[m[32m            "overall_summary": ""[m
+[32m+[m[32m        }[m
+[32m+[m
+[32m+[m[32m    sample = reviews[:50][m
+[32m+[m
+[32m+[m[32m    prompt = f"""[m
+[32m+[m[32m아래는 고객 리뷰 목록입니다.[m
+[32m+[m
+[32m+[m[32m리뷰:[m
+[32m+[m[32m{chr(10).join(sample)}[m
+[32m+[m
+[32m+[m[32m조건:[m
+[32m+[m[32m- 모든 설명은 한국어[m
+[32m+[m[32m- 리뷰에서 반복되는 경험/이슈를 묶을 것[m
+[32m+[m[32m- 감성은 positive | neutral | negative 중 하나[m
+[32m+[m[32m- JSON 외 텍스트 출력 금지[m
+[32m+[m
+[32m+[m[32m형식:[m
+[32m+[m[32m{{[m
+[32m+[m[32m  "items": [[m
+[32m+[m[32m    {{[m
+[32m+[m[32m      "sentiment": "positive | neutral | negative",[m
+[32m+[m[32m      "topics": ["주제1", "주제2"],[m
+[32m+[m[32m      "summary": "요약"[m
+[32m+[m[32m    }}[m
+[32m+[m[32m  ],[m
+[32m+[m[32m  "overall_summary": "전체 요약"[m
+[32m+[m[32m}}[m
+[32m+[m[32m"""[m
+[32m+[m
+[32m+[m[32m    response = client.chat.completions.create([m
+[32m+[m[32m        model="gpt-4o-mini",[m
+[32m+[m[32m        messages=[[m
+[32m+[m[32m            {"role": "system", "content": "너는 CX 분석 전문가다."},[m
+[32m+[m[32m            {"role": "user", "content": prompt}[m
+[32m+[m[32m        ],[m
+[32m+[m[32m        temperature=0.3[m
+[32m+[m[32m    )[m
+[32m+[m
+[32m+[m[32m    content = response.choices[0].message.content[m
+[32m+[m[32m    match = re.search(r"\{.*\}", content, re.DOTALL)[m
+[32m+[m
+[32m+[m[32m    return json.loads(match.group())[m
+[1mdiff --git a/backend/analysis/sentiment.py b/backend/analysis/sentiment.py[m
+[1mnew file mode 100644[m
+[1mindex 0000000..50605f9[m
+[1m--- /dev/null[m
+[1m+++ b/backend/analysis/sentiment.py[m
+[36m@@ -0,0 +1,100 @@[m
+[32m+[m[32mimport json[m
+[32m+[m[32mimport re[m
+[32m+[m[32mfrom openai import OpenAI[m
+[32m+[m
+[32m+[m[32mclient = OpenAI()[m
+[32m+[m
+[32m+[m
+[32m+[m[32mdef analyze_reviews(reviews: list[str]):[m
+[32m+[m[32m    """[m
+[32m+[m[32m    다국어(한국어/영어/혼합) 리뷰 리스트를 입력받아[m
+[32m+[m[32m    GPT는 감성 판단 + 요약만 수행[m
+[32m+[m[32m    통계는 GPT가 본 리뷰 기준으로 계산[m
+[32m+[m[32m    """[m
+[32m+[m
+[32m+[m[32m    if not reviews:[m
+[32m+[m[32m        return {[m
+[32m+[m[32m            "total": 0,[m
+[32m+[m[32m            "positive": 0,[m
+[32m+[m[32m            "neutral": 0,[m
+[32m+[m[32m            "negative": 0,[m
+[32m+[m[32m            "score": 0.0,[m
+[32m+[m[32m            "keywords": [],[m
+[32m+[m[32m            "summary": "",[m
+[32m+[m[32m        }[m
+[32m+[m
+[32m+[m[32m    # 비용 방어: 최대 50개[m
+[32m+[m[32m    sample_reviews = reviews[:50][m
+[32m+[m
+[32m+[m[32m    prompt = f"""[m
+[32m+[m[32m아래는 고객 설문 및 리뷰 응답 목록입니다.[m
+[32m+[m[32m응답은 한국어, 영어 또는 혼합 언어일 수 있습니다.[m
+[32m+[m
+[32m+[m[32m리뷰 목록:[m
+[32m+[m[32m{chr(10).join(sample_reviews)}[m
+[32m+[m
+[32m+[m[32m각 리뷰에 대해 감성을 판단하세요.[m
+[32m+[m
+[32m+[m[32m규칙:[m
+[32m+[m[32m- 각 리뷰마다 하나의 감성만 선택[m
+[32m+[m[32m- 선택지는 반드시 아래 중 하나:[m
+[32m+[m[32m  - positive[m
+[32m+[m[32m  - neutral[m
+[32m+[m[32m  - negative[m
+[32m+[m[32m- 개수 계산은 하지 말 것[m
+[32m+[m[32m- 결과 설명은 반드시 한국어로 작성[m
+[32m+[m[32m- 키워드는 원문 언어 유지[m
+[32m+[m
+[32m+[m[32m아래 JSON 형식으로만 답변하세요.[m
+[32m+[m
+[32m+[m[32m{{[m
+[32m+[m[32m  "sentiments": ["positive", "neutral", ...],[m
+[32m+[m[32m  "score": 전체 만족도를 0~10점 사이 숫자로 평가 (소수점 1자리),[m
+[32m+[m[32m  "keywords": ["핵심 키워드 5개"],[m
+[32m+[m[32m  "summary": "전체 리뷰 요약 (한국어)"[m
+[32m+[m[32m}}[m
+[32m+[m[32m"""[m
+[32m+[m
+[32m+[m[32m    try:[m
+[32m+[m[32m        response = client.chat.completions.create([m
+[32m+[m[32m            model="gpt-4o-mini",[m
+[32m+[m[32m            messages=[[m
+[32m+[m[32m                {[m
+[32m+[m[32m                    "role": "system",[m
+[32m+[m[32m                    "content": ([m
+[32m+[m[32m                        "너는 다국어 설문 데이터를 분석하는 전문가다. "[m
+[32m+[m[32m                        "분석 결과는 반드시 한국어로 제공한다."[m
+[32m+[m[32m                    ),[m
+[32m+[m[32m                },[m
+[32m+[m[32m                {"role": "user", "content": prompt},[m
+[32m+[m[32m            ],[m
+[32m+

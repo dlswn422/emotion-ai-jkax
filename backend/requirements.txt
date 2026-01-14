@@ -1,0 +1,28 @@
+# ===== Web Framework =====
+fastapi
+uvicorn[standard]
+
+# ===== Auth / Security =====
+python-dotenv
+python-multipart
+itsdangerous
+
+# ===== Google API =====
+google-auth
+google-auth-oauthlib
+google-api-python-client
+
+# ===== Data Handling =====
+pandas
+openpyxl
+xlrd
+python-dateutil
+
+# ===== AI / LLM =====
+openai
+
+# ===== HTTP =====
+requests
+
+# ===== DB (지금 or 향후 대비) =====
+sqlalchemy
