@@ -5,7 +5,7 @@ uvicorn[standard]
 # ===== Auth / Security =====
 python-dotenv
 python-multipart
-itsdangerou
+itsdangerous
 
 # ===== Google API =====
 google-auth
