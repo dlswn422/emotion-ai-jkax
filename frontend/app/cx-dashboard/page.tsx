@@ -79,34 +79,41 @@ export default function CxDashboardPage() {
 
   const [checking, setChecking] = useState(true);
 
-  /* ================= 로그인 가드 ================= */
+  /* =========================
+     로그인 가드
+  ========================= */
   useEffect(() => {
     let cancelled = false;
 
     const checkLogin = async () => {
       try {
-        const res = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/auth/status`,
-          { credentials: "include" }
-        );
-        const data = await res.json();
+        const res = await fetch("http://localhost:8000/auth/status", {
+          credentials: "include",
+        });
+        const auth = await res.json();
 
-        if (!cancelled && !data.logged_in) {
+        if (!cancelled && !auth.logged_in) {
           router.replace("/login");
           return;
         }
       } catch {
-        if (!cancelled) router.replace("/login");
+        if (!cancelled) {
+          router.replace("/login");
+        }
+        return;
       } finally {
-        if (!cancelled) setChecking(false);
+        if (!cancelled) {
+          setChecking(false);
+        }
       }
     };
 
     checkLogin();
+
     return () => {
       cancelled = true;
     };
-  }, [router]);
+  }, []);
 
   if (checking) {
     return (
