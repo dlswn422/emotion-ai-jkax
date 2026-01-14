@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   Store,
@@ -34,6 +34,7 @@ const API_BASE =
 
 export default function StoresPage() {
   const router = useRouter();
+  const [checking, setChecking] = useState(true); // ⭐ 핵심
 
   /* ================= 로그인 가드 (쿠키 기반) ================= */
   useEffect(() => {
@@ -42,16 +43,22 @@ export default function StoresPage() {
     const checkLogin = async () => {
       try {
         const res = await fetch(`${API_BASE}/auth/status`, {
-          credentials: "include", // ⭐⭐⭐ 핵심
+          credentials: "include", // ⭐ 쿠키 포함
         });
         const data = await res.json();
 
         if (!cancelled && !data.logged_in) {
           router.replace("/login");
+          return;
         }
       } catch {
         if (!cancelled) {
           router.replace("/login");
+          return;
+        }
+      } finally {
+        if (!cancelled) {
+          setChecking(false); // ⭐ 로그인 확인 완료
         }
       }
     };
@@ -61,8 +68,20 @@ export default function StoresPage() {
     return () => {
       cancelled = true;
     };
-  }, [router]); // ✅ API_BASE 제거 (중요)
+  }, [router]);
 
+  /* ================= 로그인 확인 중 ================= */
+  if (checking) {
+    return (
+      <main className="min-h-screen flex items-center justify-center bg-gray-50">
+        <p className="text-gray-400 text-sm">
+          로그인 상태 확인 중...
+        </p>
+      </main>
+    );
+  }
+
+  /* ================= UI ================= */
   return (
     <main className="min-h-screen bg-gray-50 px-6 py-16">
       <div className="max-w-6xl mx-auto">
@@ -77,15 +96,10 @@ export default function StoresPage() {
             </p>
           </div>
 
-          {/* Back Button */}
           <button
             onClick={() => router.push("/")}
-            className="
-              flex items-center gap-2
-              text-sm font-semibold
-              text-gray-500 hover:text-blue-600
-              transition
-            "
+            className="flex items-center gap-2 text-sm font-semibold
+                       text-gray-500 hover:text-blue-600 transition"
           >
             <ArrowLeft className="w-4 h-4" />
             메인으로
@@ -97,41 +111,32 @@ export default function StoresPage() {
           {MOCK_STORES.map((store) => (
             <div
               key={store.id}
-              className="
-                bg-white rounded-3xl p-8
-                shadow-sm hover:shadow-xl transition
-                border border-gray-100
-              "
+              className="bg-white rounded-3xl p-8
+                         shadow-sm hover:shadow-xl transition
+                         border border-gray-100"
             >
               {/* Title */}
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-3">
-                  <div
-                    className="
-                      w-12 h-12 rounded-2xl
-                      bg-blue-50 flex items-center justify-center
-                    "
-                  >
+                  <div className="w-12 h-12 rounded-2xl
+                                  bg-blue-50 flex items-center justify-center">
                     <Store className="w-6 h-6 text-blue-600" />
                   </div>
                   <div>
                     <h2 className="text-xl font-bold">
                       {store.name}
                     </h2>
-                    <div className="flex items-center gap-1 text-sm text-gray-500 mt-1">
+                    <div className="flex items-center gap-1
+                                    text-sm text-gray-500 mt-1">
                       <MapPin className="w-4 h-4" />
                       {store.address}
                     </div>
                   </div>
                 </div>
 
-                <span
-                  className="
-                    px-4 py-1 rounded-full
-                    bg-green-50 text-green-700
-                    text-sm font-semibold
-                  "
-                >
+                <span className="px-4 py-1 rounded-full
+                                 bg-green-50 text-green-700
+                                 text-sm font-semibold">
                   운영중
                 </span>
               </div>
@@ -151,14 +156,13 @@ export default function StoresPage() {
 
               {/* CTA */}
               <button
-                onClick={() => router.push(`/stores/${store.id}`)}
-                className="
-                  w-full flex items-center justify-center gap-2
-                  px-6 py-4 rounded-2xl
-                  bg-blue-600 text-white font-semibold
-                  hover:bg-blue-700 transition
-                  shadow-md
-                "
+                onClick={() =>
+                  router.push(`/stores/${store.id}`)
+                }
+                className="w-full flex items-center justify-center gap-2
+                           px-6 py-4 rounded-2xl
+                           bg-blue-600 text-white font-semibold
+                           hover:bg-blue-700 transition shadow-md"
               >
                 이 매장 리뷰 분석하기
                 <ArrowRight className="w-5 h-5" />
