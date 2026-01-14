@@ -10,6 +10,7 @@ import {
   Smile,
   Meh,
   Frown,
+  LogOut,
 } from "lucide-react";
 
 /* ================= MOCK ================= */
@@ -61,14 +62,14 @@ export default function CustomersPage() {
   const [data, setData] = useState<any>(null);
   const [checking, setChecking] = useState(true);
 
-  /* ================= 로그인 가드 (쿠키 기반) ================= */
+  /* ================= 로그인 가드 ================= */
   useEffect(() => {
     let cancelled = false;
 
     const checkLogin = async () => {
       try {
         const res = await fetch(`${API_BASE}/auth/status`, {
-          credentials: "include", // ⭐⭐⭐ 핵심
+          credentials: "include",
         });
         const auth = await res.json();
 
@@ -77,30 +78,31 @@ export default function CustomersPage() {
           return;
         }
       } catch {
-        if (!cancelled) {
-          router.replace("/login");
-          return;
-        }
+        if (!cancelled) router.replace("/login");
       } finally {
-        if (!cancelled) {
-          setChecking(false);
-        }
+        if (!cancelled) setChecking(false);
       }
     };
 
     checkLogin();
-
     return () => {
       cancelled = true;
     };
-  }, [router]); // ✅ API_BASE 제거 (중요)
+  }, [router]);
 
-  /* ================= MOCK 데이터 로드 ================= */
+  /* ================= MOCK 로드 ================= */
   useEffect(() => {
-    if (!checking) {
-      setData(MOCK);
-    }
+    if (!checking) setData(MOCK);
   }, [checking]);
+
+  /* ================= 로그아웃 ================= */
+  const handleLogout = async () => {
+    await fetch(`${API_BASE}/auth/logout`, {
+      method: "POST",
+      credentials: "include",
+    });
+    router.replace("/login");
+  };
 
   if (checking || !data) {
     return (
@@ -111,25 +113,39 @@ export default function CustomersPage() {
   }
 
   return (
-    <main className="min-h-screen bg-gray-50 px-6 py-16">
-      <div className="max-w-6xl mx-auto space-y-16">
-        {/* Header */}
-        <header className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-extrabold">👥 고객 분석</h1>
-            <p className="text-gray-500 mt-1">
-              리뷰 작성 고객의 성향과 이탈 위험을 분석합니다
-            </p>
-          </div>
-
+    <main className="min-h-screen bg-gray-50">
+      {/* ================= Header (공통 스타일) ================= */}
+      <header className="bg-white/80 backdrop-blur border-b">
+        <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
           <button
             onClick={() => router.push(`/stores/${storeId}`)}
-            className="flex items-center gap-2 text-sm text-gray-500 hover:text-blue-600"
+            className="flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-blue-600 transition"
           >
             <ArrowLeft className="w-4 h-4" />
-            매장 상세로
+            매장 상세
           </button>
-        </header>
+
+          <button
+            onClick={handleLogout}
+            className="flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-red-500 transition"
+          >
+            <LogOut className="w-4 h-4" />
+            로그아웃
+          </button>
+        </div>
+      </header>
+
+      {/* ================= Content ================= */}
+      <section className="max-w-6xl mx-auto px-6 py-16 space-y-16">
+        {/* Page Title */}
+        <div>
+          <h1 className="text-3xl font-extrabold">
+            고객 분석
+          </h1>
+          <p className="text-gray-500 mt-1">
+            리뷰 작성 고객의 성향 및 이탈 위험도 분석
+          </p>
+        </div>
 
         {/* KPI */}
         <section className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -153,7 +169,9 @@ export default function CustomersPage() {
         {/* Table */}
         <section className="bg-white rounded-3xl shadow-lg overflow-hidden">
           <div className="px-8 py-6 border-b">
-            <h2 className="text-xl font-extrabold">고객 목록</h2>
+            <h2 className="text-xl font-extrabold">
+              고객 목록
+            </h2>
             <p className="text-sm text-gray-500 mt-1">
               고객별 리뷰 행동 및 이탈 위험도
             </p>
@@ -178,7 +196,9 @@ export default function CustomersPage() {
                     key={idx}
                     className="border-t hover:bg-gray-50 transition"
                   >
-                    <Td className="font-semibold">{c.author_name}</Td>
+                    <Td className="font-semibold">
+                      {c.author_name}
+                    </Td>
                     <Td>{c.total_reviews}</Td>
                     <Td>{c.avg_rating}</Td>
                     <Td>{c.last_review_at}</Td>
@@ -197,7 +217,7 @@ export default function CustomersPage() {
             </table>
           </div>
         </section>
-      </div>
+      </section>
     </main>
   );
 }
@@ -206,14 +226,18 @@ export default function CustomersPage() {
 
 function Kpi({ icon, label, value }: any) {
   return (
-    <div className="bg-white rounded-3xl p-8 shadow-md">
+    <div className="bg-white rounded-3xl p-8 shadow-md hover:shadow-lg transition">
       <div className="flex items-center gap-4 mb-4">
         <div className="w-12 h-12 rounded-2xl bg-gray-100 flex items-center justify-center">
           {icon}
         </div>
-        <p className="text-gray-500 font-semibold">{label}</p>
+        <p className="text-gray-500 font-semibold">
+          {label}
+        </p>
       </div>
-      <p className="text-3xl font-extrabold">{value}</p>
+      <p className="text-3xl font-extrabold text-gray-900">
+        {value}
+      </p>
     </div>
   );
 }
