@@ -72,15 +72,13 @@ const MOCK = {
   ],
 };
 
-/* ================= ENTRY (Suspense 필수) ================= */
+/* ================= ENTRY ================= */
 export default function CxDashboardPage() {
   return (
     <Suspense
       fallback={
         <main className="min-h-screen flex items-center justify-center bg-gray-100">
-          <p className="text-gray-400 text-sm">
-            대시보드 로딩 중...
-          </p>
+          <p className="text-gray-400 text-sm">대시보드 로딩 중...</p>
         </main>
       }
     >
@@ -100,14 +98,14 @@ function CxDashboardInner() {
 
   const [checking, setChecking] = useState(true);
 
-  /* ================= 로그인 가드 (쿠키 기반) ================= */
+  /* ================= 로그인 가드 ================= */
   useEffect(() => {
     let cancelled = false;
 
     const checkLogin = async () => {
       try {
         const res = await fetch(`${API_BASE}/auth/status`, {
-          credentials: "include", // ⭐⭐⭐ 핵심
+          credentials: "include",
         });
         const auth = await res.json();
 
@@ -125,7 +123,7 @@ function CxDashboardInner() {
     return () => {
       cancelled = true;
     };
-  }, [router]); // ✅ API_BASE 넣지 않음
+  }, [router]);
 
   if (checking) {
     return (
@@ -146,7 +144,7 @@ function CxDashboardInner() {
       <div className="max-w-6xl mx-auto flex justify-between mb-8 print:hidden">
         <button
           onClick={() => router.back()}
-          className="flex items-center gap-2 text-sm font-semibold text-gray-600"
+          className="flex items-center gap-2 text-sm font-semibold text-gray-600 hover:text-gray-900 transition"
         >
           <ArrowLeft className="w-4 h-4" />
           뒤로가기
@@ -155,21 +153,22 @@ function CxDashboardInner() {
         <button
           onClick={() => window.print()}
           className="flex items-center gap-2 px-4 py-2
-                     bg-blue-600 hover:bg-blue-700
-                     text-white text-sm font-semibold rounded-lg"
+                     bg-slate-900 hover:bg-slate-800
+                     text-white text-sm font-semibold rounded-lg
+                     shadow-sm transition"
         >
           <Download className="w-4 h-4" />
           PDF 다운로드
         </button>
       </div>
 
-      <div className="max-w-6xl mx-auto bg-white rounded-2xl px-12 py-10 space-y-14 shadow-md">
+      <div className="max-w-6xl mx-auto bg-white rounded-2xl px-12 py-10 space-y-16 shadow-md">
         {/* Header */}
         <section className="border-b pb-6">
           <span className="text-xs tracking-widest font-bold text-blue-600">
             CX STRATEGIC REPORT
           </span>
-          <h1 className="text-3xl font-extrabold mt-2">
+          <h1 className="text-3xl font-extrabold mt-2 tracking-tight">
             고객경험(CX) 분석 보고서
           </h1>
 
@@ -185,7 +184,7 @@ function CxDashboardInner() {
         </section>
 
         {/* Executive Summary */}
-        <section className="relative bg-blue-50 rounded-xl px-6 py-6 pl-10">
+        <section className="relative bg-blue-50 rounded-xl px-8 py-6 pl-12">
           <div className="absolute left-0 top-0 h-full w-1.5 bg-blue-600 rounded-l-xl" />
           <h2 className="text-lg font-extrabold text-blue-700 mb-3 flex items-center gap-2">
             <Sparkles className="w-5 h-5" />
@@ -197,14 +196,14 @@ function CxDashboardInner() {
         </section>
 
         {/* KPI */}
-        <section className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <section className="grid grid-cols-1 md:grid-cols-3 gap-8">
           <OverallRatingCard />
           <SentimentCard />
           <NpsCard />
         </section>
 
         {/* Drivers / Improvements */}
-        <section className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <section className="grid grid-cols-1 md:grid-cols-2 gap-10">
           <ProgressBlock
             title="🔥 Key Drivers of Satisfaction"
             items={MOCK.drivers}
@@ -218,7 +217,7 @@ function CxDashboardInner() {
         </section>
 
         {/* Insights / Risk */}
-        <section className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <section className="grid grid-cols-1 md:grid-cols-2 gap-10">
           <InsightsCard />
           <RiskCard />
         </section>
@@ -236,8 +235,9 @@ function CxDashboardInner() {
 
 function Card({ children }: { children: React.ReactNode }) {
   return (
-    <div className="rounded-xl border border-gray-200 p-6 shadow-sm bg-white h-full">
-      {children}
+    <div className="relative rounded-xl border border-gray-200 p-6 shadow-sm bg-white h-full">
+      <div className="absolute left-0 top-0 h-full w-1 bg-gray-100 rounded-l-xl" />
+      <div className="pl-2">{children}</div>
     </div>
   );
 }
@@ -252,7 +252,7 @@ function OverallRatingCard() {
       </h3>
 
       <div className="flex items-end gap-3">
-        <div className="text-4xl font-extrabold text-blue-600">
+        <div className="text-5xl font-extrabold text-blue-600 tracking-tight">
           {MOCK.rating}
         </div>
         <div className="text-lg font-semibold text-gray-400">/ 5.0</div>
@@ -271,6 +271,8 @@ function OverallRatingCard() {
   );
 }
 
+/* ================= Sentiment + Legend ================= */
+
 function SentimentCard() {
   const r = 56;
   const c = 2 * Math.PI * r;
@@ -282,9 +284,16 @@ function SentimentCard() {
         SENTIMENT ANALYSIS
       </h3>
 
-      <div className="flex flex-col items-center gap-5">
+      <div className="flex flex-col items-center gap-4 drop-shadow-sm">
         <svg width="160" height="160">
-          <circle cx="80" cy="80" r={r} stroke="#e5e7eb" strokeWidth="12" fill="none" />
+          <circle
+            cx="80"
+            cy="80"
+            r={r}
+            stroke="#e5e7eb"
+            strokeWidth="12"
+            fill="none"
+          />
           <circle
             cx="80"
             cy="80"
@@ -307,10 +316,34 @@ function SentimentCard() {
             {MOCK.sentiment.positive}%
           </text>
         </svg>
+
+        {/* Legend */}
+        <div className="flex gap-4 text-sm font-semibold text-gray-600">
+          <LegendItem color="bg-green-500" label="긍정" />
+          <LegendItem color="bg-yellow-400" label="중립" />
+          <LegendItem color="bg-red-500" label="부정" />
+        </div>
       </div>
     </Card>
   );
 }
+
+function LegendItem({
+  color,
+  label,
+}: {
+  color: string;
+  label: string;
+}) {
+  return (
+    <div className="flex items-center gap-1.5">
+      <span className={`w-3 h-3 rounded-full ${color}`} />
+      <span>{label}</span>
+    </div>
+  );
+}
+
+/* ================= Other Cards ================= */
 
 function NpsCard() {
   const r = 56;
@@ -323,7 +356,7 @@ function NpsCard() {
         RECOMMENDATION (NPS)
       </h3>
 
-      <div className="flex flex-col items-center gap-5">
+      <div className="flex flex-col items-center gap-5 drop-shadow-sm">
         <svg width="160" height="160">
           <circle cx="80" cy="80" r={r} stroke="#e5e7eb" strokeWidth="12" fill="none" />
           <circle
@@ -354,7 +387,8 @@ function NpsCard() {
 }
 
 function ProgressBlock({ title, items, color }: any) {
-  const bar = color === "blue" ? "bg-blue-600" : "bg-gray-400";
+  const bar =
+    color === "blue" ? "bg-blue-600" : "bg-gray-500";
 
   return (
     <Card>
@@ -364,7 +398,7 @@ function ProgressBlock({ title, items, color }: any) {
         </h3>
       </div>
 
-      <div className="space-y-5">
+      <div className="space-y-6">
         {items.map((i: any) => (
           <div key={i.label}>
             <div className="flex justify-between text-sm font-medium mb-1">
