@@ -25,15 +25,25 @@ app.add_middleware(
 # =========================
 # CORS 설정
 # =========================
+# 1️⃣ CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "http://localhost:3000",
         "https://emotion-ai-jkax-wqsd.vercel.app",
     ],
-    allow_credentials=True,
+    allow_credentials=True,   # 🔥 세션 쿠키 때문에 필수
     allow_methods=["*"],
     allow_headers=["*"],
+)
+
+# 2️⃣ Session
+app.add_middleware(
+    SessionMiddleware,
+    secret_key=os.getenv("SESSION_SECRET"),
+    max_age=60 * 60 * 24,   # 1 day
+    same_site="lax",        # OAuth 필수
+    https_only=True,        # Render (HTTPS)
 )
 
 # =========================
