@@ -24,6 +24,10 @@ import {
   FileText,
 } from "lucide-react";
 
+/* ✅ 컴포넌트 밖에서 API BASE 고정 */
+const API_BASE =
+  process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
 type AnalysisResult = {
   total: number;
   positive: number;
@@ -40,27 +44,25 @@ export default function DashboardPage() {
   const [data, setData] = useState<AnalysisResult | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // ✅ 환경변수 기반 API URL (로컬 / 배포 자동 분기)
-  const API_URL =
-    process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
-
   /* =========================
-     로그인 가드
+     로그인 가드 (쿠키 기반)
   ========================= */
   useEffect(() => {
     let cancelled = false;
 
     const checkLogin = async () => {
       try {
-        const res = await fetch(`${API_URL}/auth/status`, {
+        const res = await fetch(`${API_BASE}/auth/status`, {
+          credentials: "include", // ⭐⭐⭐ 핵심
         });
+
         const auth = await res.json();
 
         if (!cancelled && !auth.logged_in) {
           router.replace("/login");
           return;
         }
-      } catch {
+      } catch (err) {
         if (!cancelled) {
           router.replace("/login");
         }
@@ -77,7 +79,7 @@ export default function DashboardPage() {
     return () => {
       cancelled = true;
     };
-  }, [router, API_URL]);
+  }, [router]); // ✅ API_BASE 넣지 않음
 
   /* =========================
      분석 결과 로드
@@ -264,8 +266,12 @@ function KpiCard({
 }) {
   return (
     <div className="bg-white rounded-2xl p-6 shadow-sm">
-      <div className="text-sm text-gray-500 mb-2">{label}</div>
-      <div className="text-3xl font-extrabold">{value}</div>
+      <div className="text-sm text-gray-500 mb-2">
+        {label}
+      </div>
+      <div className="text-3xl font-extrabold">
+        {value}
+      </div>
     </div>
   );
 }

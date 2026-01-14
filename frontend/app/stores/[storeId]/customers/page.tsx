@@ -50,23 +50,25 @@ const MOCK = {
   ],
 };
 
+/* ✅ 컴포넌트 밖에서 API BASE 고정 */
+const API_BASE =
+  process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
 export default function CustomersPage() {
   const { storeId } = useParams();
   const router = useRouter();
+
   const [data, setData] = useState<any>(null);
   const [checking, setChecking] = useState(true);
 
-  // ✅ 환경변수 기반 API URL
-  const API_URL =
-    process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
-
-  /* ================= 로그인 가드 ================= */
+  /* ================= 로그인 가드 (쿠키 기반) ================= */
   useEffect(() => {
     let cancelled = false;
 
     const checkLogin = async () => {
       try {
-        const res = await fetch(`${API_URL}/auth/status`, {
+        const res = await fetch(`${API_BASE}/auth/status`, {
+          credentials: "include", // ⭐⭐⭐ 핵심
         });
         const auth = await res.json();
 
@@ -75,18 +77,23 @@ export default function CustomersPage() {
           return;
         }
       } catch {
-        if (!cancelled) router.replace("/login");
-        return;
+        if (!cancelled) {
+          router.replace("/login");
+          return;
+        }
       } finally {
-        if (!cancelled) setChecking(false);
+        if (!cancelled) {
+          setChecking(false);
+        }
       }
     };
 
     checkLogin();
+
     return () => {
       cancelled = true;
     };
-  }, [router, API_URL]);
+  }, [router]); // ✅ API_BASE 제거 (중요)
 
   /* ================= MOCK 데이터 로드 ================= */
   useEffect(() => {

@@ -13,6 +13,10 @@ import {
   Star,
 } from "lucide-react";
 
+/* ✅ 컴포넌트 밖에서 API BASE 고정 */
+const API_BASE =
+  process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
 /* ================= MOCK ================= */
 const MOCK = {
   client: "예원식당 (YEWON Restaurant)",
@@ -90,23 +94,20 @@ function CxDashboardInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  // ✅ 환경변수 기반 API URL
-  const API_URL =
-    process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
-
   const from = searchParams.get("from");
   const to = searchParams.get("to");
   const storeId = searchParams.get("storeId");
 
   const [checking, setChecking] = useState(true);
 
-  /* ================= 로그인 가드 ================= */
+  /* ================= 로그인 가드 (쿠키 기반) ================= */
   useEffect(() => {
     let cancelled = false;
 
     const checkLogin = async () => {
       try {
-        const res = await fetch(`${API_URL}/auth/status`, {
+        const res = await fetch(`${API_BASE}/auth/status`, {
+          credentials: "include", // ⭐⭐⭐ 핵심
         });
         const auth = await res.json();
 
@@ -124,7 +125,7 @@ function CxDashboardInner() {
     return () => {
       cancelled = true;
     };
-  }, [router, API_URL]);
+  }, [router]); // ✅ API_BASE 넣지 않음
 
   if (checking) {
     return (

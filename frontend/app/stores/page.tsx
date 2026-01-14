@@ -28,20 +28,21 @@ const MOCK_STORES = [
   },
 ];
 
+/* ✅ 컴포넌트 밖에서 API BASE 고정 */
+const API_BASE =
+  process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
 export default function StoresPage() {
   const router = useRouter();
 
-  // ✅ 환경변수 기반 API URL
-  const API_URL =
-    process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
-
-  /* ================= 로그인 가드 ================= */
+  /* ================= 로그인 가드 (쿠키 기반) ================= */
   useEffect(() => {
     let cancelled = false;
 
     const checkLogin = async () => {
       try {
-        const res = await fetch(`${API_URL}/auth/status`, {
+        const res = await fetch(`${API_BASE}/auth/status`, {
+          credentials: "include", // ⭐⭐⭐ 핵심
         });
         const data = await res.json();
 
@@ -60,7 +61,7 @@ export default function StoresPage() {
     return () => {
       cancelled = true;
     };
-  }, [router, API_URL]);
+  }, [router]); // ✅ API_BASE 제거 (중요)
 
   return (
     <main className="min-h-screen bg-gray-50 px-6 py-16">

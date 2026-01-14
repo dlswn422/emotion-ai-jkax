@@ -14,10 +14,12 @@ export default function GoogleLoginPage() {
     const checkAlreadyLoggedIn = async () => {
       try {
         const res = await fetch(`${API_BASE}/auth/status`, {
+          credentials: "include", // ⭐⭐⭐ 쿠키 인증 핵심
         });
 
         const data = await res.json();
 
+        // 이미 로그인된 경우 메인으로 이동
         if (data.logged_in) {
           router.replace("/");
         }
@@ -27,10 +29,10 @@ export default function GoogleLoginPage() {
     };
 
     checkAlreadyLoggedIn();
-  }, [router]); // ✅ API_BASE 제거 (중요!)
+  }, [router]);
 
   const handleGoogleLogin = () => {
-    // ✅ OAuth는 반드시 브라우저 이동
+    // ✅ OAuth는 fetch ❌ → 브라우저 이동 ⭕
     window.location.href = `${API_BASE}/auth/google/login`;
   };
 

@@ -12,12 +12,16 @@ export default function Home() {
   const router = useRouter();
   const [checking, setChecking] = useState(true);
 
+  /* =========================
+     로그인 가드
+  ========================= */
   useEffect(() => {
     let cancelled = false;
 
     const checkLogin = async () => {
       try {
         const res = await fetch(`${API_BASE}/auth/status`, {
+          credentials: "include", // ⭐⭐⭐ 쿠키 인증 핵심
         });
 
         const data = await res.json();
@@ -26,11 +30,10 @@ export default function Home() {
           router.replace("/login");
           return;
         }
-      } catch (e) {
+      } catch {
         if (!cancelled) {
           router.replace("/login");
         }
-        return;
       } finally {
         if (!cancelled) {
           setChecking(false);
@@ -43,8 +46,11 @@ export default function Home() {
     return () => {
       cancelled = true;
     };
-  }, [router]); // ✅ API_BASE 제거 (중요!)
+  }, [router]); // ✅ API_BASE 의존성 제거 (정상)
 
+  /* =========================
+     로딩 상태
+  ========================= */
   if (checking) {
     return (
       <main className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -53,14 +59,21 @@ export default function Home() {
     );
   }
 
+  /* =========================
+     로그아웃
+  ========================= */
   const handleLogout = async () => {
     await fetch(`${API_BASE}/auth/logout`, {
-      method: "POST"
+      method: "POST",
+      credentials: "include", // ⭐⭐⭐ 반드시 필요
     });
 
     router.replace("/login");
   };
 
+  /* =========================
+     UI
+  ========================= */
   return (
     <main className="min-h-screen bg-gray-50">
       {/* Header */}

@@ -13,15 +13,15 @@ import {
   Loader2,
 } from "lucide-react";
 
+/* ✅ 컴포넌트 밖에서 API BASE 고정 */
+const API_BASE =
+  process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
 export default function UploadPage() {
   const router = useRouter();
 
-  // ✅ 환경변수 기반 API URL (로컬 / 배포 자동 분기)
-  const API_URL =
-    process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
-
   /* =========================
-     모든 상태는 최상단
+     상태
   ========================= */
   const [checking, setChecking] = useState(true);
   const [file, setFile] = useState<File | null>(null);
@@ -31,22 +31,24 @@ export default function UploadPage() {
   const [loading, setLoading] = useState(false);
 
   /* =========================
-     로그인 가드
+     로그인 가드 (쿠키 기반)
   ========================= */
   useEffect(() => {
     let cancelled = false;
 
     const checkLogin = async () => {
       try {
-        const res = await fetch(`${API_URL}/auth/status`, {
+        const res = await fetch(`${API_BASE}/auth/status`, {
+          credentials: "include", // ⭐⭐⭐ 핵심
         });
+
         const data = await res.json();
 
         if (!cancelled && !data.logged_in) {
           router.replace("/login");
           return;
         }
-      } catch {
+      } catch (err) {
         if (!cancelled) {
           router.replace("/login");
         }
@@ -62,7 +64,7 @@ export default function UploadPage() {
     return () => {
       cancelled = true;
     };
-  }, [router, API_URL]);
+  }, [router]);
 
   /* =========================
      파일 업로드 & 미리보기
@@ -93,7 +95,7 @@ export default function UploadPage() {
   };
 
   /* =========================
-     AI 분석 실행
+     AI 분석 실행 (쿠키 포함)
   ========================= */
   const handleAnalyze = async () => {
     if (!file || totalRows === 0) return;
@@ -105,8 +107,11 @@ export default function UploadPage() {
 
     try {
       const res = await axios.post(
-        `${API_URL}/analysis/file`,
-        formData
+        `${API_BASE}/analysis/file`,
+        formData,
+        {
+          withCredentials: true, // ⭐⭐⭐ 핵심
+        }
       );
 
       sessionStorage.setItem(
@@ -115,8 +120,8 @@ export default function UploadPage() {
       );
 
       router.push("/dashboard");
-    } catch (e) {
-      console.error(e);
+    } catch (err) {
+      console.error(err);
       alert("AI 분석 중 오류가 발생했습니다.");
     } finally {
       setLoading(false);
@@ -124,12 +129,14 @@ export default function UploadPage() {
   };
 
   /* =========================
-     로딩 화면 (return은 Hook 아래!)
+     로딩 (로그인 체크)
   ========================= */
   if (checking) {
     return (
       <main className="min-h-screen flex items-center justify-center bg-gray-50">
-        <p className="text-gray-400 text-sm">로그인 상태 확인 중...</p>
+        <p className="text-gray-400 text-sm">
+          로그인 상태 확인 중...
+        </p>
       </main>
     );
   }
@@ -141,10 +148,7 @@ export default function UploadPage() {
     <main className="min-h-screen bg-gray-50 px-6 py-16 relative">
       {/* 로딩 오버레이 */}
       {loading && (
-        <div
-          className="absolute inset-0 z-50 bg-white/80
-                     flex flex-col items-center justify-center"
-        >
+        <div className="absolute inset-0 z-50 bg-white/80 flex flex-col items-center justify-center">
           <Loader2 className="w-10 h-10 text-blue-600 animate-spin mb-4" />
           <p className="text-gray-700 font-semibold">
             AI가 리뷰를 분석 중입니다…
@@ -160,8 +164,7 @@ export default function UploadPage() {
           </h1>
           <button
             onClick={() => router.push("/")}
-            className="flex items-center gap-1 text-sm
-                       text-gray-500 hover:text-blue-600"
+            className="flex items-center gap-1 text-sm text-gray-500 hover:text-blue-600"
           >
             <ArrowLeft className="w-4 h-4" />
             메인으로
@@ -169,11 +172,7 @@ export default function UploadPage() {
         </div>
 
         {/* 업로드 박스 */}
-        <label
-          className="block bg-white border-2 border-dashed border-blue-200
-                     rounded-3xl p-14 text-center cursor-pointer
-                     hover:border-blue-400 transition"
-        >
+        <label className="block bg-white border-2 border-dashed border-blue-200 rounded-3xl p-14 text-center cursor-pointer hover:border-blue-400 transition">
           <UploadCloud className="mx-auto w-12 h-12 text-blue-600 mb-4" />
           <p className="text-lg font-semibold mb-1">
             파일을 드래그하거나 클릭하여 업로드
@@ -195,12 +194,11 @@ export default function UploadPage() {
         {/* 파일 요약 카드 */}
         {file && (
           <div className="mt-10 bg-white rounded-3xl p-8 shadow-sm">
-            <div
-              className="flex flex-col md:flex-row
-                         md:items-center md:justify-between gap-6"
-            >
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
               <div>
-                <p className="text-lg font-semibold">{file.name}</p>
+                <p className="text-lg font-semibold">
+                  {file.name}
+                </p>
                 <p className="text-sm text-gray-500 mt-1">
                   총{" "}
                   <span className="font-bold text-blue-600">
@@ -213,9 +211,7 @@ export default function UploadPage() {
               <div className="flex gap-4">
                 <button
                   onClick={() => setShowPreview(!showPreview)}
-                  className="flex items-center gap-2 px-5 py-3 rounded-xl
-                             border border-gray-200 text-gray-700
-                             hover:bg-gray-50 font-semibold"
+                  className="flex items-center gap-2 px-5 py-3 rounded-xl border border-gray-200 text-gray-700 hover:bg-gray-50 font-semibold"
                 >
                   <Eye className="w-4 h-4" />
                   {showPreview ? "미리보기 닫기" : "미리보기 보기"}
@@ -224,10 +220,7 @@ export default function UploadPage() {
                 <button
                   onClick={handleAnalyze}
                   disabled={loading || totalRows === 0}
-                  className="flex items-center gap-2 px-6 py-3 rounded-xl
-                             bg-blue-600 text-white font-semibold
-                             hover:bg-blue-700 transition shadow-md
-                             disabled:opacity-50"
+                  className="flex items-center gap-2 px-6 py-3 rounded-xl bg-blue-600 text-white font-semibold hover:bg-blue-700 transition shadow-md disabled:opacity-50"
                 >
                   <PlayCircle className="w-5 h-5" />
                   AI 분석 실행
@@ -254,8 +247,7 @@ export default function UploadPage() {
                         {Object.keys(previewData[0]).map((key) => (
                           <th
                             key={key}
-                            className="px-4 py-3 text-left
-                                       font-semibold text-gray-700"
+                            className="px-4 py-3 text-left font-semibold text-gray-700"
                           >
                             {key}
                           </th>
@@ -271,8 +263,7 @@ export default function UploadPage() {
                           {Object.values(row).map((v, j) => (
                             <td
                               key={j}
-                              className="px-4 py-3 text-gray-700
-                                         whitespace-nowrap"
+                              className="px-4 py-3 text-gray-700 whitespace-nowrap"
                             >
                               {String(v)}
                             </td>
