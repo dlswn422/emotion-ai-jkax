@@ -1,5 +1,8 @@
 "use client";
 
+/* ✅ [추가] 빌드 시 prerender 방지 */
+export const dynamic = "force-dynamic";
+
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
@@ -82,9 +85,10 @@ export default function CxDashboardPage() {
 
     const checkLogin = async () => {
       try {
-        const res = await fetch("http://localhost:8000/auth/status", {
-          credentials: "include",
-        });
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/auth/status`,
+          { credentials: "include" }
+        );
         const data = await res.json();
 
         if (!cancelled && !data.logged_in) {
@@ -154,7 +158,8 @@ export default function CxDashboardPage() {
           </div>
 
           <div className="text-sm font-semibold text-gray-500 mt-1 text-right">
-            Source: {MOCK.source} · Store ID: {storeId}
+            Source: {MOCK.source}
+            {storeId && ` · Store ID: ${storeId}`}
           </div>
         </section>
 
@@ -281,12 +286,6 @@ function SentimentCard() {
             {MOCK.sentiment.positive}%
           </text>
         </svg>
-
-        <div className="text-sm font-medium text-center space-y-1">
-          <p className="text-green-600">Positive {MOCK.sentiment.positive}%</p>
-          <p className="text-gray-600">Neutral {MOCK.sentiment.neutral}%</p>
-          <p className="text-red-600">Negative {MOCK.sentiment.negative}%</p>
-        </div>
       </div>
     </Card>
   );
@@ -401,15 +400,6 @@ function RiskCard() {
           <ShieldCheck className="w-5 h-5 text-green-600" />
           Risk Management & Action Plan
         </h3>
-      </div>
-
-      <div className="mb-6 px-4 py-3 rounded-lg bg-green-50 border border-green-200">
-        <p className="text-sm font-bold text-green-700">
-          Churn Risk: Low
-        </p>
-        <p className="text-xs font-medium text-green-700 mt-1">
-          Current metrics show very strong retention signals.
-        </p>
       </div>
 
       <table className="w-full text-sm">
