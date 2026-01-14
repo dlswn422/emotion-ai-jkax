@@ -17,6 +17,7 @@ pandas
 openpyxl
 xlrd
 python-dateutil
+psycopg2
 
 # ===== AI / LLM =====
 openai

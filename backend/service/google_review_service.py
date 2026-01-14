@@ -7,7 +7,6 @@ from backend.collectors.business_profile_client import (
     extract_review_texts,
 )
 
-from backend.db.models import GoogleReview
 
 
 # =========================================================

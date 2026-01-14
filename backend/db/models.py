@@ -1,41 +1,38 @@
-from sqlalchemy import Column, Integer, String, DateTime, Text, JSON, UniqueConstraint
+from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, BigInteger, Text
+from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
-from backend.db.base import Base  # ✅ 반드시 backend.db.base
+
+from backend.db.base import Base
 
 
-# =========================
-# 기존 모델 (유지)
-# =========================
+class Tenant(Base):
+    __tablename__ = "tenants"
 
-class Parse1Result(Base):
-    __tablename__ = "parse1_results"
+    id = Column(Integer, primary_key=True)
+    name = Column(String, nullable=False)
 
-    id = Column(Integer, primary_key=True, index=True)
-    total_reviews = Column(Integer, nullable=False)
-    raw_result = Column(JSON, nullable=False)
+    users = relationship("User", back_populates="tenant")
+
+
+class User(Base):
+    __tablename__ = "users"
+
+    id = Column(Integer, primary_key=True)
+    tenant_id = Column(Integer, ForeignKey("tenants.id"), nullable=False)
+
+    google_account_id = Column(String, unique=True, nullable=False)
+    email = Column(String, nullable=False)
+
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
-
-# =========================
-# 🔥 추가 모델 (Google 리뷰)
-# =========================
+    tenant = relationship("Tenant", back_populates="users")
 
 class GoogleReview(Base):
     __tablename__ = "google_reviews"
 
-    id = Column(Integer, primary_key=True, index=True)
-
-    store_id = Column(String, index=True, nullable=False)
-    google_review_id = Column(String, nullable=False)
-
+    id = Column(BigInteger, primary_key=True)
+    place_id = Column(String, nullable=False)
+    author_name = Column(String)
     rating = Column(Integer)
-    comment = Column(Text)
-
-    created_at_google = Column(DateTime)
-    updated_at_google = Column(DateTime)
-
-    fetched_at = Column(DateTime(timezone=True), server_default=func.now())
-
-    __table_args__ = (
-        UniqueConstraint("google_review_id", name="uq_google_review_id"),
-    )
+    text = Column(Text)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())

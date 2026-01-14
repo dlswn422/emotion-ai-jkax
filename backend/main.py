@@ -43,3 +43,4 @@ app.include_router(auth.router)
 app.include_router(stores.router)
 app.include_router(reviews.router)
 app.include_router(analysis.router)
+
