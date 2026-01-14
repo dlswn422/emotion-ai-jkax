@@ -1,8 +1,5 @@
 "use client";
 
-/* ✅ [추가] 빌드 시 prerender 방지 */
-export const dynamic = "force-dynamic";
-
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
