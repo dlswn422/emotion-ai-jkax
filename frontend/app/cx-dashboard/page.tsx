@@ -1,9 +1,9 @@
 "use client";
 
-/* ✅ prerender / SSG 완전 차단 (Vercel 빌드 에러 해결 핵심) */
+/* ✅ prerender / SSG 완전 차단 */
 export const dynamic = "force-dynamic";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   ArrowLeft,
@@ -68,8 +68,23 @@ const MOCK = {
   ],
 };
 
-/* ================= PAGE ================= */
+/* ================= ENTRY (Suspense 필수) ================= */
 export default function CxDashboardPage() {
+  return (
+    <Suspense
+      fallback={
+        <main className="min-h-screen flex items-center justify-center bg-gray-100">
+          <p className="text-gray-400 text-sm">대시보드 로딩 중...</p>
+        </main>
+      }
+    >
+      <CxDashboardInner />
+    </Suspense>
+  );
+}
+
+/* ================= REAL PAGE ================= */
+function CxDashboardInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -93,7 +108,6 @@ export default function CxDashboardPage() {
 
         if (!cancelled && !auth.logged_in) {
           router.replace("/login");
-          return;
         }
       } catch {
         if (!cancelled) router.replace("/login");
@@ -201,6 +215,7 @@ export default function CxDashboardPage() {
     </main>
   );
 }
+
 /* ================= Shared Components ================= */
 
 function Card({ children }: { children: React.ReactNode }) {
