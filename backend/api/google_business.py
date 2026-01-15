@@ -7,7 +7,6 @@ from fastapi import APIRouter, Request, Depends, HTTPException
 from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
 from google_auth_oauthlib.flow import Flow
-from google.oauth2.credentials import Credentials
 
 from backend.db.session import get_db
 from backend.db.models import OAuthAccount
@@ -18,11 +17,9 @@ CLIENT_SECRET_FILE = os.getenv("CLIENT_SECRET_FILE")
 BACKEND_URL = os.getenv("BACKEND_URL")
 FRONTEND_URL = os.getenv("FRONTEND_URL")
 
+# 🔐 Google Business 연동용 Scope
 SCOPES = [
     "https://www.googleapis.com/auth/business.manage",
-    "openid",
-    "https://www.googleapis.com/auth/userinfo.email",
-    "https://www.googleapis.com/auth/userinfo.profile",
 ]
 
 
@@ -38,8 +35,8 @@ def connect_google_business(request: Request):
     )
 
     auth_url, _ = flow.authorization_url(
-        access_type="offline",
-        prompt="consent",
+        access_type="offline",     # 🔥 refresh_token 발급 필수
+        prompt="consent",          # 🔥 최초 1회 강제 동의
         include_granted_scopes="true",
         state=state,
     )
@@ -54,7 +51,7 @@ def google_business_callback(
     state: str,
     db: Session = Depends(get_db),
 ):
-    # 1️⃣ state 검증
+    # 1️⃣ CSRF 방어
     if request.session.get("google_oauth_state") != state:
         raise HTTPException(status_code=400, detail="Invalid OAuth state")
 
@@ -71,56 +68,44 @@ def google_business_callback(
     )
     flow.fetch_token(code=code)
 
-    # 4️⃣ Credentials 재구성
-    credentials = Credentials(
-        token=flow.credentials.token,
-        refresh_token=flow.credentials.refresh_token,
-        token_uri=flow.credentials.token_uri,
-        client_id=flow.credentials.client_id,
-        client_secret=flow.credentials.client_secret,
-        scopes=flow.credentials.scopes,
-    )
+    creds = flow.credentials
 
-    print("\n===== GOOGLE BUSINESS TOKEN DEBUG =====")
-    print("Access Token:", credentials.token)
-    print("Refresh Token:", credentials.refresh_token)
-    print("Scopes:", credentials.scopes)
-    print("=======================================\n")
+    if not creds.refresh_token:
+        raise HTTPException(
+            status_code=500,
+            detail="Refresh token not issued (already connected?)",
+        )
 
-    if not credentials.token:
-        raise HTTPException(status_code=500, detail="Access token not issued")
-
-    # 5️⃣ Google profile 조회 (requests 방식)
+    # 🔍 (선택) Google 계정 확인용 – 디버깅용
     profile_res = requests.get(
         "https://www.googleapis.com/oauth2/v2/userinfo",
-        headers={
-            "Authorization": f"Bearer {credentials.token}"
-        },
+        headers={"Authorization": f"Bearer {creds.token}"},
         timeout=5,
     )
 
     if profile_res.status_code != 200:
         raise HTTPException(
             status_code=500,
-            detail=f"Failed to fetch profile: {profile_res.text}",
+            detail="Failed to fetch Google profile",
         )
 
     profile = profile_res.json()
 
-    print("\n===== GOOGLE PROFILE (BUSINESS) =====")
+    print("\n===== GOOGLE BUSINESS CONNECTED =====")
     pprint.pprint(profile)
-    print("=====================================\n")
+    print("====================================\n")
 
-    # 6️⃣ OAuthAccount upsert
+    # 4️⃣ OAuthAccount UPSERT (중복 시 업데이트)
     oauth = OAuthAccount(
         user_id=user_id,
         provider="google",
         provider_account_id=profile["id"],
-        refresh_token=credentials.refresh_token,
-        scope=" ".join(SCOPES),
+        refresh_token=creds.refresh_token,
+        scope=" ".join(creds.scopes),
     )
 
     db.merge(oauth)
     db.commit()
 
+    # 5️⃣ 프론트 매장 화면으로 이동
     return RedirectResponse(f"{FRONTEND_URL}/stores")
