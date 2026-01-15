@@ -5,16 +5,19 @@ from sqlalchemy.orm import Session
 import secrets
 import pprint
 import requests
+import os
 
-from backend.settings import (
-    FRONTEND_URL,
-    BACKEND_URL,
-    CLIENT_SECRET_FILE,
-)
 from backend.db.session import get_db
 from backend.db.models import User, Tenant
 
 router = APIRouter(prefix="/auth", tags=["auth"])
+
+# ===============================
+# Enviroment Variable
+# ===============================
+BACKEND_URL = os.getenv("BACKEND_URL", "http://localhost:8000")
+FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")
+CLIENT_SECRET_FILE=os.getenv("CLIENT_SECRET_FILE")
 
 # ===============================
 # Google OAuth Config (LOGIN)
