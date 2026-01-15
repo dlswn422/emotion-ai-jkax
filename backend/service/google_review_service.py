@@ -7,8 +7,6 @@ from backend.collectors.business_profile_client import (
 
 from backend.db.models import GoogleReview
 
-
-
 # =========================================================
 # 기존 함수 (LLM 분석용) — 그대로 유지
 # =========================================================
