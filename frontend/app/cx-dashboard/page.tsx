@@ -11,9 +11,10 @@ import {
   Sparkles,
   ShieldCheck,
   Star,
+  Loader2,
 } from "lucide-react";
 
-/* ✅ 컴포넌트 밖에서 API BASE 고정 */
+/* ✅ API BASE */
 const API_BASE =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -78,7 +79,7 @@ export default function CxDashboardPage() {
     <Suspense
       fallback={
         <main className="min-h-screen flex items-center justify-center bg-gray-100">
-          <p className="text-gray-400 text-sm">대시보드 로딩 중...</p>
+          <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
         </main>
       }
     >
@@ -97,6 +98,8 @@ function CxDashboardInner() {
   const storeId = searchParams.get("storeId");
 
   const [checking, setChecking] = useState(true);
+  const [downloading, setDownloading] = useState(false);
+  const [navigatingBack, setNavigatingBack] = useState(false);
 
   /* ================= 로그인 가드 ================= */
   useEffect(() => {
@@ -128,9 +131,7 @@ function CxDashboardInner() {
   if (checking) {
     return (
       <main className="min-h-screen flex items-center justify-center bg-gray-100">
-        <p className="text-gray-400 text-sm">
-          로그인 상태 확인 중...
-        </p>
+        <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
       </main>
     );
   }
@@ -139,19 +140,44 @@ function CxDashboardInner() {
     from && to ? `${from} ~ ${to}` : "전체 기간";
 
   return (
-    <main className="min-h-screen bg-gray-100 px-6 py-12">
+    <main className="relative min-h-screen bg-gray-100 px-6 py-12">
+      {/* ================= 이동 / 다운로드 로딩 ================= */}
+      {(downloading || navigatingBack) && (
+        <div className="absolute inset-0 z-50 bg-white/70 backdrop-blur
+                        flex flex-col items-center justify-center">
+          <Loader2 className="w-8 h-8 animate-spin text-slate-700 mb-3" />
+          <p className="text-sm font-semibold text-gray-600">
+            {downloading
+              ? "PDF 생성 중…"
+              : "이전 화면으로 이동 중…"}
+          </p>
+        </div>
+      )}
+
       {/* Actions */}
       <div className="max-w-6xl mx-auto flex justify-between mb-8 print:hidden">
         <button
-          onClick={() => router.back()}
-          className="flex items-center gap-2 text-sm font-semibold text-gray-600 hover:text-gray-900 transition"
+          onClick={() => {
+            setNavigatingBack(true);
+            setTimeout(() => {
+              router.back();
+            }, 400);
+          }}
+          className="flex items-center gap-2 text-sm font-semibold
+                     text-gray-600 hover:text-gray-900 transition"
         >
           <ArrowLeft className="w-4 h-4" />
           뒤로가기
         </button>
 
         <button
-          onClick={() => window.print()}
+          onClick={() => {
+            setDownloading(true);
+            setTimeout(() => {
+              window.print();
+              setDownloading(false);
+            }, 400);
+          }}
           className="flex items-center gap-2 px-4 py-2
                      bg-slate-900 hover:bg-slate-800
                      text-white text-sm font-semibold rounded-lg

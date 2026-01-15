@@ -23,9 +23,10 @@ import {
   Tag,
   FileText,
   LogOut,
+  Loader2,
 } from "lucide-react";
 
-/* ✅ 컴포넌트 밖에서 API BASE 고정 */
+/* ✅ API BASE */
 const API_BASE =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -39,11 +40,15 @@ type AnalysisResult = {
   summary: string;
 };
 
+type OverlayType = "none" | "home" | "upload" | "logout";
+
 export default function DashboardPage() {
   const router = useRouter();
+
   const [checking, setChecking] = useState(true);
-  const [data, setData] = useState<AnalysisResult | null>(null);
   const [loading, setLoading] = useState(true);
+  const [data, setData] = useState<AnalysisResult | null>(null);
+  const [overlay, setOverlay] = useState<OverlayType>("none");
 
   /* ================= 로그인 가드 ================= */
   useEffect(() => {
@@ -58,6 +63,7 @@ export default function DashboardPage() {
 
         if (!cancelled && !auth.logged_in) {
           router.replace("/login");
+          return;
         }
       } catch {
         if (!cancelled) router.replace("/login");
@@ -72,15 +78,6 @@ export default function DashboardPage() {
     };
   }, [router]);
 
-  /* ================= 로그아웃 ================= */
-  const handleLogout = async () => {
-    await fetch(`${API_BASE}/auth/logout`, {
-      method: "POST",
-      credentials: "include",
-    });
-    router.replace("/login");
-  };
-
   /* ================= 분석 결과 로드 ================= */
   useEffect(() => {
     const saved = sessionStorage.getItem("analysisResult");
@@ -90,8 +87,43 @@ export default function DashboardPage() {
     setLoading(false);
   }, []);
 
+  /* ================= 로그아웃 ================= */
+  const handleLogout = async () => {
+    setOverlay("logout");
+    try {
+      await fetch(`${API_BASE}/auth/logout`, {
+        method: "POST",
+        credentials: "include",
+      });
+    } finally {
+      setTimeout(() => router.replace("/login"), 600);
+    }
+  };
+
+  /* ================= 네비게이션 ================= */
+  const goHome = () => {
+    setOverlay("home");
+    setTimeout(() => router.push("/"), 600);
+  };
+
+  const goUpload = () => {
+    setOverlay("upload");
+    setTimeout(() => router.push("/upload"), 600);
+  };
+
+  /* ================= 초기 로딩 (F5 포함) ================= */
   if (checking || loading) {
-    return <DashboardSkeleton />;
+    return (
+      <main className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100
+                       flex items-center justify-center">
+        <div className="flex flex-col items-center">
+          <Loader2 className="w-10 h-10 text-blue-600 animate-spin mb-4" />
+          <p className="text-sm font-semibold text-gray-600">
+            대시보드 불러오는 중…
+          </p>
+        </div>
+      </main>
+    );
   }
 
   if (!data) {
@@ -102,6 +134,15 @@ export default function DashboardPage() {
     );
   }
 
+  const overlayMessage =
+    overlay === "none"
+      ? ""
+      : {
+          home: "메인 화면으로 이동 중…",
+          upload: "다시 분석 화면으로 이동 중…",
+          logout: "로그아웃 중…",
+        }[overlay];
+
   const chartData = [
     { name: "긍정", value: data.positive, color: "#22c55e" },
     { name: "중립", value: data.neutral, color: "#facc15" },
@@ -109,23 +150,32 @@ export default function DashboardPage() {
   ];
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
-      {/* ================= App Header (Upload와 동일) ================= */}
+    <main className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 relative">
+      {/* 공통 이동 로딩 오버레이 */}
+      {overlay !== "none" && (
+        <div className="absolute inset-0 z-50 bg-white/70 backdrop-blur
+                        flex flex-col items-center justify-center">
+          <Loader2 className="w-10 h-10 text-blue-600 animate-spin mb-4" />
+          <p className="font-semibold text-gray-700">
+            {overlayMessage}
+          </p>
+        </div>
+      )}
+
+      {/* Header */}
       <header className="bg-white/80 backdrop-blur border-b">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-          {/* Left */}
           <button
-            onClick={() => router.push("/")}
+            onClick={goHome}
             className="flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-blue-600"
           >
             <Home className="w-4 h-4" />
             메인으로
           </button>
 
-          {/* Right */}
           <div className="flex items-center gap-6">
             <button
-              onClick={() => router.push("/upload")}
+              onClick={goUpload}
               className="flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-blue-600"
             >
               <ArrowLeft className="w-4 h-4" />
@@ -143,9 +193,8 @@ export default function DashboardPage() {
         </div>
       </header>
 
-      {/* ================= Content ================= */}
+      {/* Content */}
       <section className="max-w-7xl mx-auto px-6 py-16">
-        {/* Page Title */}
         <div className="mb-14">
           <h1 className="text-3xl font-extrabold tracking-tight mb-2">
             📊 리뷰 분석 대시보드
@@ -155,7 +204,6 @@ export default function DashboardPage() {
           </p>
         </div>
 
-        {/* KPI */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-16">
           <KpiCard label="총 리뷰" value={data.total} />
           <KpiCard label="긍정 😊" value={data.positive} />
@@ -163,7 +211,6 @@ export default function DashboardPage() {
           <KpiCard label="부정 😡" value={data.negative} />
         </div>
 
-        {/* Score */}
         <Section title="종합 만족도" icon={<Star className="w-5 h-5" />}>
           <div className="flex items-center gap-12">
             <ScoreGauge score={data.score} />
@@ -177,7 +224,6 @@ export default function DashboardPage() {
           </div>
         </Section>
 
-        {/* Charts */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-12 mb-16">
           <Section title="감성 분포" icon={<BarChart3 className="w-5 h-5" />}>
             <ResponsiveContainer width="100%" height={260}>
@@ -215,13 +261,12 @@ export default function DashboardPage() {
           </Section>
         </div>
 
-        {/* Keywords */}
         <Section title="주요 키워드" icon={<Tag className="w-5 h-5" />}>
           <div className="flex flex-wrap gap-3">
             {data.keywords.map((k) => (
               <span
                 key={k}
-                className="px-4 py-2 rounded-full bg-blue-50 text-blue-700 font-semibold text-sm border border-blue-100 hover:bg-blue-100 transition"
+                className="px-4 py-2 rounded-full bg-blue-50 text-blue-700 font-semibold text-sm border border-blue-100"
               >
                 {k}
               </span>
@@ -229,7 +274,6 @@ export default function DashboardPage() {
           </div>
         </Section>
 
-        {/* Summary */}
         <Section title="AI 요약" icon={<FileText className="w-5 h-5" />}>
           <div className="bg-slate-50 rounded-2xl p-8 border-l-4 border-blue-600">
             <p className="text-gray-700 leading-relaxed">
@@ -266,7 +310,7 @@ function Section({
 
 function KpiCard({ label, value }: { label: string; value: number }) {
   return (
-    <div className="bg-white rounded-2xl p-6 shadow-sm hover:shadow-md transition">
+    <div className="bg-white rounded-2xl p-6 shadow-sm">
       <div className="text-sm text-gray-500 mb-2">{label}</div>
       <div className="text-3xl font-extrabold text-gray-900">
         {value}
@@ -281,14 +325,7 @@ function ScoreGauge({ score }: { score: number }) {
   return (
     <div className="relative w-44 h-44">
       <svg className="w-full h-full rotate-[-90deg]">
-        <circle
-          cx="88"
-          cy="88"
-          r="76"
-          stroke="#e5e7eb"
-          strokeWidth="12"
-          fill="none"
-        />
+        <circle cx="88" cy="88" r="76" stroke="#e5e7eb" strokeWidth="12" fill="none" />
         <circle
           cx="88"
           cy="88"
@@ -303,28 +340,6 @@ function ScoreGauge({ score }: { score: number }) {
       </svg>
       <div className="absolute inset-0 flex items-center justify-center text-4xl font-extrabold text-gray-900">
         {score}
-      </div>
-    </div>
-  );
-}
-
-function DashboardSkeleton() {
-  return (
-    <div className="min-h-screen bg-slate-50 px-6 py-12">
-      <div className="max-w-7xl mx-auto animate-pulse space-y-12">
-        <div className="h-10 bg-gray-200 rounded w-1/3" />
-        <div className="grid grid-cols-4 gap-6">
-          {[...Array(4)].map((_, i) => (
-            <div key={i} className="h-24 bg-gray-200 rounded-2xl" />
-          ))}
-        </div>
-        <div className="h-72 bg-gray-200 rounded-3xl" />
-        <div className="grid grid-cols-2 gap-10">
-          <div className="h-64 bg-gray-200 rounded-3xl" />
-          <div className="h-64 bg-gray-200 rounded-3xl" />
-        </div>
-        <div className="h-32 bg-gray-200 rounded-3xl" />
-        <div className="h-32 bg-gray-200 rounded-3xl" />
       </div>
     </div>
   );

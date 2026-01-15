@@ -13,6 +13,8 @@ import {
 const API_BASE =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
+type OverlayType = "none" | "stores" | "upload" | "logout";
+
 export default function Home() {
   const router = useRouter();
 
@@ -20,7 +22,7 @@ export default function Home() {
   const [googleConnected, setGoogleConnected] = useState<boolean | null>(null);
 
   const [showConnectModal, setShowConnectModal] = useState(false);
-  const [navigating, setNavigating] = useState(false);
+  const [overlay, setOverlay] = useState<OverlayType>("none");
 
   /* =========================
      로그인 + 연동 상태 체크
@@ -69,37 +71,58 @@ export default function Home() {
   }, [router]);
 
   /* =========================
-     로딩
+     초기 로딩
   ========================= */
   if (checking || googleConnected === null) {
     return (
-      <main className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100">
-        <p className="text-sm text-gray-400 animate-pulse">
-          상태 확인 중…
-        </p>
+      <main className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100
+                      flex items-center justify-center">
+        <div className="flex flex-col items-center">
+          <Loader2 className="w-9 h-9 text-blue-600 animate-spin mb-4" />
+          <p className="text-sm font-semibold text-gray-600">
+            상태 확인 중…
+          </p>
+        </div>
       </main>
     );
   }
 
+
   /* =========================
-     로그아웃
+     로그아웃 (로딩 포함)
   ========================= */
   const handleLogout = async () => {
-    await fetch(`${API_BASE}/auth/logout`, {
-      method: "POST",
-      credentials: "include",
-    });
-    router.replace("/login");
+    setOverlay("logout");
+    try {
+      await fetch(`${API_BASE}/auth/logout`, {
+        method: "POST",
+        credentials: "include",
+      });
+    } finally {
+      setTimeout(() => {
+        router.replace("/login");
+      }, 600);
+    }
   };
 
   /* =========================
-     Google 리뷰 분석 클릭
+     설문 데이터 분석 이동
+  ========================= */
+  const handleUploadClick = () => {
+    setOverlay("upload");
+    setTimeout(() => {
+      router.push("/upload");
+    }, 600);
+  };
+
+  /* =========================
+     Google 리뷰 분석 이동
   ========================= */
   const handleGoogleReviewClick = () => {
     if (!googleConnected) {
-      setShowConnectModal(true); // 팝업
+      setShowConnectModal(true);
     } else {
-      setNavigating(true);       // 이동 로딩
+      setOverlay("stores");
       setTimeout(() => {
         router.push("/stores");
       }, 600);
@@ -107,17 +130,29 @@ export default function Home() {
   };
 
   /* =========================
+     오버레이 메시지
+  ========================= */
+  const overlayMessage =
+    overlay === "none"
+      ? ""
+      : {
+          stores: "매장 목록으로 이동 중…",
+          upload: "설문 데이터 업로드 화면으로 이동 중…",
+          logout: "로그아웃 중…",
+        }[overlay];
+
+  /* =========================
      UI
   ========================= */
   return (
     <main className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 relative">
-      {/* 이동 로딩 오버레이 */}
-      {navigating && (
+      {/* 공통 로딩 오버레이 */}
+      {overlay !== "none" && (
         <div className="absolute inset-0 z-50 bg-white/70 backdrop-blur
                         flex flex-col items-center justify-center">
           <Loader2 className="w-10 h-10 text-blue-600 animate-spin mb-4" />
           <p className="font-semibold text-gray-700">
-            매장 목록으로 이동 중…
+            {overlayMessage}
           </p>
         </div>
       )}
@@ -190,7 +225,7 @@ export default function Home() {
 
         <div className="flex flex-col sm:flex-row justify-center gap-6">
           <button
-            onClick={() => router.push("/upload")}
+            onClick={handleUploadClick}
             className="px-10 py-5 rounded-2xl bg-blue-600 text-white text-lg font-semibold shadow-xl hover:bg-blue-700 transition"
           >
             <UploadCloud className="inline w-6 h-6 mr-2" />

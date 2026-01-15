@@ -11,6 +11,7 @@ import {
   Meh,
   Frown,
   LogOut,
+  Loader2,
 } from "lucide-react";
 
 /* ================= MOCK ================= */
@@ -55,12 +56,15 @@ const MOCK = {
 const API_BASE =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
+type OverlayType = "none" | "back" | "logout";
+
 export default function CustomersPage() {
   const { storeId } = useParams();
   const router = useRouter();
 
   const [data, setData] = useState<any>(null);
   const [checking, setChecking] = useState(true);
+  const [overlay, setOverlay] = useState<OverlayType>("none");
 
   /* ================= 로그인 가드 ================= */
   useEffect(() => {
@@ -90,33 +94,67 @@ export default function CustomersPage() {
     };
   }, [router]);
 
+  /* ================= 데이터 로드 (MOCK) ================= */
   useEffect(() => {
-    if (!checking) setData(MOCK);
+    if (!checking) {
+      setData(MOCK);
+    }
   }, [checking]);
 
+  /* ================= 로그아웃 ================= */
   const handleLogout = async () => {
-    await fetch(`${API_BASE}/auth/logout`, {
-      method: "POST",
-      credentials: "include",
-    });
-    router.replace("/login");
+    setOverlay("logout");
+    try {
+      await fetch(`${API_BASE}/auth/logout`, {
+        method: "POST",
+        credentials: "include",
+      });
+    } finally {
+      setTimeout(() => {
+        router.replace("/login");
+      }, 600);
+    }
   };
 
+  /* ================= 초기 로딩 ================= */
   if (checking || !data) {
     return (
       <main className="min-h-screen flex items-center justify-center bg-gray-50">
-        로딩 중...
+        <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
       </main>
     );
   }
 
+  const overlayMessage =
+    overlay === "back"
+      ? "매장 상세 화면으로 이동 중…"
+      : overlay === "logout"
+      ? "로그아웃 중…"
+      : "";
+
   return (
-    <main className="min-h-screen bg-gray-50">
+    <main className="relative min-h-screen bg-gray-50">
+      {/* ================= 이동 로딩 오버레이 ================= */}
+      {overlay !== "none" && (
+        <div className="absolute inset-0 z-50 bg-white/70 backdrop-blur
+                        flex flex-col items-center justify-center">
+          <Loader2 className="w-9 h-9 animate-spin text-blue-600 mb-4" />
+          <p className="text-sm font-semibold text-gray-600">
+            {overlayMessage}
+          </p>
+        </div>
+      )}
+
       {/* ================= Header ================= */}
       <header className="bg-white/80 backdrop-blur border-b">
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
           <button
-            onClick={() => router.push(`/stores/${storeId}`)}
+            onClick={() => {
+              setOverlay("back");
+              setTimeout(() => {
+                router.push(`/stores/${storeId}`);
+              }, 600);
+            }}
             className="flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-blue-600"
           >
             <ArrowLeft className="w-4 h-4" />
@@ -164,7 +202,7 @@ export default function CustomersPage() {
           />
         </section>
 
-        {/* ================= Customers List (개선된 부분) ================= */}
+        {/* ================= Customers List ================= */}
         <section className="bg-white rounded-3xl shadow-lg overflow-hidden">
           <div className="px-10 py-8 border-b">
             <h2 className="text-2xl font-extrabold">

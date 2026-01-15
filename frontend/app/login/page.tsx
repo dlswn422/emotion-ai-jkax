@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Chrome } from "lucide-react";
+import { Chrome, Loader2 } from "lucide-react";
 
 /* ✅ 컴포넌트 밖에서 상수로 고정 */
 const API_BASE =
@@ -10,6 +10,7 @@ const API_BASE =
 
 export default function GoogleLoginPage() {
   const router = useRouter();
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     const checkAlreadyLoggedIn = async () => {
@@ -32,6 +33,9 @@ export default function GoogleLoginPage() {
   }, [router]);
 
   const handleGoogleLogin = () => {
+    if (isLoading) return;
+
+    setIsLoading(true);
     window.location.href = `${API_BASE}/auth/google/login`;
   };
 
@@ -58,41 +62,53 @@ export default function GoogleLoginPage() {
         {/* 로그인 버튼 */}
         <button
           onClick={handleGoogleLogin}
-          className="
+          disabled={isLoading}
+          className={`
             w-full flex items-center justify-center gap-3
-            rounded-xl border border-gray-200
-            bg-white px-6 py-4
-            text-sm font-semibold text-gray-700
+            rounded-xl border
+            px-6 py-4
+            text-sm font-semibold
             shadow-sm transition
-            hover:bg-gray-50 hover:shadow-md
-            active:scale-[0.99]
-          "
+            ${
+              isLoading
+                ? "bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed"
+                : "bg-white text-gray-700 border-gray-200 hover:bg-gray-50 hover:shadow-md active:scale-[0.99]"
+            }
+          `}
         >
-          <svg
-            width="20"
-            height="20"
-            viewBox="0 0 48 48"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <path
-              fill="#EA4335"
-              d="M24 9.5c3.54 0 6.7 1.22 9.19 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"
-            />
-            <path
-              fill="#4285F4"
-              d="M46.1 24.5c0-1.7-.15-3.33-.43-4.91H24v9.29h12.4c-.54 2.9-2.18 5.36-4.66 7.03l7.19 5.59C42.99 37.36 46.1 31.47 46.1 24.5z"
-            />
-            <path
-              fill="#FBBC05"
-              d="M10.54 28.41c-.48-1.43-.76-2.95-.76-4.41s.27-2.98.76-4.41l-7.98-6.19C.92 16.21 0 20.02 0 24s.92 7.79 2.56 11.22l7.98-6.19z"
-            />
-            <path
-              fill="#34A853"
-              d="M24 48c6.48 0 11.93-2.13 15.91-5.81l-7.19-5.59c-2 1.34-4.56 2.13-8.72 2.13-6.26 0-11.57-4.22-13.46-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"
-            />
-          </svg>
-
-          Google로 계속하기
+          {isLoading ? (
+            <>
+              <Loader2 className="h-5 w-5 animate-spin" />
+              Google 로그인 중…
+            </>
+          ) : (
+            <>
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 48 48"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  fill="#EA4335"
+                  d="M24 9.5c3.54 0 6.7 1.22 9.19 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"
+                />
+                <path
+                  fill="#4285F4"
+                  d="M46.1 24.5c0-1.7-.15-3.33-.43-4.91H24v9.29h12.4c-.54 2.9-2.18 5.36-4.66 7.03l7.19 5.59C42.99 37.36 46.1 31.47 46.1 24.5z"
+                />
+                <path
+                  fill="#FBBC05"
+                  d="M10.54 28.41c-.48-1.43-.76-2.95-.76-4.41s.27-2.98.76-4.41l-7.98-6.19C.92 16.21 0 20.02 0 24s.92 7.79 2.56 11.22l7.98-6.19z"
+                />
+                <path
+                  fill="#34A853"
+                  d="M24 48c6.48 0 11.93-2.13 15.91-5.81l-7.19-5.59c-2 1.34-4.56 2.13-8.72 2.13-6.26 0-11.57-4.22-13.46-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"
+                />
+              </svg>
+              Google로 계속하기
+            </>
+          )}
         </button>
 
         {/* 하단 설명 */}

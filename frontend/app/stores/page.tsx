@@ -34,11 +34,13 @@ const MOCK_STORES = [
 const API_BASE =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
+type OverlayType = "none" | "home" | "logout" | "store";
+
 export default function StoresPage() {
   const router = useRouter();
 
   const [checking, setChecking] = useState(true);
-  const [navigating, setNavigating] = useState(false);
+  const [overlay, setOverlay] = useState<OverlayType>("none");
 
   /* ================= 로그인 가드 ================= */
   useEffect(() => {
@@ -56,14 +58,9 @@ export default function StoresPage() {
           return;
         }
       } catch {
-        if (!cancelled) {
-          router.replace("/login");
-          return;
-        }
+        if (!cancelled) router.replace("/login");
       } finally {
-        if (!cancelled) {
-          setChecking(false);
-        }
+        if (!cancelled) setChecking(false);
       }
     };
 
@@ -75,33 +72,57 @@ export default function StoresPage() {
 
   /* ================= 로그아웃 ================= */
   const handleLogout = async () => {
-    await fetch(`${API_BASE}/auth/logout`, {
-      method: "POST",
-      credentials: "include",
-    });
-    router.replace("/login");
+    setOverlay("logout");
+    try {
+      await fetch(`${API_BASE}/auth/logout`, {
+        method: "POST",
+        credentials: "include",
+      });
+    } finally {
+      setTimeout(() => router.replace("/login"), 600);
+    }
   };
 
-  /* ================= 로그인 확인 중 ================= */
+  /* ================= 메인 이동 ================= */
+  const goHome = () => {
+    setOverlay("home");
+    setTimeout(() => router.push("/"), 600);
+  };
+
+  /* ================= 초기 로딩 ================= */
   if (checking) {
     return (
-      <main className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100">
-        <p className="text-sm text-gray-400 animate-pulse">
-          로그인 상태 확인 중…
-        </p>
+      <main className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100
+                       flex items-center justify-center">
+        <div className="flex flex-col items-center">
+          <Loader2 className="w-9 h-9 text-blue-600 animate-spin mb-4" />
+          <p className="text-sm font-semibold text-gray-600">
+            매장 목록 불러오는 중…
+          </p>
+        </div>
       </main>
     );
   }
 
+  const overlayMessage =
+    overlay === "none"
+      ? ""
+      : {
+          home: "메인 화면으로 이동 중…",
+          logout: "로그아웃 중…",
+          store: "매장 리뷰 분석 화면으로 이동 중…",
+        }[overlay];
+
   /* ================= UI ================= */
   return (
     <main className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 relative">
-      {/* 페이지 이동 로딩 */}
-      {navigating && (
-        <div className="absolute inset-0 z-50 bg-white/70 backdrop-blur flex flex-col items-center justify-center">
+      {/* 공통 이동 로딩 오버레이 */}
+      {overlay !== "none" && (
+        <div className="absolute inset-0 z-50 bg-white/70 backdrop-blur
+                        flex flex-col items-center justify-center">
           <Loader2 className="w-10 h-10 text-blue-600 animate-spin mb-4" />
           <p className="font-semibold text-gray-700">
-            매장 리뷰 분석 화면으로 이동 중…
+            {overlayMessage}
           </p>
         </div>
       )}
@@ -110,7 +131,7 @@ export default function StoresPage() {
       <header className="bg-white/80 backdrop-blur border-b">
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
           <button
-            onClick={() => router.push("/")}
+            onClick={goHome}
             className="flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-blue-600"
           >
             <ArrowLeft className="w-4 h-4" />
@@ -181,15 +202,17 @@ export default function StoresPage() {
               {/* CTA */}
               <button
                 onClick={() => {
-                  setNavigating(true);
-                  router.push(
-                    `/stores/${encodeURIComponent(store.id)}`
-                  );
+                  setOverlay("store");
+                  setTimeout(() => {
+                    router.push(
+                      `/stores/${encodeURIComponent(store.id)}`
+                    );
+                  }, 600);
                 }}
-                disabled={navigating}
+                disabled={overlay !== "none"}
                 className="w-full flex items-center justify-center gap-2 px-6 py-4 rounded-2xl bg-blue-600 text-white font-semibold shadow-lg hover:bg-blue-700 transition disabled:opacity-60"
               >
-                {navigating ? "이동 중…" : "이 매장 리뷰 분석하기"}
+                이 매장 리뷰 분석하기
                 <ArrowRight className="w-5 h-5" />
               </button>
             </div>

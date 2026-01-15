@@ -10,7 +10,6 @@ import {
   Sparkles,
   ArrowLeft,
   RefreshCw,
-  AlertTriangle,
   CheckCircle,
   Calendar,
   LogOut,
@@ -38,6 +37,7 @@ const MOCK_STORES: Record<string, any> = {
 };
 
 type SyncResult = "idle" | "success" | "error";
+type OverlayType = "none" | "stores" | "logout" | "analyze" | "customers";
 
 const API_BASE =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
@@ -46,17 +46,16 @@ export default function StoreDetailPage() {
   const router = useRouter();
   const params = useParams();
 
-  /* ================= 🔑 storeId decode ================= */
+  /* ================= storeId decode ================= */
   const decodedStoreId = useMemo(() => {
     if (!params.storeId) return "";
     return decodeURIComponent(params.storeId as string);
   }, [params.storeId]);
 
-  /* MOCK 조회 기준은 반드시 decoded */
   const store = MOCK_STORES[decodedStoreId];
 
   const [checking, setChecking] = useState(true);
-  const [navigating, setNavigating] = useState(false);
+  const [overlay, setOverlay] = useState<OverlayType>("none");
 
   const [showSyncModal, setShowSyncModal] = useState(false);
   const [syncing, setSyncing] = useState(false);
@@ -78,7 +77,6 @@ export default function StoreDetailPage() {
           credentials: "include",
         });
         const data = await res.json();
-
         if (!cancelled && !data.logged_in) {
           router.replace("/login");
         }
@@ -97,11 +95,15 @@ export default function StoreDetailPage() {
 
   /* ================= 로그아웃 ================= */
   const handleLogout = async () => {
-    await fetch(`${API_BASE}/auth/logout`, {
-      method: "POST",
-      credentials: "include",
-    });
-    router.replace("/login");
+    setOverlay("logout");
+    try {
+      await fetch(`${API_BASE}/auth/logout`, {
+        method: "POST",
+        credentials: "include",
+      });
+    } finally {
+      setTimeout(() => router.replace("/login"), 600);
+    }
   };
 
   /* ================= 리뷰 최신화 ================= */
@@ -115,18 +117,18 @@ export default function StoreDetailPage() {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          store_id: decodedStoreId, // ✅ 항상 decoded 값
-        }),
+        body: JSON.stringify({ store_id: decodedStoreId }),
       });
 
-      if (!res.ok) throw new Error("리뷰 최신화 중 오류가 발생했습니다.");
+      if (!res.ok) throw new Error("리뷰를 불러오는 중 오류가 발생했습니다.");
 
       const data = await res.json();
       setInsertedCount(data.inserted ?? 0);
       setSyncResult("success");
     } catch (e: any) {
-      setErrorMessage(e.message);
+      setErrorMessage(
+        e?.message || "일시적인 문제로 리뷰를 불러오지 못했습니다."
+      );
       setSyncResult("error");
     } finally {
       setSyncing(false);
@@ -137,20 +139,28 @@ export default function StoreDetailPage() {
   const handleAnalyze = () => {
     if (!fromDate || !toDate) return;
 
-    setNavigating(true);
+    setOverlay("analyze");
     setShowAnalyzeModal(false);
 
-    router.push(
-      `/cx-dashboard?storeId=${encodeURIComponent(
-        decodedStoreId
-      )}&from=${fromDate}&to=${toDate}`
-    );
+    setTimeout(() => {
+      router.push(
+        `/cx-dashboard?storeId=${encodeURIComponent(
+          decodedStoreId
+        )}&from=${fromDate}&to=${toDate}`
+      );
+    }, 600);
   };
 
+  /* ================= 초기 로딩 ================= */
   if (checking) {
     return (
-      <main className="min-h-screen flex items-center justify-center bg-slate-50">
-        로그인 상태 확인 중…
+      <main className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center">
+        <div className="flex flex-col items-center">
+          <Loader2 className="w-9 h-9 text-blue-600 animate-spin mb-4" />
+          <p className="text-sm font-semibold text-gray-600">
+            매장 정보 불러오는 중…
+          </p>
+        </div>
       </main>
     );
   }
@@ -163,15 +173,23 @@ export default function StoreDetailPage() {
     );
   }
 
+  const overlayMessage =
+    overlay === "none"
+      ? ""
+      : {
+        stores: "매장 목록으로 이동 중…",
+        logout: "로그아웃 중…",
+        analyze: "리뷰 분석 화면으로 이동 중…",
+        customers: "고객 분석 화면으로 이동 중…",
+      }[overlay];
+
   return (
     <main className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 relative">
-      {/* ================= 페이지 이동 로딩 ================= */}
-      {navigating && (
+      {/* ================= 이동 오버레이 ================= */}
+      {overlay !== "none" && (
         <div className="absolute inset-0 z-50 bg-white/70 backdrop-blur flex flex-col items-center justify-center">
           <Loader2 className="w-10 h-10 text-blue-600 animate-spin mb-4" />
-          <p className="font-semibold text-gray-700">
-            화면 이동 중…
-          </p>
+          <p className="font-semibold text-gray-700">{overlayMessage}</p>
         </div>
       )}
 
@@ -179,8 +197,11 @@ export default function StoreDetailPage() {
       <header className="bg-white/80 backdrop-blur border-b">
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
           <button
-            onClick={() => router.push("/stores")}
-            className="flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-blue-600 transition"
+            onClick={() => {
+              setOverlay("stores");
+              setTimeout(() => router.push("/stores"), 600);
+            }}
+            className="flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-blue-600"
           >
             <ArrowLeft className="w-4 h-4" />
             매장 목록
@@ -188,7 +209,7 @@ export default function StoreDetailPage() {
 
           <button
             onClick={handleLogout}
-            className="flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-red-500 transition"
+            className="flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-red-500"
           >
             <LogOut className="w-4 h-4" />
             로그아웃
@@ -196,6 +217,7 @@ export default function StoreDetailPage() {
         </div>
       </header>
 
+      {/* ================= 본문 ================= */}
       <section className="max-w-6xl mx-auto px-6 py-20 space-y-16">
         {/* Hero */}
         <section className="bg-white rounded-3xl p-10 shadow-lg">
@@ -245,35 +267,137 @@ export default function StoreDetailPage() {
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <button
-              onClick={() => setShowSyncModal(true)}
-              className="px-8 py-4 rounded-2xl border border-slate-200 bg-white text-slate-700 font-semibold hover:bg-slate-50 transition"
+              onClick={() => {
+                setSyncResult("idle");
+                setErrorMessage(null);
+                setInsertedCount(0);
+                setShowSyncModal(true);
+              }}
+              className="px-8 py-4 rounded-2xl border border-slate-200 bg-white text-slate-700 font-semibold hover:bg-slate-50"
             >
               리뷰 최신화
             </button>
 
             <button
               onClick={() => setShowAnalyzeModal(true)}
-              className="px-12 py-4 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold shadow-md hover:from-blue-700 hover:to-indigo-700 transition"
+              className="px-12 py-4 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold shadow-md hover:from-blue-700 hover:to-indigo-700"
             >
               리뷰 분석 시작
             </button>
 
             <button
               onClick={() => {
-                setNavigating(true);
-                router.push(
-                  `/stores/${encodeURIComponent(
-                    decodedStoreId
-                  )}/customers`
-                );
+                setOverlay("customers");
+                setTimeout(() => {
+                  router.push(
+                    `/stores/${encodeURIComponent(
+                      decodedStoreId
+                    )}/customers`
+                  );
+                }, 600);
               }}
-              className="px-8 py-4 rounded-2xl border border-blue-200 bg-blue-50 text-blue-700 font-semibold hover:bg-blue-100 transition"
+              className="px-8 py-4 rounded-2xl border border-blue-200 bg-blue-50 text-blue-700 font-semibold hover:bg-blue-100"
             >
               고객 분석
             </button>
           </div>
         </section>
       </section>
+
+      {/* ================= 리뷰 최신화 모달 ================= */}
+      {showSyncModal && (
+        <Modal onClose={() => setShowSyncModal(false)}>
+          {syncing ? (
+            <div className="text-center py-12">
+              <RefreshCw className="w-8 h-8 animate-spin mx-auto mb-4 text-blue-600" />
+              <p className="font-semibold">동기화 중입니다…</p>
+            </div>
+          ) : syncResult === "success" ? (
+            <>
+              <h3 className="text-base font-semibold text-gray-900 mb-2">
+                Google 리뷰 최신화
+              </h3>
+
+              <p className="text-sm text-gray-600 leading-relaxed mb-6">
+                신규 리뷰 {insertedCount}건이 저장되었습니다.
+              </p>
+
+              <div className="flex justify-end gap-3">
+                <button
+                  onClick={() => setShowSyncModal(false)}
+                  className="
+                    px-6 py-2 rounded-xl
+                    text-sm font-semibold
+                    text-white bg-blue-600
+                    hover:bg-blue-700
+                  "
+                >
+                  확인
+                </button>
+              </div>
+            </>
+          ) : syncResult === "error" ? (
+            <>
+              <h3 className="text-xl font-extrabold mb-3">
+                Google 리뷰 최신화
+              </h3>
+              <p className="text-gray-600 mb-8">
+                리뷰를 불러오는 중 문제가 발생했습니다.
+                <br />
+                잠시 후 다시 시도해주세요.
+              </p>
+
+              <div className="flex justify-end gap-3">
+                <button
+                  onClick={() => setShowSyncModal(false)}
+                  className="
+                  px-4 py-2 rounded-xl
+                  text-sm font-semibold
+                  text-blue-600 bg-blue-50
+                  hover:bg-blue-100
+                "
+                >
+                  닫기
+                </button>
+                <button
+                  onClick={handleSyncReviews}
+                  className="
+                  px-6 py-2 rounded-xl
+                  text-sm font-semibold
+                  text-white bg-blue-600
+                  hover:bg-blue-700
+                "
+                >
+                  다시 시도
+                </button>
+              </div>
+            </>
+          ) : (
+            <>
+              <h3 className="text-xl font-extrabold mb-3">
+                Google 리뷰 최신화
+              </h3>
+              <p className="text-gray-600 mb-8">
+                최신 Google 리뷰를 불러옵니다.
+              </p>
+              <div className="flex justify-end gap-4">
+                <button
+                  onClick={() => setShowSyncModal(false)}
+                  className="px-4 py-2 rounded-xl bg-blue-50 text-blue-600 font-semibold hover:bg-blue-100"
+                >
+                  취소
+                </button>
+                <button
+                  onClick={handleSyncReviews}
+                  className="px-6 py-2 rounded-xl bg-blue-600 text-white font-semibold hover:bg-blue-700"
+                >
+                  확인
+                </button>
+              </div>
+            </>
+          )}
+        </Modal>
+      )}
 
       {/* ================= 분석 기간 모달 ================= */}
       {showAnalyzeModal && (
@@ -291,79 +415,18 @@ export default function StoreDetailPage() {
           <div className="flex justify-end gap-4">
             <button
               onClick={() => setShowAnalyzeModal(false)}
-              className="px-4 py-2 rounded-xl bg-white border border-blue-600 text-blue-600 font-semibold hover:bg-blue-50 transition"
+              className="px-4 py-2 rounded-xl bg-blue-50 text-blue-600 font-semibold hover:bg-blue-100"
             >
               취소
             </button>
             <button
               onClick={handleAnalyze}
               disabled={!fromDate || !toDate}
-              className="px-6 py-2 rounded-xl bg-blue-600 text-white font-semibold hover:bg-blue-700 disabled:opacity-50 transition"
+              className="px-6 py-2 rounded-xl bg-blue-600 text-white font-semibold hover:bg-blue-700 disabled:opacity-50"
             >
               분석 시작
             </button>
           </div>
-        </Modal>
-      )}
-
-      {/* ================= 리뷰 최신화 모달 ================= */}
-      {showSyncModal && (
-        <Modal onClose={() => setShowSyncModal(false)}>
-          {syncing ? (
-            <div className="text-center py-12">
-              <RefreshCw className="w-8 h-8 animate-spin mx-auto mb-4 text-blue-600" />
-              <p className="font-semibold">동기화 중입니다…</p>
-            </div>
-          ) : syncResult === "success" ? (
-            <div className="text-center py-10">
-              <CheckCircle className="w-10 h-10 text-green-600 mx-auto mb-4" />
-              <p className="font-bold text-lg mb-2">리뷰 최신화 완료</p>
-              <p className="text-gray-600 mb-6">
-                신규 리뷰 {insertedCount}건이 저장되었습니다.
-              </p>
-              <button
-                onClick={() => setShowSyncModal(false)}
-                className="px-6 py-2 rounded-xl bg-blue-600 text-white font-semibold hover:bg-blue-700 transition"
-              >
-                확인
-              </button>
-            </div>
-          ) : syncResult === "error" ? (
-            <div className="text-center py-10">
-              <AlertTriangle className="w-10 h-10 text-red-500 mx-auto mb-4" />
-              <p className="font-bold text-lg mb-2">리뷰 최신화 실패</p>
-              <p className="text-gray-600 mb-6">{errorMessage}</p>
-              <button
-                onClick={() => setShowSyncModal(false)}
-                className="px-6 py-2 rounded-xl bg-slate-700 text-white font-semibold hover:bg-slate-600 transition"
-              >
-                닫기
-              </button>
-            </div>
-          ) : (
-            <>
-              <h3 className="text-xl font-extrabold mb-3">
-                Google 리뷰 최신화
-              </h3>
-              <p className="text-gray-600 mb-8">
-                최신 Google 리뷰를 불러옵니다.
-              </p>
-              <div className="flex justify-end gap-4">
-                <button
-                  onClick={() => setShowSyncModal(false)}
-                  className="px-4 py-2 rounded-xl bg-white border border-blue-600 text-blue-600 font-semibold hover:bg-blue-50 transition"
-                >
-                  취소
-                </button>
-                <button
-                  onClick={handleSyncReviews}
-                  className="px-6 py-2 rounded-xl bg-blue-600 text-white font-semibold hover:bg-blue-700 transition"
-                >
-                  확인
-                </button>
-              </div>
-            </>
-          )}
         </Modal>
       )}
     </main>

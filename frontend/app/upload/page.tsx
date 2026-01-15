@@ -14,9 +14,17 @@ import {
   LogOut,
 } from "lucide-react";
 
-/* ✅ 컴포넌트 밖에서 API BASE 고정 */
+/* ✅ API BASE */
 const API_BASE =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
+type OverlayType =
+  | "none"
+  | "home"
+  | "logout"
+  | "analyze"
+  | "file"
+  | "preview";
 
 export default function UploadPage() {
   const router = useRouter();
@@ -29,7 +37,7 @@ export default function UploadPage() {
   const [previewData, setPreviewData] = useState<any[]>([]);
   const [totalRows, setTotalRows] = useState<number>(0);
   const [showPreview, setShowPreview] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [overlay, setOverlay] = useState<OverlayType>("none");
 
   /* =========================
      로그인 가드
@@ -42,7 +50,6 @@ export default function UploadPage() {
         const res = await fetch(`${API_BASE}/auth/status`, {
           credentials: "include",
         });
-
         const data = await res.json();
 
         if (!cancelled && !data.logged_in) {
@@ -50,13 +57,9 @@ export default function UploadPage() {
           return;
         }
       } catch {
-        if (!cancelled) {
-          router.replace("/login");
-        }
+        if (!cancelled) router.replace("/login");
       } finally {
-        if (!cancelled) {
-          setChecking(false);
-        }
+        if (!cancelled) setChecking(false);
       }
     };
 
@@ -70,39 +73,73 @@ export default function UploadPage() {
      로그아웃
   ========================= */
   const handleLogout = async () => {
-    await fetch(`${API_BASE}/auth/logout`, {
-      method: "POST",
-      credentials: "include",
-    });
-    router.replace("/login");
+    setOverlay("logout");
+    try {
+      await fetch(`${API_BASE}/auth/logout`, {
+        method: "POST",
+        credentials: "include",
+      });
+    } finally {
+      setTimeout(() => router.replace("/login"), 600);
+    }
   };
 
   /* =========================
-     파일 업로드 & 미리보기
+     메인 이동
+  ========================= */
+  const handleGoHome = () => {
+    setOverlay("home");
+    setTimeout(() => router.push("/"), 600);
+  };
+
+  /* =========================
+     파일 업로드 & 파싱 (로딩 포함)
   ========================= */
   const handleFile = async (f: File) => {
+    setOverlay("file");
+
     setFile(f);
     setShowPreview(false);
     setPreviewData([]);
     setTotalRows(0);
 
-    if (f.name.endsWith(".csv")) {
-      Papa.parse(f, {
-        header: true,
-        skipEmptyLines: true,
-        complete: (result) => {
-          setPreviewData(result.data.slice(0, 5));
-          setTotalRows(result.data.length);
-        },
-      });
-    } else {
-      const buffer = await f.arrayBuffer();
-      const wb = XLSX.read(buffer, { type: "array" });
-      const sheet = wb.Sheets[wb.SheetNames[0]];
-      const json = XLSX.utils.sheet_to_json(sheet);
-      setPreviewData(json.slice(0, 5));
-      setTotalRows(json.length);
+    try {
+      if (f.name.endsWith(".csv")) {
+        Papa.parse(f, {
+          header: true,
+          skipEmptyLines: true,
+          complete: (result) => {
+            setPreviewData(result.data.slice(0, 5));
+            setTotalRows(result.data.length);
+            setOverlay("none");
+          },
+        });
+      } else {
+        const buffer = await f.arrayBuffer();
+        const wb = XLSX.read(buffer, { type: "array" });
+        const sheet = wb.Sheets[wb.SheetNames[0]];
+        const json = XLSX.utils.sheet_to_json(sheet);
+        setPreviewData(json.slice(0, 5));
+        setTotalRows(json.length);
+        setOverlay("none");
+      }
+    } catch {
+      alert("파일을 읽는 중 오류가 발생했습니다.");
+      setOverlay("none");
     }
+  };
+
+  /* =========================
+     미리보기 토글 (로딩 포함)
+  ========================= */
+  const handlePreviewToggle = () => {
+    if (previewData.length === 0) return;
+
+    setOverlay("preview");
+    setTimeout(() => {
+      setShowPreview((prev) => !prev);
+      setOverlay("none");
+    }, 400);
   };
 
   /* =========================
@@ -111,7 +148,7 @@ export default function UploadPage() {
   const handleAnalyze = async () => {
     if (!file || totalRows === 0) return;
 
-    setLoading(true);
+    setOverlay("analyze");
 
     const formData = new FormData();
     formData.append("file", file);
@@ -129,37 +166,52 @@ export default function UploadPage() {
       );
 
       router.push("/dashboard");
-    } catch (err) {
+    } catch {
       alert("AI 분석 중 오류가 발생했습니다.");
-    } finally {
-      setLoading(false);
+      setOverlay("none");
     }
   };
 
   /* =========================
-     로딩 (로그인 체크)
+     초기 로딩
   ========================= */
   if (checking) {
     return (
-      <main className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100">
-        <p className="text-sm text-gray-400 animate-pulse">
-          로그인 상태 확인 중…
-        </p>
+      <main className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100
+                       flex items-center justify-center">
+        <div className="flex flex-col items-center">
+          <Loader2 className="w-9 h-9 text-blue-600 animate-spin mb-4" />
+          <p className="text-sm font-semibold text-gray-600">
+            상태 확인 중…
+          </p>
+        </div>
       </main>
     );
   }
+
+  const overlayMessage =
+    overlay === "none"
+      ? ""
+      : {
+          home: "메인 화면으로 이동 중…",
+          logout: "로그아웃 중…",
+          analyze: "AI가 리뷰를 분석 중입니다…",
+          file: "파일을 불러오는 중…",
+          preview: "미리보기 준비 중…",
+        }[overlay];
 
   /* =========================
      UI
   ========================= */
   return (
     <main className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 relative">
-      {/* 로딩 오버레이 */}
-      {loading && (
-        <div className="absolute inset-0 z-50 bg-white/70 backdrop-blur flex flex-col items-center justify-center">
+      {/* 공통 로딩 오버레이 */}
+      {overlay !== "none" && (
+        <div className="absolute inset-0 z-50 bg-white/70 backdrop-blur
+                        flex flex-col items-center justify-center">
           <Loader2 className="w-10 h-10 text-blue-600 animate-spin mb-4" />
           <p className="font-semibold text-gray-700">
-            AI가 리뷰를 분석 중입니다…
+            {overlayMessage}
           </p>
         </div>
       )}
@@ -168,7 +220,7 @@ export default function UploadPage() {
       <header className="bg-white/80 backdrop-blur border-b">
         <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
           <button
-            onClick={() => router.push("/")}
+            onClick={handleGoHome}
             className="flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-blue-600"
           >
             <ArrowLeft className="w-4 h-4" />
@@ -235,7 +287,7 @@ export default function UploadPage() {
 
               <div className="flex gap-4">
                 <button
-                  onClick={() => setShowPreview(!showPreview)}
+                  onClick={handlePreviewToggle}
                   className="px-5 py-3 rounded-xl border font-semibold hover:bg-gray-50"
                 >
                   <Eye className="inline w-4 h-4 mr-1" />
@@ -244,7 +296,7 @@ export default function UploadPage() {
 
                 <button
                   onClick={handleAnalyze}
-                  disabled={loading || totalRows === 0}
+                  disabled={overlay !== "none" || totalRows === 0}
                   className="px-6 py-3 rounded-xl bg-blue-600 text-white font-semibold hover:bg-blue-700 shadow-lg disabled:opacity-50"
                 >
                   <PlayCircle className="inline w-5 h-5 mr-1" />
