@@ -165,10 +165,9 @@ def get_google_business_locations(
     print("user_id:", user_id)
 
     if not user_id:
-        print("❌ NOT AUTHENTICATED")
         raise HTTPException(status_code=401, detail="Not authenticated")
 
-    # 2️⃣ 연동 여부 확인
+    # 2️⃣ OAuth 연동 확인
     oauth = (
         db.query(OAuthAccount)
         .filter(
@@ -180,25 +179,20 @@ def get_google_business_locations(
 
     if not oauth or not oauth.refresh_token:
         print("❌ GOOGLE NOT CONNECTED")
-        raise HTTPException(
-            status_code=400,
-            detail="Google Business not connected",
-        )
+        return {
+            "connected": False,
+            "accounts": 0,
+            "locations": [],
+        }
 
     print("OAuthAccount found")
-    print("provider_account_id:", oauth.provider_account_id)
     print("scope:", oauth.scope)
 
-    # 3️⃣ access_token 재발급
-    print("\nReissuing access token using refresh_token...")
+    # 3️⃣ Access Token 재발급
     access_token = get_google_business_access_token(oauth.refresh_token)
-    print("Access token issued:", access_token[:50] + "...")
+    headers = {"Authorization": f"Bearer {access_token}"}
 
-    headers = {
-        "Authorization": f"Bearer {access_token}",
-    }
-
-    # 4️⃣ Business 계정 목록 조회
+    # 4️⃣ Accounts 조회
     print("\n👉 CALLING ACCOUNTS API")
     accounts_res = requests.get(
         "https://mybusinessaccountmanagement.googleapis.com/v1/accounts",
@@ -207,57 +201,55 @@ def get_google_business_locations(
     )
 
     print("Accounts API status:", accounts_res.status_code)
+    accounts_res.raise_for_status()
 
-    if accounts_res.status_code != 200:
-        print("❌ ACCOUNTS API ERROR")
-        print(accounts_res.text)
-        accounts_res.raise_for_status()
+    accounts = accounts_res.json().get("accounts", [])
+    print(f"✅ TOTAL ACCOUNTS: {len(accounts)}")
 
-    accounts_data = accounts_res.json()
-    pprint.pprint(accounts_data)
-
-    accounts = accounts_data.get("accounts", [])
     if not accounts:
-        print("❌ NO ACCOUNTS FOUND")
-        return []
+        return {
+            "connected": True,
+            "accounts": 0,
+            "locations": [],
+        }
 
-    account_name = accounts[0]["name"]
-    print("Using account:", account_name)
+    # 5️⃣ 모든 Account → 모든 Location 조회
+    all_locations = []
 
-    # 5️⃣ 매장(Location) 목록 조회
-    print("\n👉 CALLING LOCATIONS API")
-    locations_res = requests.get(
-        f"https://mybusinessbusinessinformation.googleapis.com/v1/{account_name}/locations",
-        headers=headers,
-        timeout=10,
-    )
+    for idx, account in enumerate(accounts):
+        account_name = account["name"]
+        print(f"\n👉 [{idx+1}] CALLING LOCATIONS API:", account_name)
 
-    print("Locations API status:", locations_res.status_code)
+        locations_res = requests.get(
+            f"https://mybusinessbusinessinformation.googleapis.com/v1/{account_name}/locations",
+            headers=headers,
+            timeout=10,
+        )
 
-    if locations_res.status_code != 200:
-        print("❌ LOCATIONS API ERROR")
-        print(locations_res.text)
+        print("Locations API status:", locations_res.status_code)
         locations_res.raise_for_status()
 
-    locations_data = locations_res.json()
-    pprint.pprint(locations_data)
+        locations = locations_res.json().get("locations", [])
+        print(f"   └─ Locations count: {len(locations)}")
 
-    locations = locations_data.get("locations", [])
-    print(f"\n✅ TOTAL LOCATIONS: {len(locations)}")
+        for loc in locations:
+            all_locations.append({
+                "store_id": loc["name"],                 # accounts/x/locations/y
+                "account_id": account_name,              # 어떤 account 소속인지
+                "name": loc.get("title"),
+                "address": " ".join(
+                    loc.get("storefrontAddress", {}).get("addressLines", [])
+                ),
+                "rating": loc.get("averageRating"),
+                "reviews": loc.get("totalReviewCount", 0),
+            })
 
-    # 6️⃣ 데이터 변환
-    result = []
-    for loc in locations:
-        result.append({
-            "id": loc["name"],
-            "name": loc.get("title"),
-            "address": " ".join(
-                loc.get("storefrontAddress", {}).get("addressLines", [])
-            ),
-            "rating": loc.get("averageRating"),
-            "reviews": loc.get("totalReviewCount", 0),
-        })
+    print("\n===== FINAL RESULT =====")
+    print(f"TOTAL LOCATIONS: {len(all_locations)}")
+    print("========================\n")
 
-    print("\n===== GOOGLE BUSINESS LOCATIONS END =====\n")
-
-    return result
+    return {
+        "connected": True,
+        "accounts": len(accounts),
+        "locations": all_locations,
+    }
