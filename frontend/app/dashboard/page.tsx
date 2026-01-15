@@ -22,6 +22,7 @@ import {
   Star,
   Tag,
   FileText,
+  LogOut,
 } from "lucide-react";
 
 /* ✅ 컴포넌트 밖에서 API BASE 고정 */
@@ -71,6 +72,15 @@ export default function DashboardPage() {
     };
   }, [router]);
 
+  /* ================= 로그아웃 ================= */
+  const handleLogout = async () => {
+    await fetch(`${API_BASE}/auth/logout`, {
+      method: "POST",
+      credentials: "include",
+    });
+    router.replace("/login");
+  };
+
   /* ================= 분석 결과 로드 ================= */
   useEffect(() => {
     const saved = sessionStorage.getItem("analysisResult");
@@ -99,30 +109,50 @@ export default function DashboardPage() {
   ];
 
   return (
-    <main className="min-h-screen bg-slate-50 px-6 py-12">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-12">
-          <h1 className="text-3xl font-extrabold tracking-tight flex items-center gap-2">
-            📊 리뷰 분석 대시보드
-          </h1>
+    <main className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
+      {/* ================= App Header (Upload와 동일) ================= */}
+      <header className="bg-white/80 backdrop-blur border-b">
+        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+          {/* Left */}
+          <button
+            onClick={() => router.push("/")}
+            className="flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-blue-600"
+          >
+            <Home className="w-4 h-4" />
+            메인으로
+          </button>
 
-          <div className="flex gap-4 text-sm">
-            <button
-              onClick={() => router.push("/")}
-              className="flex items-center gap-1 text-gray-500 hover:text-blue-600 font-semibold transition"
-            >
-              <Home className="w-4 h-4" />
-              메인
-            </button>
+          {/* Right */}
+          <div className="flex items-center gap-6">
             <button
               onClick={() => router.push("/upload")}
-              className="flex items-center gap-1 text-gray-500 hover:text-blue-600 font-semibold transition"
+              className="flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-blue-600"
             >
               <ArrowLeft className="w-4 h-4" />
               다시 분석
             </button>
+
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-red-500"
+            >
+              <LogOut className="w-4 h-4" />
+              로그아웃
+            </button>
           </div>
+        </div>
+      </header>
+
+      {/* ================= Content ================= */}
+      <section className="max-w-7xl mx-auto px-6 py-16">
+        {/* Page Title */}
+        <div className="mb-14">
+          <h1 className="text-3xl font-extrabold tracking-tight mb-2">
+            📊 리뷰 분석 대시보드
+          </h1>
+          <p className="text-gray-600">
+            업로드한 리뷰 데이터를 기반으로 AI가 도출한 고객 인사이트입니다.
+          </p>
         </div>
 
         {/* KPI */}
@@ -191,14 +221,7 @@ export default function DashboardPage() {
             {data.keywords.map((k) => (
               <span
                 key={k}
-                className="
-                  px-4 py-2 rounded-full
-                  bg-blue-50 text-blue-700
-                  font-semibold text-sm
-                  border border-blue-100
-                  hover:bg-blue-100
-                  transition
-                "
+                className="px-4 py-2 rounded-full bg-blue-50 text-blue-700 font-semibold text-sm border border-blue-100 hover:bg-blue-100 transition"
               >
                 {k}
               </span>
@@ -214,7 +237,7 @@ export default function DashboardPage() {
             </p>
           </div>
         </Section>
-      </div>
+      </section>
     </main>
   );
 }
@@ -292,10 +315,7 @@ function DashboardSkeleton() {
         <div className="h-10 bg-gray-200 rounded w-1/3" />
         <div className="grid grid-cols-4 gap-6">
           {[...Array(4)].map((_, i) => (
-            <div
-              key={i}
-              className="h-24 bg-gray-200 rounded-2xl"
-            />
+            <div key={i} className="h-24 bg-gray-200 rounded-2xl" />
           ))}
         </div>
         <div className="h-72 bg-gray-200 rounded-3xl" />
