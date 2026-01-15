@@ -263,14 +263,14 @@ export default function StoreDetailPage() {
           <div className="flex justify-end gap-4">
             <button
               onClick={() => setShowAnalyzeModal(false)}
-              className="text-slate-500 font-semibold hover:text-slate-700 transition"
+              className="px-4 py-2 rounded-xl bg-white border border-blue-600 text-blue-600 font-semibold hover:bg-blue-50 transition"
             >
               취소
             </button>
             <button
               onClick={handleAnalyze}
               disabled={!fromDate || !toDate}
-              className="px-6 py-2 rounded-xl bg-slate-900 text-white font-semibold hover:bg-slate-800 disabled:opacity-50 transition"
+              className="px-6 py-2 rounded-xl bg-blue-600 text-white font-semibold hover:bg-blue-700 disabled:opacity-50 transition"
             >
               분석 시작
             </button>
@@ -295,7 +295,7 @@ export default function StoreDetailPage() {
               </p>
               <button
                 onClick={() => setShowSyncModal(false)}
-                className="px-6 py-2 rounded-xl bg-slate-900 text-white font-semibold hover:bg-slate-800 transition"
+                className="px-6 py-2 rounded-xl bg-blue-600 text-white font-semibold hover:bg-blue-700 transition"
               >
                 확인
               </button>
@@ -323,13 +323,13 @@ export default function StoreDetailPage() {
               <div className="flex justify-end gap-4">
                 <button
                   onClick={() => setShowSyncModal(false)}
-                  className="text-slate-500 font-semibold hover:text-slate-700 transition"
+                  className="px-4 py-2 rounded-xl bg-white border border-blue-600 text-blue-600 font-semibold hover:bg-blue-50 transition"
                 >
                   취소
                 </button>
                 <button
                   onClick={handleSyncReviews}
-                  className="px-6 py-2 rounded-xl bg-slate-900 text-white font-semibold hover:bg-slate-800 transition"
+                  className="px-6 py-2 rounded-xl bg-blue-600 text-white font-semibold hover:bg-blue-700 transition"
                 >
                   확인
                 </button>
