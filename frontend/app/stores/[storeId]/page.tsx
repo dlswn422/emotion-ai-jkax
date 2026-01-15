@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useRouter, useParams } from "next/navigation";
 import {
   Store,
@@ -44,8 +44,16 @@ const API_BASE =
 
 export default function StoreDetailPage() {
   const router = useRouter();
-  const { storeId } = useParams();
-  const store = MOCK_STORES[storeId as string];
+  const params = useParams();
+
+  /* ================= 🔑 storeId decode ================= */
+  const decodedStoreId = useMemo(() => {
+    if (!params.storeId) return "";
+    return decodeURIComponent(params.storeId as string);
+  }, [params.storeId]);
+
+  /* MOCK 조회 기준은 반드시 decoded */
+  const store = MOCK_STORES[decodedStoreId];
 
   const [checking, setChecking] = useState(true);
   const [navigating, setNavigating] = useState(false);
@@ -107,7 +115,9 @@ export default function StoreDetailPage() {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ store_id: storeId }),
+        body: JSON.stringify({
+          store_id: decodedStoreId, // ✅ 항상 decoded 값
+        }),
       });
 
       if (!res.ok) throw new Error("리뷰 최신화 중 오류가 발생했습니다.");
@@ -123,15 +133,17 @@ export default function StoreDetailPage() {
     }
   };
 
-  /* ================= 리뷰 분석 이동 (⭐ 로딩 포함) ================= */
+  /* ================= 리뷰 분석 이동 ================= */
   const handleAnalyze = () => {
     if (!fromDate || !toDate) return;
 
-    setNavigating(true);          // ⭐ 여기!
-    setShowAnalyzeModal(false);   // 모달 닫기
+    setNavigating(true);
+    setShowAnalyzeModal(false);
 
     router.push(
-      `/cx-dashboard?storeId=${storeId}&from=${fromDate}&to=${toDate}`
+      `/cx-dashboard?storeId=${encodeURIComponent(
+        decodedStoreId
+      )}&from=${fromDate}&to=${toDate}`
     );
   };
 
@@ -158,7 +170,7 @@ export default function StoreDetailPage() {
         <div className="absolute inset-0 z-50 bg-white/70 backdrop-blur flex flex-col items-center justify-center">
           <Loader2 className="w-10 h-10 text-blue-600 animate-spin mb-4" />
           <p className="font-semibold text-gray-700">
-            분석 화면으로 이동 중…
+            화면 이동 중…
           </p>
         </div>
       )}
@@ -205,9 +217,21 @@ export default function StoreDetailPage() {
 
         {/* Metrics */}
         <section className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          <Metric icon={<Star className="w-6 h-6 text-yellow-400" />} label="평균 평점" value={store.rating} />
-          <Metric icon={<MessageSquare className="w-6 h-6 text-green-500" />} label="리뷰 수" value={`${store.reviews}개`} />
-          <Metric icon={<Sparkles className="w-6 h-6 text-purple-500" />} label="분석 항목" value="감성 · 키워드 · 요약" />
+          <Metric
+            icon={<Star className="w-6 h-6 text-yellow-400" />}
+            label="평균 평점"
+            value={store.rating}
+          />
+          <Metric
+            icon={<MessageSquare className="w-6 h-6 text-green-500" />}
+            label="리뷰 수"
+            value={`${store.reviews}개`}
+          />
+          <Metric
+            icon={<Sparkles className="w-6 h-6 text-purple-500" />}
+            label="분석 항목"
+            value="감성 · 키워드 · 요약"
+          />
         </section>
 
         {/* CTA */}
@@ -237,7 +261,11 @@ export default function StoreDetailPage() {
             <button
               onClick={() => {
                 setNavigating(true);
-                router.push(`/stores/${storeId}/customers`);
+                router.push(
+                  `/stores/${encodeURIComponent(
+                    decodedStoreId
+                  )}/customers`
+                );
               }}
               className="px-8 py-4 rounded-2xl border border-blue-200 bg-blue-50 text-blue-700 font-semibold hover:bg-blue-100 transition"
             >
