@@ -36,3 +36,19 @@ class GoogleReview(Base):
     rating = Column(Integer)
     text = Column(Text)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
+class OAuthAccount(Base):
+    __tablename__ = "oauth_accounts"
+
+    id = Column(BigInteger, primary_key=True)
+    user_id = Column(BigInteger, nullable=False)
+
+    provider = Column(String, nullable=False)  # "google"
+    provider_account_id = Column(String, nullable=False)
+
+    refresh_token = Column(Text, nullable=False)
+    scope = Column(Text)
+
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())

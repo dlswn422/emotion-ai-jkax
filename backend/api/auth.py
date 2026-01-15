@@ -1,10 +1,10 @@
 from fastapi import APIRouter, Request, Depends
 from fastapi.responses import RedirectResponse, JSONResponse
 from google_auth_oauthlib.flow import Flow
-from googleapiclient.discovery import build
 from sqlalchemy.orm import Session
 import secrets
 import pprint
+import requests
 
 from backend.settings import (
     FRONTEND_URL,
@@ -43,9 +43,15 @@ def google_login(request: Request):
     )
 
     auth_url, _ = flow.authorization_url(
-        access_type="online",
+        access_type="offline",      # 🔥 반드시 offline
+        prompt="consent",           # 🔥 반드시 consent
+        include_granted_scopes="true",
         state=state,
     )
+
+    print("\n===== GOOGLE LOGIN =====")
+    print("Auth URL:", auth_url)
+    print("========================\n")
 
     return RedirectResponse(auth_url)
 
@@ -60,9 +66,17 @@ def google_callback(
     state: str,
     db: Session = Depends(get_db),
 ):
+    print("\n===== GOOGLE CALLBACK HIT =====")
+    print("code:", code)
+    print("state:", state)
+    print("===============================\n")
+
     # 1️⃣ CSRF state 검증
     saved_state = request.session.get("oauth_state")
+    print("Saved session state:", saved_state)
+
     if not saved_state or state != saved_state:
+        print("❌ STATE MISMATCH")
         return JSONResponse(
             {"error": "Invalid OAuth state"},
             status_code=400,
@@ -76,29 +90,62 @@ def google_callback(
     )
     flow.fetch_token(code=code)
 
-    # 3️⃣ Google 프로필 조회
-    oauth2_service = build("oauth2", "v2", credentials=flow.credentials)
-    profile = oauth2_service.userinfo().get().execute()
+    # 🔥🔥🔥 핵심 디버그 프린트 🔥🔥🔥
+    print("\n===== TOKEN DEBUG =====")
+    print("Access Token:", flow.credentials.token)
+    print("Refresh Token:", flow.credentials.refresh_token)
+    print("Token URI:", flow.credentials.token_uri)
+    print("Client ID:", flow.credentials.client_id)
+    print("Scopes:", flow.credentials.scopes)
+    print("========================\n")
 
-    print("\n================ GOOGLE PROFILE ================")
+    # 3️⃣ Google Profile 조회 (requests + Bearer)
+    if not flow.credentials.token:
+        print("❌ ACCESS TOKEN IS NONE")
+        return JSONResponse(
+            {"error": "Access token not issued"},
+            status_code=500,
+        )
+
+    profile_res = requests.get(
+        "https://www.googleapis.com/oauth2/v2/userinfo",
+        headers={
+            "Authorization": f"Bearer {flow.credentials.token}"
+        },
+        timeout=5,
+    )
+
+    print("\n===== USERINFO RESPONSE =====")
+    print("Status:", profile_res.status_code)
+    print("Body:", profile_res.text)
+    print("=============================\n")
+
+    if profile_res.status_code != 200:
+        return JSONResponse(
+            {"error": "Failed to fetch userinfo"},
+            status_code=500,
+        )
+
+    profile = profile_res.json()
+
+    print("\n===== GOOGLE PROFILE =====")
     pprint.pprint(profile)
-    print("================================================\n")
+    print("==========================\n")
 
+    # --- 여기 아래는 아직 중요 아님 (일단 안 봐도 됨) ---
     google_account_id = profile["id"]
     email = profile["email"]
 
-    # 4️⃣ User 조회
     user = (
         db.query(User)
         .filter(User.google_account_id == google_account_id)
         .first()
     )
 
-    # 5️⃣ 없으면 Tenant + User 자동 생성
     if not user:
         tenant = Tenant(name=email)
         db.add(tenant)
-        db.flush()  # tenant.id 확보
+        db.flush()
 
         user = User(
             tenant_id=tenant.id,
@@ -111,7 +158,6 @@ def google_callback(
     else:
         tenant = user.tenant
 
-    # 6️⃣ 🔥 세션 정리 (최종 형태)
     request.session.clear()
     request.session["user_id"] = user.id
     request.session["tenant_id"] = tenant.id
@@ -120,19 +166,10 @@ def google_callback(
 
 
 # ===============================
-# Auth Status (Login Guard)
+# Auth Status
 # ===============================
 @router.get("/status")
 def auth_status(request: Request):
     return {
         "logged_in": bool(request.session.get("user_id")),
     }
-
-
-# ===============================
-# Logout
-# ===============================
-@router.post("/logout")
-def logout(request: Request):
-    request.session.clear()
-    return {"logged_out": True}
