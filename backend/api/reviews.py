@@ -1,53 +1,192 @@
-from fastapi import APIRouter, HTTPException, Depends, Query
-from backend.db.session import get_db
+from fastapi import APIRouter, Request, Depends
+from fastapi.responses import RedirectResponse, JSONResponse
+from google_auth_oauthlib.flow import Flow
 from sqlalchemy.orm import Session
-from backend.collectors.business_profile_client import (
-    fetch_all_google_reviews,
-    extract_review_texts,
-)
-from backend.service.google_review_service import sync_google_reviews
+import secrets
+import requests
+import os
+import pprint
 
-router = APIRouter(
-    prefix="/reviews",
-    tags=["reviews"],
-)
+from backend.db.session import get_db
+from backend.db.models import User, Tenant
+
+router = APIRouter(prefix="/auth", tags=["auth"])
+
+# ===============================
+# Environment
+# ===============================
+BACKEND_URL = os.getenv("BACKEND_URL", "http://localhost:8000")
+FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")
+CLIENT_SECRET_FILE = os.getenv("CLIENT_SECRET_FILE")
+
+# ===============================
+# 🔐 LOGIN ONLY SCOPES (절대 변경 금지)
+# ===============================
+LOGIN_SCOPES = [
+    "openid",
+    "https://www.googleapis.com/auth/userinfo.email",
+    "https://www.googleapis.com/auth/userinfo.profile",
+]
+
+REDIRECT_URI = f"{BACKEND_URL}/auth/google/callback"
 
 
-@router.get("/google")
-def get_google_reviews():
-    """
-    Google Business Profile 리뷰 원본 조회
-    """
-    try:
-        raw_reviews = fetch_all_google_reviews()
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+# =========================================================
+# 1️⃣ Google Login
+# =========================================================
+@router.get("/google/login")
+def google_login(request: Request):
+    state = secrets.token_urlsafe(16)
+    request.session["login_oauth_state"] = state
 
-    reviews = extract_review_texts(raw_reviews)
+    flow = Flow.from_client_secrets_file(
+        CLIENT_SECRET_FILE,
+        scopes=LOGIN_SCOPES,
+        redirect_uri=REDIRECT_URI,
+    )
 
-    return {
-        "total": len(reviews),
-        "reviews": reviews,
-    }
+    # ❗ 로그인에서는 offline / consent / include_granted_scopes ❌
+    auth_url, _ = flow.authorization_url(
+        state=state
+    )
+
+    print("\n===== GOOGLE LOGIN =====")
+    print("Auth URL:", auth_url)
+    print("========================\n")
+
+    return RedirectResponse(auth_url)
 
 
-@router.post("/sync")
-def sync_reviews(
-    store_id: str = Query(..., description="Store ID"),
+# =========================================================
+# 2️⃣ Google Login Callback
+# =========================================================
+@router.get("/google/callback")
+def google_callback(
+    request: Request,
+    code: str,
+    state: str,
     db: Session = Depends(get_db),
 ):
-    """
-    매장별 Google 리뷰 수동 동기화 API
+    print("\n===== GOOGLE LOGIN CALLBACK =====")
+    print("code:", code)
+    print("state:", state)
 
-    - store_id 기준으로 Google 리뷰 조회
-    - 이미 저장된 리뷰는 제외
-    - 신규 리뷰만 DB 저장
-    - 수동 버튼 / 배치 프로그램 공용
-    """
+    saved_state = request.session.get("login_oauth_state")
+    print("saved_state:", saved_state)
 
-    result = sync_google_reviews(store_id=store_id, db=db)
+    if not saved_state or state != saved_state:
+        return JSONResponse(
+            {"error": "Invalid OAuth state"},
+            status_code=400,
+        )
 
+    # 👉 state는 1회용
+    request.session.pop("login_oauth_state", None)
+
+    # ===============================
+    # Token Exchange
+    # ===============================
+    flow = Flow.from_client_secrets_file(
+        CLIENT_SECRET_FILE,
+        scopes=LOGIN_SCOPES,
+        redirect_uri=REDIRECT_URI,
+    )
+
+    flow.fetch_token(code=code)
+    credentials = flow.credentials
+
+    print("\n===== TOKEN DEBUG (LOGIN) =====")
+    print("Access Token:", credentials.token)
+    print("Refresh Token:", credentials.refresh_token)  # 항상 None 여야 정상
+    print("Scopes:", credentials.scopes)
+    print("===============================\n")
+
+    if not credentials.token:
+        return JSONResponse(
+            {"error": "Access token missing"},
+            status_code=500,
+        )
+
+    # ===============================
+    # Fetch Google Profile
+    # ===============================
+    profile_res = requests.get(
+        "https://www.googleapis.com/oauth2/v2/userinfo",
+        headers={
+            "Authorization": f"Bearer {credentials.token}"
+        },
+        timeout=5,
+    )
+
+    print("\n===== USERINFO RESPONSE =====")
+    print("Status:", profile_res.status_code)
+    print("Body:", profile_res.text)
+    print("=============================\n")
+
+    if profile_res.status_code != 200:
+        return JSONResponse(
+            {"error": "Failed to fetch user profile"},
+            status_code=500,
+        )
+
+    profile = profile_res.json()
+
+    print("\n===== GOOGLE PROFILE =====")
+    pprint.pprint(profile)
+    print("==========================\n")
+
+    google_account_id = profile["id"]
+    email = profile["email"]
+
+    # ===============================
+    # User / Tenant Upsert
+    # ===============================
+    user = (
+        db.query(User)
+        .filter(User.google_account_id == google_account_id)
+        .first()
+    )
+
+    if not user:
+        tenant = Tenant(name=email)
+        db.add(tenant)
+        db.flush()
+
+        user = User(
+            tenant_id=tenant.id,
+            google_account_id=google_account_id,
+            email=email,
+        )
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+    else:
+        tenant = user.tenant
+
+    # ===============================
+    # Session Login
+    # ===============================
+    request.session.clear()
+    request.session["user_id"] = user.id
+    request.session["tenant_id"] = tenant.id
+
+    return RedirectResponse(FRONTEND_URL)
+
+
+# =========================================================
+# 3️⃣ Auth Status
+# =========================================================
+@router.get("/status")
+def auth_status(request: Request):
     return {
-        "message": "Google reviews sync completed",
-        **result,
+        "logged_in": bool(request.session.get("user_id")),
     }
+
+
+# =========================================================
+# 4️⃣ Logout (로그인만 해제, 연동 유지)
+# =========================================================
+@router.post("/logout")
+def logout(request: Request):
+    request.session.clear()
+    return {"logged_out": True}
