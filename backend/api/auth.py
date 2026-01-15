@@ -170,6 +170,9 @@ FRONTEND_URL = os.getenv("FRONTEND_URL")
 # Google Business 연동용 Scope
 SCOPES = [
     "https://www.googleapis.com/auth/business.manage",
+    "openid",
+    "https://www.googleapis.com/auth/userinfo.email",
+    "https://www.googleapis.com/auth/userinfo.profile",
 ]
 
 
