@@ -90,9 +90,6 @@ def google_business_callback(
     print("Scopes:", creds.scopes)
     print("----------------------\n")
 
-    # =====================================================
-    # 🔥 핵심 수정 포인트 (여기가 제일 중요)
-    # =====================================================
     if creds.refresh_token:
         refresh_token = creds.refresh_token
         print("✅ New refresh_token issued")
@@ -165,7 +162,10 @@ def get_google_business_locations(
 
     # 1️⃣ 로그인 확인
     user_id = request.session.get("user_id")
+    print("user_id:", user_id)
+
     if not user_id:
+        print("❌ NOT AUTHENTICATED")
         raise HTTPException(status_code=401, detail="Not authenticated")
 
     # 2️⃣ 연동 여부 확인
@@ -179,42 +179,73 @@ def get_google_business_locations(
     )
 
     if not oauth or not oauth.refresh_token:
+        print("❌ GOOGLE NOT CONNECTED")
         raise HTTPException(
             status_code=400,
             detail="Google Business not connected",
         )
 
+    print("OAuthAccount found")
+    print("provider_account_id:", oauth.provider_account_id)
+    print("scope:", oauth.scope)
+
     # 3️⃣ access_token 재발급
+    print("\nReissuing access token using refresh_token...")
     access_token = get_google_business_access_token(oauth.refresh_token)
+    print("Access token issued:", access_token[:50] + "...")
 
     headers = {
         "Authorization": f"Bearer {access_token}",
     }
 
-    # 4️⃣ Business 계정 조회
+    # 4️⃣ Business 계정 목록 조회
+    print("\n👉 CALLING ACCOUNTS API")
     accounts_res = requests.get(
         "https://mybusinessaccountmanagement.googleapis.com/v1/accounts",
         headers=headers,
         timeout=10,
     )
-    accounts_res.raise_for_status()
 
-    accounts = accounts_res.json().get("accounts", [])
+    print("Accounts API status:", accounts_res.status_code)
+
+    if accounts_res.status_code != 200:
+        print("❌ ACCOUNTS API ERROR")
+        print(accounts_res.text)
+        accounts_res.raise_for_status()
+
+    accounts_data = accounts_res.json()
+    pprint.pprint(accounts_data)
+
+    accounts = accounts_data.get("accounts", [])
     if not accounts:
+        print("❌ NO ACCOUNTS FOUND")
         return []
 
     account_name = accounts[0]["name"]
+    print("Using account:", account_name)
 
-    # 5️⃣ 매장 목록 조회
+    # 5️⃣ 매장(Location) 목록 조회
+    print("\n👉 CALLING LOCATIONS API")
     locations_res = requests.get(
         f"https://mybusinessbusinessinformation.googleapis.com/v1/{account_name}/locations",
         headers=headers,
         timeout=10,
     )
-    locations_res.raise_for_status()
 
-    locations = locations_res.json().get("locations", [])
+    print("Locations API status:", locations_res.status_code)
 
+    if locations_res.status_code != 200:
+        print("❌ LOCATIONS API ERROR")
+        print(locations_res.text)
+        locations_res.raise_for_status()
+
+    locations_data = locations_res.json()
+    pprint.pprint(locations_data)
+
+    locations = locations_data.get("locations", [])
+    print(f"\n✅ TOTAL LOCATIONS: {len(locations)}")
+
+    # 6️⃣ 데이터 변환
     result = []
     for loc in locations:
         result.append({
@@ -227,5 +258,6 @@ def get_google_business_locations(
             "reviews": loc.get("totalReviewCount", 0),
         })
 
-    print("===== GOOGLE BUSINESS LOCATIONS END =====\n")
+    print("\n===== GOOGLE BUSINESS LOCATIONS END =====\n")
+
     return result
