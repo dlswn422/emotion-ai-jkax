@@ -1,28 +1,16 @@
 from sqlalchemy.orm import Session
-from datetime import datetime
+from datetime import datetime, date, time
+
 from backend.collectors.business_profile_client import (
     fetch_all_google_reviews,
-    extract_review_texts,
 )
-
 from backend.db.models import GoogleReview
 
-# =========================================================
-# 기존 함수 (LLM 분석용) — 그대로 유지
-# =========================================================
-
-def get_google_reviews_texts():
-    """
-    LLM 분석용 리뷰 텍스트 추출
-    (기존 로직 그대로 유지)
-    """
-    raw_reviews = fetch_all_google_reviews()
-    return extract_review_texts(raw_reviews)
-
 
 # =========================================================
-# 🔥 추가 함수 (DB 저장 + 배치/수동 공용)
+# 🔥 기존 함수 (DB 저장 / 배치·수동 공용)
 # =========================================================
+
 def sync_google_reviews(store_id: str, tenant_id: int, db: Session):
     existing_review_ids = {
         r.google_review_id
@@ -68,16 +56,80 @@ def sync_google_reviews(store_id: str, tenant_id: int, db: Session):
 
 
 # =========================================================
-# 내부 헬퍼 함수 (파일 내부에만 존재)
+# ✅ 신규 함수 ①
+# 기간 + 매장 + 테넌트 기준 리뷰 조회 (대시보드 공용)
+# =========================================================
+
+def get_google_reviews_by_period(
+    db: Session,
+    tenant_id: int,
+    store_id: str,
+    start_date: date,
+    end_date: date,
+):
+    start_dt = datetime.combine(start_date, time.min)
+    end_dt = datetime.combine(end_date, time.max)
+
+    return (
+        db.query(GoogleReview)
+        .filter(GoogleReview.tenant_id == tenant_id)
+        .filter(GoogleReview.store_id == store_id)
+        .filter(GoogleReview.created_at_google >= start_dt)
+        .filter(GoogleReview.created_at_google <= end_dt)
+        .order_by(GoogleReview.created_at_google.asc())
+        .all()
+    )
+
+
+# =========================================================
+# ✅ 신규 함수 ②
+# 날짜별 평점 추이 (그래프용)
+# =========================================================
+
+def get_rating_trend_by_period(
+    db: Session,
+    tenant_id: int,
+    store_id: str,
+    start_date: date,
+    end_date: date,
+):
+    from sqlalchemy import func
+
+    start_dt = datetime.combine(start_date, time.min)
+    end_dt = datetime.combine(end_date, time.max)
+
+    rows = (
+        db.query(
+            func.date(GoogleReview.created_at_google).label("date"),
+            func.avg(GoogleReview.rating).label("avg_rating"),
+            func.count().label("count"),
+        )
+        .filter(GoogleReview.tenant_id == tenant_id)
+        .filter(GoogleReview.store_id == store_id)
+        .filter(GoogleReview.created_at_google >= start_dt)
+        .filter(GoogleReview.created_at_google <= end_dt)
+        .group_by(func.date(GoogleReview.created_at_google))
+        .order_by(func.date(GoogleReview.created_at_google))
+        .all()
+    )
+
+    return [
+        {
+            "date": r.date,
+            "avg_rating": round(float(r.avg_rating), 2),
+            "count": r.count,
+        }
+        for r in rows
+    ]
+
+
+# =========================================================
+# 내부 헬퍼 함수
 # =========================================================
 
 def _parse_datetime(value: str | None):
-    """
-    Google API datetime 문자열 → datetime 객체
-    """
     if not value:
         return None
-
     try:
         return datetime.fromisoformat(value.replace("Z", ""))
     except Exception:
@@ -85,9 +137,6 @@ def _parse_datetime(value: str | None):
 
 
 def _convert_rating(value):
-    """
-    Google 별점 포맷 대응 (필요 시 확장)
-    """
     if isinstance(value, int):
         return value
 
@@ -98,5 +147,4 @@ def _convert_rating(value):
         "FOUR": 4,
         "FIVE": 5,
     }
-
     return rating_map.get(value)
