@@ -45,7 +45,7 @@ export default function Home() {
 
         // 2️⃣ Google 연동 여부
         const googleRes = await fetch(
-          `${API_BASE}/integrations/google/status`,
+          `${API_BASE}/connect/google-business/status`,
           { credentials: "include" }
         );
         const googleData = await googleRes.json();
