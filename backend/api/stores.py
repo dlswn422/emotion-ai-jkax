@@ -166,19 +166,22 @@ def get_store_detail(
     """
     Google Business Profile 기준
     단일 매장 상세 정보 조회
+
+    - Google: 매장 메타 정보
+    - 우리 DB: 리뷰 집계 정보
     """
 
     # 1️⃣ store_key → store_id 복원
     store_id = decode_store_key(store_key)
     # 예: accounts/123456789/locations/987654321
 
-    # 🔑 user_id 기반 Credentials 로드
+    # 2️⃣ 로그인 유저 기준 Google Credentials
     creds = load_credentials(
         user_id=current_user.id,
         db=db,
     )
 
-    # 2️⃣ Location API 호출
+    # 3️⃣ Google Location API
     service = build(
         "mybusinessbusinessinformation",
         "v1",
@@ -197,7 +200,7 @@ def get_store_detail(
             detail="매장 정보를 찾을 수 없습니다.",
         )
 
-    # 3️⃣ 주소 가공
+    # 4️⃣ 주소 가공
     address = location.get("storefrontAddress", {})
     categories = location.get("categories", {})
 
@@ -211,18 +214,68 @@ def get_store_detail(
         )
     )
 
-    # 4️⃣ 프론트 응답
+    category_name = (
+        categories
+        .get("primaryCategory", {})
+        .get("displayName")
+    )
+
+    status = location.get("openInfo", {}).get("status", "UNKNOWN")
+
+    # 5️⃣ 우리 DB 기준 리뷰 집계
+    agg = (
+        db.query(
+            func.avg(GoogleReview.rating).label("avg_rating"),
+            func.count(GoogleReview.id).label("review_count"),
+            func.max(GoogleReview.created_at).label("last_review_at"),
+        )
+        .filter(GoogleReview.store_id == store_id)
+        .one()
+    )
+
+    avg_rating = (
+        round(float(agg.avg_rating), 2)
+        if agg.avg_rating is not None
+        else None
+    )
+
+    review_count = agg.review_count or 0
+
+    # 마지막 리뷰 기준 동기화 시각 (프론트 표시용)
+    last_synced_at = (
+        agg.last_review_at.isoformat()
+        if agg.last_review_at
+        else None
+    )
+
+    # 6️⃣ UI용 설명 문구 (의도적으로 서버에서 생성)
+    description = None
+    if category_name and address_text:
+        description = (
+            f"{address_text}에서 운영 중인 "
+            f"{category_name} 매장입니다."
+        )
+
+    # 7️⃣ 최종 응답 (프론트 디자인 기준)
     return {
-        "store_id": location["name"],
+        # 식별자
+        "store_id": store_id,
         "store_key": store_key,
+
+        # 매장 메타
         "name": location.get("title"),
         "address": address_text,
-        "category": (
-            categories
-            .get("primaryCategory", {})
-            .get("displayName")
-        ),
-        "status": location.get("openInfo", {}).get("status", "UNKNOWN"),
+        "category": category_name,
+        "status": status,
+
+        # 리뷰 지표 (우리 DB)
+        "avg_rating": avg_rating,
+        "review_count": review_count,
+        "last_synced_at": last_synced_at,
+
+        # UI 컨텍스트
+        "description": description,
+        "source": "google_business_profile",
     }
     
 @router.post("/sync-reviews")
