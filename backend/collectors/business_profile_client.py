@@ -1,25 +1,55 @@
-import os
-import pickle
 from typing import List, Dict
+import os
 
 from googleapiclient.discovery import build
 from google.oauth2.credentials import Credentials
+from google.auth.transport.requests import Request
+from sqlalchemy.orm import Session
 
-# collectors 디렉토리 기준
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-TOKEN_FILE = os.path.join(BASE_DIR, "token.pickle")
+from backend.db.models import OAuthAccount
 
 
-def load_credentials() -> Credentials:
+# -------------------------------------------------
+# Environment variables
+# -------------------------------------------------
+GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
+GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET")
+
+def load_credentials(
+    *,
+    user_id: int,
+    db: Session,
+) -> Credentials:
     """
-    OAuth 완료 후 저장된 credentials 로드
-    - auth/google/login 에서 생성된 token.pickle 사용
+    OAuthAccount 테이블 기반으로
+    Google API Credentials 생성
     """
-    if not os.path.exists(TOKEN_FILE):
+
+    oauth = (
+        db.query(OAuthAccount)
+        .filter(
+            OAuthAccount.user_id == user_id,
+            OAuthAccount.provider == "google",
+        )
+        .one_or_none()
+    )
+
+    if not oauth:
         raise RuntimeError("Google OAuth 인증이 필요합니다.")
 
-    with open(TOKEN_FILE, "rb") as f:
-        return pickle.load(f)
+    creds = Credentials(
+        token=None,
+        refresh_token=oauth.refresh_token,
+        token_uri="https://oauth2.googleapis.com/token",
+        client_id=GOOGLE_CLIENT_ID,
+        client_secret=GOOGLE_CLIENT_SECRET,
+        scopes=oauth.scope.split(" ") if oauth.scope else None,
+    )
+
+    if not creds.valid:
+        creds.refresh(Request())
+
+    return creds
 
 
 def fetch_all_google_reviews() -> List[Dict]:

@@ -5,8 +5,9 @@ from googleapiclient.discovery import build
 import base64
 
 from backend.db.session import get_db
-from backend.db.models import GoogleReview
+from backend.db.models import GoogleReview, User
 from backend.collectors.business_profile_client import load_credentials
+from backend.api.auth import get_current_user
 
 router = APIRouter(prefix="/stores", tags=["stores"])
 
@@ -38,7 +39,10 @@ def decode_store_key(store_key: str) -> str:
 # ----------------------------
 
 @router.get("")
-def list_stores(db: Session = Depends(get_db)):
+def list_stores(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     """
     로그인한 Google 계정에 연결된 모든 매장 목록 조회
     (여러 Business Account 지원)
@@ -47,7 +51,11 @@ def list_stores(db: Session = Depends(get_db)):
     - 우리 DB 기준 리뷰 집계 포함
     """
 
-    creds = load_credentials()
+    # 🔑 user_id 기반 Credentials 로드
+    creds = load_credentials(
+        user_id=current_user.id,
+        db=db,
+    )
 
     # 1️⃣ Business Account 조회
     account_service = build(
@@ -151,7 +159,11 @@ def list_stores(db: Session = Depends(get_db)):
 # ----------------------------
 
 @router.get("/{store_key}")
-def get_store_detail(store_key: str):
+def get_store_detail(
+    store_key: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     """
     Google Business Profile 기준
     단일 매장 상세 정보 조회
@@ -161,7 +173,11 @@ def get_store_detail(store_key: str):
     store_id = decode_store_key(store_key)
     # 예: accounts/123456789/locations/987654321
 
-    creds = load_credentials()
+    # 🔑 user_id 기반 Credentials 로드
+    creds = load_credentials(
+        user_id=current_user.id,
+        db=db,
+    )
 
     # 2️⃣ Location API 호출
     service = build(

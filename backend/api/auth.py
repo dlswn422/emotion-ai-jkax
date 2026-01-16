@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Request, Depends
+from fastapi import APIRouter, Request, Depends, HTTPException
 from fastapi.responses import RedirectResponse, JSONResponse
 from google_auth_oauthlib.flow import Flow
 from sqlalchemy.orm import Session
@@ -190,3 +190,34 @@ def auth_status(request: Request):
 def logout(request: Request):
     request.session.clear()
     return {"logged_out": True}
+
+
+def get_current_user(
+    request: Request,
+    db: Session = Depends(get_db),
+) -> User:
+    """
+    세션 기반 로그인 사용자 조회
+    """
+
+    user_id = request.session.get("user_id")
+
+    if not user_id:
+        raise HTTPException(
+            status_code=401,
+            detail="로그인이 필요합니다.",
+        )
+
+    user = (
+        db.query(User)
+        .filter(User.id == user_id)
+        .one_or_none()
+    )
+
+    if not user:
+        raise HTTPException(
+            status_code=401,
+            detail="유효하지 않은 사용자입니다.",
+        )
+
+    return user
