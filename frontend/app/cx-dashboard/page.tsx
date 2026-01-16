@@ -517,24 +517,50 @@ function RiskCard() {
 }
 
 function ScoreTrendCard() {
+  const searchParams = useSearchParams();
+  const storeId = searchParams.get("storeId");
+  const from = searchParams.get("from");
+  const to = searchParams.get("to");
+
   const [unit, setUnit] = useState<"day" | "month">("day");
+  const [data, setData] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  /* 🔧 목데이터 (API 연동 시 그대로 교체) */
-  const data =
-    unit === "day"
-      ? [
-          { date: "01-01", avg_rating: 3.8 },
-          { date: "01-02", avg_rating: 4.0 },
-          { date: "01-03", avg_rating: 4.3, highlight: true }, // 급변
-          { date: "01-04", avg_rating: 4.5 },
-        ]
-      : [
-          { date: "2025-11", avg_rating: 3.9 },
-          { date: "2025-12", avg_rating: 4.2, highlight: true },
-          { date: "2026-01", avg_rating: 4.6 },
-        ];
+  useEffect(() => {
+    if (!storeId) return;
 
-  const highlightIndex = data.findIndex((d) => d.highlight);
+    let cancelled = false;
+
+    const fetchTrend = async () => {
+      setLoading(true);
+      try {
+        const params = new URLSearchParams({
+          store_id: storeId,
+          unit,
+        });
+
+        if (from) params.append("from", from);
+        if (to) params.append("to", to);
+
+        const res = await fetch(
+          `${API_BASE}/dashboard/rating-trend?${params.toString()}`,
+          { credentials: "include" }
+        );
+
+        const json = await res.json();
+        if (!cancelled) setData(json);
+      } catch (e) {
+        console.error("평점 추이 조회 실패", e);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+
+    fetchTrend();
+    return () => {
+      cancelled = true;
+    };
+  }, [storeId, from, to, unit]);
 
   return (
     <Card>
@@ -550,13 +576,13 @@ function ScoreTrendCard() {
         </div>
 
         <div className="flex gap-2">
-          {["day", "month"].map((v) => (
+          {(["day", "month"] as const).map((v) => (
             <button
               key={v}
-              onClick={() => setUnit(v as "day" | "month")}
+              onClick={() => setUnit(v)}
               className={`px-3 py-1 rounded-lg text-sm font-semibold transition ${
                 unit === v
-                  ? "bg-blue-600 text-white"
+                  ? "bg-blue-600 text-white shadow-sm"
                   : "bg-gray-100 text-gray-600 hover:bg-gray-200"
               }`}
             >
@@ -567,92 +593,98 @@ function ScoreTrendCard() {
       </div>
 
       {/* ================= Chart ================= */}
-      <div className="h-[300px]">
-        <ResponsiveContainer width="100%" height="100%">
-          <ComposedChart data={data}>
-            {/* Gradient */}
-            <defs>
-              <linearGradient id="scoreGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#2563eb" stopOpacity={0.25} />
-                <stop offset="100%" stopColor="#2563eb" stopOpacity={0.05} />
-              </linearGradient>
-            </defs>
+      <div className="h-[300px] relative">
+        {loading ? (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
+          </div>
+        ) : (
+          <ResponsiveContainer width="100%" height="100%">
+            <ComposedChart data={data}>
+              {/* Gradient (부드러운 라인 아래 음영) */}
+              <defs>
+                <linearGradient id="scoreGradient" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#2563eb" stopOpacity={0.18} />
+                  <stop offset="100%" stopColor="#2563eb" stopOpacity={0.03} />
+                </linearGradient>
+              </defs>
 
-            <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
 
-            <XAxis dataKey="date" axisLine={false} tick={{ fontSize: 12 }} />
-            <YAxis domain={[3, 5]} axisLine={false} tick={{ fontSize: 12 }} />
-
-            {/* 🔥 급변 구간 배경 하이라이트 */}
-            {highlightIndex !== -1 && (
-              <ReferenceArea
-                x1={data[Math.max(0, highlightIndex - 0.5)]?.date}
-                x2={data[Math.min(data.length - 1, highlightIndex + 0.5)]?.date}
-                fill="#fee2e2"
-                fillOpacity={0.7}
+              <XAxis
+                dataKey="date"
+                axisLine={false}
+                tick={{ fontSize: 12, fill: "#6b7280" }}
               />
-            )}
+              <YAxis
+                domain={[3, 5]}
+                axisLine={false}
+                tick={{ fontSize: 12, fill: "#6b7280" }}
+              />
 
-            <Tooltip
-              formatter={(v: any) => [`${v}점`, "평균 평점"]}
-              labelFormatter={(label, payload: any) =>
-                payload?.[0]?.payload?.highlight
-                  ? `${label} (급변 구간)`
-                  : label
-              }
-            />
-
-            {/* Area */}
-            <Area
-              type="monotone"
-              dataKey="avg_rating"
-              stroke="none"
-              fill="url(#scoreGradient)"
-            />
-
-            {/* Line + Highlight Dot */}
-            <Line
-              type="monotone"
-              dataKey="avg_rating"
-              stroke="#2563eb"
-              strokeWidth={3}
-              dot={(p: any) => {
-                if (!p.cx || !p.cy) return null;
-
-                if (p.payload.highlight) {
-                  return (
-                    <g>
-                      <circle
-                        cx={p.cx}
-                        cy={p.cy}
-                        r={12}
-                        fill="#fecaca"
-                      />
-                      <circle
-                        cx={p.cx}
-                        cy={p.cy}
-                        r={6}
-                        fill="#dc2626"
-                        stroke="#ffffff"
-                        strokeWidth={2}
-                      />
-                    </g>
-                  );
+              <Tooltip
+                formatter={(v: any) => [`${v}점`, "평균 평점"]}
+                labelFormatter={(label, payload: any) =>
+                  payload?.[0]?.payload?.highlight
+                    ? `${label} (급변 구간)`
+                    : label
                 }
+              />
 
-                return (
-                  <circle
-                    cx={p.cx}
-                    cy={p.cy}
-                    r={3}
-                    fill="#2563eb"
-                  />
-                );
-              }}
-              activeDot={{ r: 6 }}
-            />
-          </ComposedChart>
-        </ResponsiveContainer>
+              {/* Area (화이트 배경 + 은은한 음영) */}
+              <Area
+                type="monotone"
+                dataKey="avg_rating"
+                stroke="none"
+                fill="url(#scoreGradient)"
+              />
+
+              {/* Line + Highlight Dot */}
+              <Line
+                type="monotone"
+                dataKey="avg_rating"
+                stroke="#2563eb"
+                strokeWidth={3}
+                dot={(p: any) => {
+                  if (!p.cx || !p.cy) return null;
+
+                  if (p.payload.highlight) {
+                    return (
+                      <g>
+                        {/* glow */}
+                        <circle
+                          cx={p.cx}
+                          cy={p.cy}
+                          r={14}
+                          fill="#fee2e2"
+                        />
+                        {/* core */}
+                        <circle
+                          cx={p.cx}
+                          cy={p.cy}
+                          r={6}
+                          fill="#dc2626"
+                          stroke="#ffffff"
+                          strokeWidth={2}
+                        />
+                      </g>
+                    );
+                  }
+
+                  return (
+                    <circle
+                      cx={p.cx}
+                      cy={p.cy}
+                      r={3}
+                      fill="#2563eb"
+                    />
+                  );
+                }}
+                activeDot={{ r: 6 }}
+              />
+            </ComposedChart>
+          </ResponsiveContainer>
+        )}
       </div>
 
       {/* ================= Legend ================= */}
@@ -662,7 +694,7 @@ function ScoreTrendCard() {
           평균 평점
         </div>
         <div className="flex items-center gap-2">
-          <span className="w-3 h-3 rounded-full bg-red-400" />
+          <span className="w-3 h-3 rounded-full bg-red-500" />
           급변 구간
         </div>
       </div>
