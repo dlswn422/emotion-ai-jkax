@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func
 from googleapiclient.discovery import build
 import base64
-
+from backend.service.google_review_service import sync_all_reviews_for_user
 from backend.db.session import get_db
 from backend.db.models import GoogleReview, User
 from backend.collectors.business_profile_client import load_credentials
@@ -15,7 +15,6 @@ router = APIRouter(prefix="/stores", tags=["stores"])
 # ----------------------------
 # Store Key Encoder / Decoder
 # ----------------------------
-
 def encode_store_key(store_id: str) -> str:
     """
     accounts/.../locations/... → URL-safe key
@@ -224,4 +223,24 @@ def get_store_detail(
             .get("displayName")
         ),
         "status": location.get("openInfo", {}).get("status", "UNKNOWN"),
+    }
+    
+@router.post("/sync-reviews")
+def sync_reviews(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    🔄 로그인한 계정 기준
+    모든 매장의 리뷰를 DB에 저장 (수동 실행)
+    """
+
+    result = sync_all_reviews_for_user(
+        user_id=current_user.id,
+        db=db,
+    )
+
+    return {
+        "message": "리뷰 동기화 완료",
+        **result,
     }

@@ -1,5 +1,6 @@
 from sqlalchemy.orm import Session
 from datetime import datetime, date, time
+from typing import Dict
 
 from backend.collectors.business_profile_client import (
     fetch_all_google_reviews,
@@ -8,55 +9,60 @@ from backend.db.models import GoogleReview
 
 
 # =========================================================
-# 🔥 기존 함수 (DB 저장 / 배치·수동 공용)
+# DB 저장 / 배치·수동 공용
 # =========================================================
+def sync_all_reviews_for_user(
+    *,
+    user_id: int,
+    db: Session,
+) -> Dict[str, int]:
+    """
+    로그인한 유저의 Google 계정 기준
+    모든 매장의 리뷰를 DB에 저장
+    """
 
-def sync_google_reviews(store_id: str, tenant_id: int, db: Session):
-    existing_review_ids = {
-        r.google_review_id
-        for r in db.query(GoogleReview.google_review_id)
-        .filter(
-            GoogleReview.store_id == store_id,
-            GoogleReview.tenant_id == tenant_id,
+    reviews = fetch_all_google_reviews(
+        user_id=user_id,
+        db=db,
+    )
+
+    saved = 0
+    skipped = 0
+
+    for r in reviews:
+        review_id = r["name"]  # Google review resource name
+
+        exists = (
+            db.query(GoogleReview)
+            .filter(GoogleReview.review_id == review_id)
+            .first()
         )
-        .all()
-    }
 
-    raw_reviews = fetch_all_google_reviews(store_id)
-
-    new_reviews = []
-
-    for r in raw_reviews:
-        review_id = r.get("reviewId")
-        if not review_id or review_id in existing_review_ids:
+        if exists:
+            skipped += 1
             continue
 
-        new_reviews.append(
-            GoogleReview(
-                tenant_id=tenant_id,
-                store_id=store_id,
-                google_review_id=review_id,
-                author_name=r.get("reviewer", {}).get("displayName"),
-                rating=_convert_rating(r.get("starRating")),
-                comment=r.get("comment"),
-                created_at_google=_parse_datetime(r.get("createTime")),
-                updated_at_google=_parse_datetime(r.get("updateTime")),
-            )
+        review = GoogleReview(
+            review_id=review_id,
+            store_id=r["name"].split("/reviews/")[0],
+            rating=r.get("starRating"),
+            comment=r.get("comment"),
+            create_time=r.get("createTime"),
         )
 
-    if new_reviews:
-        db.bulk_save_objects(new_reviews)
-        db.commit()
+        db.add(review)
+        saved += 1
+
+    db.commit()
 
     return {
-        "total_fetched": len(raw_reviews),
-        "inserted": len(new_reviews),
-        "skipped": len(raw_reviews) - len(new_reviews),
+        "total_fetched": len(reviews),
+        "saved": saved,
+        "skipped": skipped,
     }
 
 
 # =========================================================
-# ✅ 신규 함수 ①
 # 기간 + 매장 + 테넌트 기준 리뷰 조회 (대시보드 공용)
 # =========================================================
 
@@ -82,10 +88,8 @@ def get_google_reviews_by_period(
 
 
 # =========================================================
-# ✅ 신규 함수 ②
 # 날짜별 평점 추이 (그래프용)
 # =========================================================
-
 def get_rating_trend_by_period(
     db: Session,
     tenant_id: int,
@@ -123,28 +127,3 @@ def get_rating_trend_by_period(
     ]
 
 
-# =========================================================
-# 내부 헬퍼 함수
-# =========================================================
-
-def _parse_datetime(value: str | None):
-    if not value:
-        return None
-    try:
-        return datetime.fromisoformat(value.replace("Z", ""))
-    except Exception:
-        return None
-
-
-def _convert_rating(value):
-    if isinstance(value, int):
-        return value
-
-    rating_map = {
-        "ONE": 1,
-        "TWO": 2,
-        "THREE": 3,
-        "FOUR": 4,
-        "FIVE": 5,
-    }
-    return rating_map.get(value)

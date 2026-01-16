@@ -52,14 +52,23 @@ def load_credentials(
     return creds
 
 
-def fetch_all_google_reviews() -> List[Dict]:
+def fetch_all_google_reviews(
+    *,
+    user_id: int,
+    db: Session,
+) -> List[Dict]:
     """
-    사장님 계정에 연결된 매장의 모든 리뷰 수집
-    (심사 승인 후 정상 동작)
+    로그인한 유저의 Google 계정 기준으로
+    접근 가능한 모든 Account / 모든 Location의 리뷰 수집
     """
-    creds = load_credentials()
 
-    # 1️⃣ Account 조회
+    # 🔑 user_id 기반 Credentials
+    creds = load_credentials(
+        user_id=user_id,
+        db=db,
+    )
+
+    # 1️⃣ Business Account 조회
     account_service = build(
         "mybusinessaccountmanagement",
         "v1",
@@ -74,59 +83,58 @@ def fetch_all_google_reviews() -> List[Dict]:
     )
 
     if not accounts:
-        raise RuntimeError("연결된 Google Business 계정이 없습니다.")
+        return []
 
-    account_name = accounts[0]["name"]
-
-    # 2️⃣ Location 조회
+    # 2️⃣ Location 서비스
     location_service = build(
         "mybusinessbusinessinformation",
         "v1",
         credentials=creds,
     )
 
-    locations = (
-        location_service.accounts()
-        .locations()
-        .list(parent=account_name)
-        .execute()
-        .get("locations", [])
-    )
-
-    if not locations:
-        raise RuntimeError("연결된 매장이 없습니다.")
-
-    location_name = locations[0]["name"]
-
-    # 3️⃣ Reviews 조회 (⚠️ Business Profile API 심사 승인 필요)
+    # 3️⃣ Review 서비스 (최신)
     review_service = build(
-        "mybusiness",
-        "v4",
+        "mybusinessreviews",
+        "v1",
         credentials=creds,
     )
 
-    reviews: List[Dict] = []
-    page_token = None
+    all_reviews: List[Dict] = []
 
-    while True:
-        resp = (
-            review_service.accounts()
+    # 4️⃣ Account → Location → Review 전체 순회
+    for account in accounts:
+        account_name = account["name"]  # accounts/{accountId}
+
+        locations = (
+            location_service.accounts()
             .locations()
-            .reviews()
-            .list(
-                parent=location_name,
-                pageToken=page_token,
-            )
+            .list(parent=account_name)
             .execute()
+            .get("locations", [])
         )
 
-        reviews.extend(resp.get("reviews", []))
-        page_token = resp.get("nextPageToken")
+        for loc in locations:
+            location_name = loc["name"]  # accounts/.../locations/...
 
-        if not page_token:
-            break
+            request = (
+                review_service.accounts()
+                .locations()
+                .reviews()
+                .list(parent=location_name)
+            )
 
-    return reviews
+            while request:
+                response = request.execute()
+                all_reviews.extend(response.get("reviews", []))
+
+                request = (
+                    review_service.accounts()
+                    .locations()
+                    .reviews()
+                    .list_next(request, response)
+                )
+
+    return all_reviews
 
 
 def extract_review_texts(reviews: List[Dict]) -> List[str]:
