@@ -274,7 +274,7 @@ export default function StoreDetailPage() {
               이 매장의 리뷰를 분석해보세요
             </h2>
             <p className="text-gray-600 mb-8">
-              {store.review_count}개의 Google 리뷰를 기반으로 분석을 시작합니다
+              Google 리뷰를 기반으로 분석을 시작합니다
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
