@@ -35,9 +35,12 @@ def decode_store_key(store_key: str) -> str:
 @router.get("")
 def list_stores(db: Session = Depends(get_db)):
     """
-    로그인한 Google 계정에 연결된 매장 목록 조회
-    (Google 실시간 + 우리 DB 리뷰 집계)
+    로그인한 Google 계정에 연결된 모든 매장 목록 조회
+    (여러 Business Account 지원)
+    - Google 실시간 조회
+    - 우리 DB 기준 리뷰 집계 포함
     """
+
     creds = load_credentials()
 
     # 1️⃣ Business Account 조회
@@ -54,60 +57,73 @@ def list_stores(db: Session = Depends(get_db)):
             detail="연결된 Google Business 계정이 없습니다.",
         )
 
-    account_name = accounts[0]["name"]  # ex) accounts/123456789
-
-    # 2️⃣ 매장(Location) 조회
+    # 2️⃣ Location 서비스
     location_service = build(
         "mybusinessbusinessinformation",
         "v1",
         credentials=creds,
     )
 
-    locations = (
-        location_service.accounts()
-        .locations()
-        .list(parent=account_name)
-        .execute()
-        .get("locations", [])
-    )
+    results: list[dict] = []
 
-    results = []
+    # 3️⃣ 모든 Account 순회
+    for account in accounts:
+        account_name = account["name"]  # accounts/{accountId}
 
-    for loc in locations:
-        store_id = loc["name"]
-        address = loc.get("storefrontAddress", {})
-
-        # 3️⃣ 우리 DB 기준 리뷰 집계
-        agg = (
-            db.query(
-                func.avg(GoogleReview.rating).label("avg_rating"),
-                func.count(GoogleReview.id).label("review_count"),
-            )
-            .filter(GoogleReview.store_id == store_id)
-            .one()
+        locations = (
+            location_service.accounts()
+            .locations()
+            .list(parent=account_name)
+            .execute()
+            .get("locations", [])
         )
 
-        avg_rating = round(float(agg.avg_rating), 2) if agg.avg_rating else None
-        review_count = agg.review_count or 0
+        for loc in locations:
+            store_id = loc["name"]  # accounts/.../locations/...
+            address = loc.get("storefrontAddress", {})
 
-        results.append({
-            "store_key": encode_store_key(store_id),
-            "store_id": store_id,  # 내부용
-            "name": loc.get("title"),
-            "address": " ".join(
-                filter(None, [
-                    address.get("locality"),
-                    address.get("administrativeArea"),
-                ])
-            ),
-            "category": loc.get("primaryCategory", {}).get("displayName"),
-            "status": loc.get("openInfo", {}).get("status", "UNKNOWN"),
-            "rating": avg_rating,
-            "review_count": review_count,
-        })
+            # 4️⃣ 우리 DB 기준 리뷰 집계
+            agg = (
+                db.query(
+                    func.avg(GoogleReview.rating).label("avg_rating"),
+                    func.count(GoogleReview.id).label("review_count"),
+                )
+                .filter(GoogleReview.store_id == store_id)
+                .one()
+            )
+
+            avg_rating = (
+                round(float(agg.avg_rating), 2)
+                if agg.avg_rating is not None
+                else None
+            )
+
+            review_count = agg.review_count or 0
+
+            results.append({
+                # ✅ 프론트 라우팅용 (URL-safe)
+                "store_key": encode_store_key(store_id),
+
+                # 🔒 내부 식별자 (API 내부 사용)
+                "store_id": store_id,
+
+                # 🏪 매장 정보
+                "name": loc.get("title"),
+                "address": " ".join(
+                    filter(None, [
+                        address.get("locality"),
+                        address.get("administrativeArea"),
+                    ])
+                ),
+                "category": loc.get("primaryCategory", {}).get("displayName"),
+                "status": loc.get("openInfo", {}).get("status", "UNKNOWN"),
+
+                # 📊 리뷰 지표 (우리 DB 기준)
+                "rating": avg_rating,
+                "review_count": review_count,
+            })
 
     return results
-
 
 @router.get("/{store_key}")
 def get_store_detail(store_key: str):
