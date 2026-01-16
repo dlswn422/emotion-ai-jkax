@@ -15,6 +15,7 @@ import {
   AlertTriangle,
   CheckCircle,
   Info,
+  Users,
 } from "lucide-react";
 
 /* ================= MOCK ================= */
@@ -25,14 +26,23 @@ const MOCK_STORES: Record<string, any> = {
     category: "이탈리안 레스토랑",
     status: "OPEN",
     avg_rating: 4.6,
-    review_count: 128,
+    review_count: 5,
     description:
       "강남에서 운영 중인 이탈리안 레스토랑으로, 신선한 재료와 정성스러운 파스타로 꾸준히 사랑받고 있습니다.",
     last_synced_at: "2026-01-16T12:40:00Z",
   },
+  store_2: {
+    name: "인주네 중식집",
+    address: "서울 구로구",
+    category: "중식",
+    status: "OPEN",
+    avg_rating: null,
+    review_count: 0,
+    description:
+      "정갈한 중식 요리와 합리적인 가격으로 지역 주민들에게 사랑받는 중식당입니다.",
+    last_synced_at: null,
+  },
 };
-
-type OverlayType = "none" | "stores" | "logout" | "analyze" | "customers";
 
 const API_BASE =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
@@ -68,39 +78,6 @@ function StoreHeader({
   );
 }
 
-/* ================= 실패 화면 ================= */
-function StoreLoadError({
-  message,
-  onBack,
-}: {
-  message: string;
-  onBack: () => void;
-}) {
-  return (
-    <section className="flex flex-1 items-center justify-center bg-slate-50">
-      <div className="bg-white rounded-3xl p-10 max-w-md w-full text-center shadow-sm">
-        <div className="w-16 h-16 mx-auto mb-6 rounded-full bg-red-50 flex items-center justify-center">
-          <AlertTriangle className="w-8 h-8 text-red-500" />
-        </div>
-
-        <h2 className="text-xl font-extrabold mb-2">
-          매장 정보를 불러올 수 없습니다
-        </h2>
-        <p className="text-gray-600 mb-8 whitespace-pre-line">
-          {message}
-        </p>
-
-        <button
-          onClick={onBack}
-          className="px-6 py-3 rounded-2xl bg-blue-600 text-white font-semibold hover:bg-blue-700"
-        >
-          매장 목록으로 돌아가기
-        </button>
-      </div>
-    </section>
-  );
-}
-
 /* ================= 메인 ================= */
 export default function StoreDetailPage() {
   const router = useRouter();
@@ -115,12 +92,11 @@ export default function StoreDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [store, setStore] = useState<any | null>(null);
 
-  const [overlay, setOverlay] = useState<OverlayType>("none");
   const [showAnalyzeModal, setShowAnalyzeModal] = useState(false);
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
 
-  /* ================= 로그인 + 데이터 로드 ================= */
+  /* ================= 로그인 + MOCK 로드 ================= */
   useEffect(() => {
     let cancelled = false;
 
@@ -136,17 +112,14 @@ export default function StoreDetailPage() {
           return;
         }
 
-        // 🔴 현재는 MOCK
         const mock = MOCK_STORES[decodedStoreId];
-        if (!mock) {
-          throw new Error("not_found");
-        }
+        if (!mock) throw new Error("not_found");
 
         if (!cancelled) setStore(mock);
       } catch {
         if (!cancelled)
           setError(
-            "매장 정보를 불러오는 데 실패했습니다.\n네트워크 상태를 확인하거나 잠시 후 다시 시도해주세요."
+            "매장 정보를 불러오는 데 실패했습니다.\n잠시 후 다시 시도해주세요."
           );
       } finally {
         if (!cancelled) setChecking(false);
@@ -159,33 +132,15 @@ export default function StoreDetailPage() {
     };
   }, [decodedStoreId, router]);
 
-  /* ================= 로그아웃 ================= */
-  const handleLogout = async () => {
-    setOverlay("logout");
-    try {
-      await fetch(`${API_BASE}/auth/logout`, {
-        method: "POST",
-        credentials: "include",
-      });
-    } finally {
-      setTimeout(() => router.replace("/login"), 600);
-    }
-  };
-
-  /* ================= 분석 이동 ================= */
   const handleAnalyze = () => {
     if (!fromDate || !toDate) return;
 
-    setOverlay("analyze");
     setShowAnalyzeModal(false);
-
-    setTimeout(() => {
-      router.push(
-        `/cx-dashboard?storeId=${encodeURIComponent(
-          decodedStoreId
-        )}&from=${fromDate}&to=${toDate}`
-      );
-    }, 600);
+    router.push(
+      `/cx-dashboard?storeId=${encodeURIComponent(
+        decodedStoreId
+      )}&from=${fromDate}&to=${toDate}`
+    );
   };
 
   /* ================= Render ================= */
@@ -193,7 +148,7 @@ export default function StoreDetailPage() {
     <main className="min-h-screen flex flex-col bg-slate-50">
       <StoreHeader
         onBack={() => router.push("/stores")}
-        onLogout={handleLogout}
+        onLogout={() => router.replace("/login")}
       />
 
       {/* 로딩 */}
@@ -205,109 +160,144 @@ export default function StoreDetailPage() {
 
       {/* 실패 */}
       {!checking && error && (
-        <StoreLoadError
-          message={error}
-          onBack={() => router.push("/stores")}
-        />
+        <div className="flex-1 flex items-center justify-center">
+          <AlertTriangle className="w-10 h-10 text-red-500" />
+        </div>
       )}
 
       {/* 정상 */}
-      {!checking && !error && store && (
-        <section className="max-w-6xl mx-auto px-6 py-16 space-y-14 flex-1">
-          {/* HERO */}
-          <section className="bg-white rounded-3xl p-10 shadow-sm">
-            <div className="flex gap-6">
-              <div className="w-16 h-16 rounded-2xl bg-blue-50 flex items-center justify-center">
-                <Store className="w-8 h-8 text-blue-600" />
-              </div>
+      {!checking && !error && store && (() => {
+        const hasReviews = store.review_count > 0;
 
-              <div className="flex-1">
-                <div className="flex items-center gap-3 mb-2">
-                  <h1 className="text-2xl font-extrabold">{store.name}</h1>
-                  <span className="flex items-center gap-1 text-sm text-green-600 font-semibold">
-                    <CheckCircle className="w-4 h-4" />
-                    운영중
-                  </span>
+        return (
+          <section className="max-w-6xl mx-auto px-6 py-16 space-y-14 flex-1">
+            {/* HERO */}
+            <section className="bg-white rounded-3xl p-10 shadow-sm">
+              <div className="flex gap-6">
+                <div className="w-16 h-16 rounded-2xl bg-blue-50 flex items-center justify-center">
+                  <Store className="w-8 h-8 text-blue-600" />
                 </div>
 
-                <p className="text-sm text-gray-500 mb-2">
-                  {store.category} · {store.address}
-                </p>
+                <div className="flex-1">
+                  <div className="flex items-center gap-3 mb-2">
+                    <h1 className="text-2xl font-extrabold">{store.name}</h1>
+                    {store.status === "OPEN" && (
+                      <span className="flex items-center gap-1 text-sm text-green-600 font-semibold">
+                        <CheckCircle className="w-4 h-4" />
+                        운영중
+                      </span>
+                    )}
+                  </div>
 
-                <p className="text-gray-600 mb-4">
-                  {store.description}
-                </p>
+                  <p className="text-sm text-gray-500 mb-2">
+                    {store.category} · {store.address}
+                  </p>
 
-                <div className="flex items-center gap-2 text-xs text-gray-400">
-                  <Info className="w-4 h-4" />
-                  매장 정보는 Google Business Profile 기준입니다
+                  <p className="text-gray-600 mb-4">
+                    {store.description}
+                  </p>
+
+                  <div className="flex items-center gap-2 text-xs text-gray-400">
+                    <Info className="w-4 h-4" />
+                    Google Business Profile 기준 정보
+                  </div>
                 </div>
               </div>
-            </div>
+            </section>
+
+            {/* METRICS */}
+            <section className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              <Metric
+                icon={<Star className="w-6 h-6 text-yellow-400" />}
+                label="평균 평점"
+                value={hasReviews ? store.avg_rating : "—"}
+                sub={hasReviews ? "Google 리뷰 기준 평균 평점" : "리뷰 수집 후 평점이 표시됩니다"}
+              />
+              <Metric
+                icon={<MessageSquare className="w-6 h-6 text-green-500" />}
+                label="리뷰 수"
+                value={`${store.review_count}개`}
+                sub={hasReviews ? "분석 가능한 리뷰 데이터" : "Google 리뷰 동기화 대기 중"}
+              />
+              <Metric
+                icon={<Sparkles className="w-6 h-6 text-purple-500" />}
+                label="분석 항목"
+                value="감성 · 키워드 · 요약"
+                sub={hasReviews ? "감성 · 키워드 · 요약 분석 제공" : "리뷰 수집 후 분석 기능이 활성화됩니다"}
+              />
+            </section>
+
+            {/* CTA */}
+            <section className="bg-white rounded-3xl p-12 shadow-md text-center">
+              {!hasReviews ? (
+                <>
+                  <h2 className="text-2xl font-extrabold mb-3">
+                    아직 분석할 리뷰가 없습니다
+                  </h2>
+                  <p className="text-gray-600 mb-8">
+                    Google 리뷰가 수집되면
+                    <br />
+                    고객 인사이트 분석을 시작할 수 있습니다
+                  </p>
+
+                  <button
+                    disabled
+                    className="px-10 py-4 rounded-2xl bg-gray-100 text-gray-400 font-semibold cursor-not-allowed"
+                  >
+                    리뷰 분석 준비 중
+                  </button>
+                </>
+              ) : (
+                <>
+                  <h2 className="text-2xl font-extrabold mb-3">
+                    이 매장의 리뷰를 분석해보세요
+                  </h2>
+                  <p className="text-gray-600 mb-8">
+                    Google 리뷰 기반 고객 인사이트 제공
+                  </p>
+
+                  <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                    <button
+                      onClick={() => setShowAnalyzeModal(true)}
+                      className="px-12 py-4 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold shadow-md hover:from-blue-700 hover:to-indigo-700"
+                    >
+                      리뷰 분석 시작
+                    </button>
+
+                    <button
+                      onClick={() =>
+                        router.push(
+                          `/stores/${encodeURIComponent(
+                            decodedStoreId
+                          )}/customers`
+                        )
+                      }
+                      className="px-8 py-4 rounded-2xl border border-blue-200 bg-blue-50 text-blue-700 font-semibold hover:bg-blue-100 flex items-center gap-2 justify-center"
+                    >
+                      <Users className="w-5 h-5" />
+                      고객 분석
+                    </button>
+                  </div>
+                </>
+              )}
+            </section>
           </section>
-
-          {/* METRICS */}
-          <section className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <Metric
-              icon={<Star className="w-6 h-6 text-yellow-400" />}
-              label="평균 평점"
-              value={store.avg_rating}
-              sub="최근 Google 리뷰 기준"
-            />
-            <Metric
-              icon={<MessageSquare className="w-6 h-6 text-green-500" />}
-              label="분석 가능 리뷰"
-              value={`${store.review_count}개`}
-              sub="리뷰 분석 대상"
-            />
-            <Metric
-              icon={<Sparkles className="w-6 h-6 text-purple-500" />}
-              label="분석 항목"
-              value="감성 · 키워드 · 요약"
-              sub="고객 인사이트 제공"
-            />
-          </section>
-
-          {/* CTA */}
-          <section className="bg-white rounded-3xl p-12 shadow-md text-center">
-            <h2 className="text-2xl font-extrabold mb-3">
-              이 매장의 리뷰를 분석해보세요
-            </h2>
-            <p className="text-gray-600 mb-8">
-              Google 리뷰를 기반으로 분석을 시작합니다
-            </p>
-
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <button
-                onClick={() => setShowAnalyzeModal(true)}
-                className="px-12 py-4 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold shadow-md hover:from-blue-700 hover:to-indigo-700"
-              >
-                리뷰 분석 시작
-              </button>
-
-              <button
-                onClick={() =>
-                  router.push(`/stores/${decodedStoreId}/customers`)
-                }
-                className="px-8 py-4 rounded-2xl border border-blue-200 bg-blue-50 text-blue-700 font-semibold hover:bg-blue-100"
-              >
-                고객 분석
-              </button>
-            </div>
-          </section>
-        </section>
-      )}
+        );
+      })()}
 
       {/* 분석 기간 모달 */}
       {showAnalyzeModal && (
         <Modal onClose={() => setShowAnalyzeModal(false)}>
-          <h3 className="text-xl font-extrabold mb-6">
+          <h3 className="text-xl font-extrabold mb-6 flex items-center gap-2">
+            <Calendar className="w-5 h-5 text-blue-600" />
             분석 기간 선택
           </h3>
+
           <div className="space-y-4 mb-8">
             <InputDate label="시작일" value={fromDate} onChange={setFromDate} />
             <InputDate label="종료일" value={toDate} onChange={setToDate} />
           </div>
+
           <div className="flex justify-end gap-4">
             <button
               onClick={() => setShowAnalyzeModal(false)}
