@@ -4,7 +4,6 @@ import { useEffect, useState, useMemo } from "react";
 import { useRouter, useParams } from "next/navigation";
 import {
   Store,
-  MapPin,
   Star,
   MessageSquare,
   Sparkles,
@@ -26,7 +25,7 @@ const MOCK_STORES: Record<string, any> = {
     category: "이탈리안 레스토랑",
     status: "OPEN",
     avg_rating: 4.6,
-    review_count: 5,
+    review_count: 0,
     description:
       "강남에서 운영 중인 이탈리안 레스토랑으로, 신선한 재료와 정성스러운 파스타로 꾸준히 사랑받고 있습니다.",
     last_synced_at: "2026-01-16T12:40:00Z",
@@ -78,7 +77,7 @@ function StoreHeader({
   );
 }
 
-/* ================= 메인 ================= */
+/* ================= Main ================= */
 export default function StoreDetailPage() {
   const router = useRouter();
   const params = useParams();
@@ -95,6 +94,9 @@ export default function StoreDetailPage() {
   const [showAnalyzeModal, setShowAnalyzeModal] = useState(false);
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
+
+  /** ✅ 분석 로딩 상태 */
+  const [analyzing, setAnalyzing] = useState(false);
 
   /* ================= 로그인 + MOCK 로드 ================= */
   useEffect(() => {
@@ -132,24 +134,40 @@ export default function StoreDetailPage() {
     };
   }, [decodedStoreId, router]);
 
+  /* ================= Analyze ================= */
   const handleAnalyze = () => {
-    if (!fromDate || !toDate) return;
+    if (!fromDate || !toDate || analyzing) return;
 
+    setAnalyzing(true);
     setShowAnalyzeModal(false);
-    router.push(
-      `/cx-dashboard?storeId=${encodeURIComponent(
-        decodedStoreId
-      )}&from=${fromDate}&to=${toDate}`
-    );
+
+    // UX용 짧은 딜레이
+    setTimeout(() => {
+      router.push(
+        `/cx-dashboard?storeId=${encodeURIComponent(
+          decodedStoreId
+        )}&from=${fromDate}&to=${toDate}`
+      );
+    }, 500);
   };
 
   /* ================= Render ================= */
   return (
-    <main className="min-h-screen flex flex-col bg-slate-50">
+    <main className="min-h-screen flex flex-col bg-slate-50 relative">
       <StoreHeader
         onBack={() => router.push("/stores")}
         onLogout={() => router.replace("/login")}
       />
+
+      {/* ✅ 분석 이동 로딩 오버레이 */}
+      {analyzing && (
+        <div className="absolute inset-0 z-50 bg-white/70 backdrop-blur flex flex-col items-center justify-center">
+          <Loader2 className="w-10 h-10 text-blue-600 animate-spin mb-4" />
+          <p className="font-semibold text-gray-700">
+            리뷰 분석 화면으로 이동 중…
+          </p>
+        </div>
+      )}
 
       {/* 로딩 */}
       {checking && (
@@ -211,19 +229,31 @@ export default function StoreDetailPage() {
                 icon={<Star className="w-6 h-6 text-yellow-400" />}
                 label="평균 평점"
                 value={hasReviews ? store.avg_rating : "—"}
-                sub={hasReviews ? "Google 리뷰 기준 평균 평점" : "리뷰 수집 후 평점이 표시됩니다"}
+                sub={
+                  hasReviews
+                    ? "Google 리뷰 기준 평균 평점"
+                    : "리뷰 수집 후 평점이 표시됩니다"
+                }
               />
               <Metric
                 icon={<MessageSquare className="w-6 h-6 text-green-500" />}
                 label="리뷰 수"
                 value={`${store.review_count}개`}
-                sub={hasReviews ? "분석 가능한 리뷰 데이터" : "Google 리뷰 동기화 대기 중"}
+                sub={
+                  hasReviews
+                    ? "분석 가능한 리뷰 데이터"
+                    : "Google 리뷰 동기화 대기 중"
+                }
               />
               <Metric
                 icon={<Sparkles className="w-6 h-6 text-purple-500" />}
                 label="분석 항목"
                 value="감성 · 키워드 · 요약"
-                sub={hasReviews ? "감성 · 키워드 · 요약 분석 제공" : "리뷰 수집 후 분석 기능이 활성화됩니다"}
+                sub={
+                  hasReviews
+                    ? "감성 · 키워드 · 요약 분석 제공"
+                    : "리뷰 수집 후 분석 기능이 활성화됩니다"
+                }
               />
             </section>
 
@@ -307,7 +337,7 @@ export default function StoreDetailPage() {
             </button>
             <button
               onClick={handleAnalyze}
-              disabled={!fromDate || !toDate}
+              disabled={!fromDate || !toDate || analyzing}
               className="px-6 py-2 rounded-xl bg-blue-600 text-white font-semibold disabled:opacity-50"
             >
               분석 시작
