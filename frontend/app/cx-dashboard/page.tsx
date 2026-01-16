@@ -13,6 +13,17 @@ import {
   Star,
   Loader2,
 } from "lucide-react";
+import {
+  ResponsiveContainer,
+  ComposedChart,
+  XAxis,
+  YAxis,
+  Tooltip,
+  CartesianGrid,
+  Area,
+  Line,
+  ReferenceArea
+} from "recharts";
 
 /* ✅ API BASE */
 const API_BASE =
@@ -227,7 +238,11 @@ function CxDashboardInner() {
           <SentimentCard />
           <NpsCard />
         </section>
-
+        {/* KPI */}
+        <section className="mt-10">
+          <ScoreTrendCard />
+        </section>
+          
         {/* Drivers / Improvements */}
         <section className="grid grid-cols-1 md:grid-cols-2 gap-10">
           <ProgressBlock
@@ -497,6 +512,160 @@ function RiskCard() {
           ))}
         </tbody>
       </table>
+    </Card>
+  );
+}
+
+function ScoreTrendCard() {
+  const [unit, setUnit] = useState<"day" | "month">("day");
+
+  /* 🔧 목데이터 (API 연동 시 그대로 교체) */
+  const data =
+    unit === "day"
+      ? [
+          { date: "01-01", avg_rating: 3.8 },
+          { date: "01-02", avg_rating: 4.0 },
+          { date: "01-03", avg_rating: 4.3, highlight: true }, // 급변
+          { date: "01-04", avg_rating: 4.5 },
+        ]
+      : [
+          { date: "2025-11", avg_rating: 3.9 },
+          { date: "2025-12", avg_rating: 4.2, highlight: true },
+          { date: "2026-01", avg_rating: 4.6 },
+        ];
+
+  const highlightIndex = data.findIndex((d) => d.highlight);
+
+  return (
+    <Card>
+      {/* ================= Header ================= */}
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h3 className="text-lg font-extrabold text-gray-800">
+            평점 점수 추이
+          </h3>
+          <p className="text-sm text-gray-500 mt-1">
+            고객 전반 만족도 변화
+          </p>
+        </div>
+
+        <div className="flex gap-2">
+          {["day", "month"].map((v) => (
+            <button
+              key={v}
+              onClick={() => setUnit(v as "day" | "month")}
+              className={`px-3 py-1 rounded-lg text-sm font-semibold transition ${
+                unit === v
+                  ? "bg-blue-600 text-white"
+                  : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+              }`}
+            >
+              {v === "day" ? "일별" : "월별"}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* ================= Chart ================= */}
+      <div className="h-[300px]">
+        <ResponsiveContainer width="100%" height="100%">
+          <ComposedChart data={data}>
+            {/* Gradient */}
+            <defs>
+              <linearGradient id="scoreGradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#2563eb" stopOpacity={0.25} />
+                <stop offset="100%" stopColor="#2563eb" stopOpacity={0.05} />
+              </linearGradient>
+            </defs>
+
+            <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+
+            <XAxis dataKey="date" axisLine={false} tick={{ fontSize: 12 }} />
+            <YAxis domain={[3, 5]} axisLine={false} tick={{ fontSize: 12 }} />
+
+            {/* 🔥 급변 구간 배경 하이라이트 */}
+            {highlightIndex !== -1 && (
+              <ReferenceArea
+                x1={data[Math.max(0, highlightIndex - 0.5)]?.date}
+                x2={data[Math.min(data.length - 1, highlightIndex + 0.5)]?.date}
+                fill="#fee2e2"
+                fillOpacity={0.7}
+              />
+            )}
+
+            <Tooltip
+              formatter={(v: any) => [`${v}점`, "평균 평점"]}
+              labelFormatter={(label, payload: any) =>
+                payload?.[0]?.payload?.highlight
+                  ? `${label} (급변 구간)`
+                  : label
+              }
+            />
+
+            {/* Area */}
+            <Area
+              type="monotone"
+              dataKey="avg_rating"
+              stroke="none"
+              fill="url(#scoreGradient)"
+            />
+
+            {/* Line + Highlight Dot */}
+            <Line
+              type="monotone"
+              dataKey="avg_rating"
+              stroke="#2563eb"
+              strokeWidth={3}
+              dot={(p: any) => {
+                if (!p.cx || !p.cy) return null;
+
+                if (p.payload.highlight) {
+                  return (
+                    <g>
+                      <circle
+                        cx={p.cx}
+                        cy={p.cy}
+                        r={12}
+                        fill="#fecaca"
+                      />
+                      <circle
+                        cx={p.cx}
+                        cy={p.cy}
+                        r={6}
+                        fill="#dc2626"
+                        stroke="#ffffff"
+                        strokeWidth={2}
+                      />
+                    </g>
+                  );
+                }
+
+                return (
+                  <circle
+                    cx={p.cx}
+                    cy={p.cy}
+                    r={3}
+                    fill="#2563eb"
+                  />
+                );
+              }}
+              activeDot={{ r: 6 }}
+            />
+          </ComposedChart>
+        </ResponsiveContainer>
+      </div>
+
+      {/* ================= Legend ================= */}
+      <div className="flex gap-6 text-sm font-semibold text-gray-500 mt-4">
+        <div className="flex items-center gap-2">
+          <span className="w-3 h-3 rounded-full bg-blue-600" />
+          평균 평점
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="w-3 h-3 rounded-full bg-red-400" />
+          급변 구간
+        </div>
+      </div>
     </Card>
   );
 }
