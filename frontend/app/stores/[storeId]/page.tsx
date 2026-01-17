@@ -35,7 +35,7 @@ const MOCK_STORES: Record<string, any> = {
     address: "서울 구로구",
     category: "중식",
     status: "OPEN",
-    avg_rating: null,
+    avg_rating: 0,
     review_count: 0,
     description:
       "정갈한 중식 요리와 합리적인 가격으로 지역 주민들에게 사랑받는 중식당입니다.",

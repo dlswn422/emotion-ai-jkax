@@ -26,12 +26,12 @@ const MOCK_STORES = [
     id: "store_2",
     name: "인주네 중식집",
     address: "서울 구로구",
-    rating: null,
+    rating: null, // 리뷰 없음
     reviews: 0,
   },
 ];
 
-/* ✅ API BASE */
+/* ================= API ================= */
 const API_BASE =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -110,7 +110,7 @@ export default function StoresPage() {
       if (!res.ok) {
         throw new Error("sync_failed");
       }
-    } catch (e) {
+    } catch {
       setSyncError(
         "리뷰 동기화에 실패했습니다.\n잠시 후 다시 시도해주세요."
       );
@@ -139,7 +139,7 @@ export default function StoresPage() {
       : {
           home: "메인 화면으로 이동 중…",
           logout: "로그아웃 중…",
-          store: "매장 리뷰 분석 화면으로 이동 중…",
+          store: "매장 상세 화면으로 이동 중…",
           sync: "최신 리뷰를 동기화하는 중…",
         }[overlay];
 
@@ -211,15 +211,16 @@ export default function StoresPage() {
             </p>
           </div>
 
-          {/* 🔄 동기화 버튼 (톤 맞춘 디자인) */}
+          {/* 🔄 세련된 동기화 버튼 */}
           <button
             onClick={syncReviews}
             disabled={overlay !== "none"}
             className="
-              group flex items-center gap-2 px-6 py-3 rounded-2xl
-              bg-blue-50 text-blue-700 font-semibold
-              border border-blue-100
-              hover:bg-blue-100 hover:border-blue-200
+              relative group flex items-center gap-2 px-7 py-3.5 rounded-2xl
+              bg-gradient-to-r from-blue-600 to-indigo-600
+              text-white font-semibold
+              shadow-lg shadow-blue-200/40
+              hover:shadow-xl hover:-translate-y-0.5
               transition
               disabled:opacity-60
             "
@@ -235,62 +236,66 @@ export default function StoresPage() {
 
         {/* Store Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-          {MOCK_STORES.map((store) => (
-            <div
-              key={store.id}
-              className="bg-white rounded-3xl p-8 border border-gray-100 shadow-sm hover:shadow-2xl transition hover:-translate-y-1"
-            >
-              {/* Header */}
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-2xl bg-blue-50 flex items-center justify-center">
-                    <Store className="w-6 h-6 text-blue-600" />
-                  </div>
+          {MOCK_STORES.map((store) => {
+            const rating = store.rating ?? 0.0;
 
-                  <div>
-                    <h2 className="text-xl font-bold">{store.name}</h2>
-                    <div className="flex items-center gap-1 text-sm text-gray-500 mt-1">
-                      <MapPin className="w-4 h-4" />
-                      {store.address}
+            return (
+              <div
+                key={store.id}
+                className="bg-white rounded-3xl p-8 border border-gray-100 shadow-sm hover:shadow-2xl transition hover:-translate-y-1"
+              >
+                {/* Header */}
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-2xl bg-blue-50 flex items-center justify-center">
+                      <Store className="w-6 h-6 text-blue-600" />
+                    </div>
+
+                    <div>
+                      <h2 className="text-xl font-bold">{store.name}</h2>
+                      <div className="flex items-center gap-1 text-sm text-gray-500 mt-1">
+                        <MapPin className="w-4 h-4" />
+                        {store.address}
+                      </div>
                     </div>
                   </div>
+
+                  <span className="px-4 py-1 rounded-full bg-green-50 text-green-700 text-sm font-semibold">
+                    운영중
+                  </span>
                 </div>
 
-                <span className="px-4 py-1 rounded-full bg-green-50 text-green-700 text-sm font-semibold">
-                  운영중
-                </span>
+                {/* Metrics */}
+                <div className="flex items-center gap-6 mb-8">
+                  <div className="flex items-center gap-2 text-lg font-semibold">
+                    <Star className="w-5 h-5 text-yellow-400" />
+                    {rating.toFixed(1)}
+                  </div>
+
+                  <div className="text-sm text-gray-500">
+                    리뷰 {store.reviews.toLocaleString()}개
+                  </div>
+                </div>
+
+                {/* CTA */}
+                <button
+                  onClick={() => {
+                    setOverlay("store");
+                    setTimeout(() => {
+                      router.push(
+                        `/stores/${encodeURIComponent(store.id)}`
+                      );
+                    }, 600);
+                  }}
+                  disabled={overlay !== "none"}
+                  className="w-full flex items-center justify-center gap-2 px-6 py-4 rounded-2xl bg-blue-600 text-white font-semibold shadow-lg hover:bg-blue-700 transition disabled:opacity-60"
+                >
+                  이 매장 리뷰 분석하기
+                  <ArrowRight className="w-5 h-5" />
+                </button>
               </div>
-
-              {/* Metrics */}
-              <div className="flex items-center gap-6 mb-8">
-                <div className="flex items-center gap-2 text-lg font-semibold">
-                  <Star className="w-5 h-5 text-yellow-400" />
-                  {store.rating}
-                </div>
-
-                <div className="text-sm text-gray-500">
-                  리뷰 {store.reviews.toLocaleString()}개
-                </div>
-              </div>
-
-              {/* CTA */}
-              <button
-                onClick={() => {
-                  setOverlay("store");
-                  setTimeout(() => {
-                    router.push(
-                      `/stores/${encodeURIComponent(store.id)}`
-                    );
-                  }, 600);
-                }}
-                disabled={overlay !== "none"}
-                className="w-full flex items-center justify-center gap-2 px-6 py-4 rounded-2xl bg-blue-600 text-white font-semibold shadow-lg hover:bg-blue-700 transition disabled:opacity-60"
-              >
-                이 매장 리뷰 분석하기
-                <ArrowRight className="w-5 h-5" />
-              </button>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </section>
     </main>
