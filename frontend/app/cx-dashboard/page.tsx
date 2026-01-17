@@ -398,8 +398,9 @@ function SentimentCard({ sentiment }: any) {
   const pNeutral = sentiment.neutral / 100;
   const pNegative = sentiment.negative / 100;
 
-  const offsetPositive = c * (1 - pPositive);
-  const offsetNeutral = offsetPositive - c * pNeutral;
+  const offsetNegative = c * (1 - pNegative);
+  const offsetNeutral = offsetNegative - c * pNeutral;
+  const offsetPositive = offsetNeutral - c * pPositive;
 
   return (
     <Card>
@@ -409,18 +410,25 @@ function SentimentCard({ sentiment }: any) {
 
       <svg width="160" height="160" className="mx-auto mb-4">
         {/* base */}
-        <circle cx="80" cy="80" r={r} stroke="#e5e7eb" strokeWidth="12" fill="none" />
-
-        {/* positive */}
         <circle
           cx="80"
           cy="80"
           r={r}
-          stroke="#22c55e"
+          stroke="#e5e7eb"
+          strokeWidth="12"
+          fill="none"
+        />
+
+        {/* negative */}
+        <circle
+          cx="80"
+          cy="80"
+          r={r}
+          stroke="#ef4444"
           strokeWidth="12"
           fill="none"
           strokeDasharray={c}
-          strokeDashoffset={offsetPositive}
+          strokeDashoffset={offsetNegative}
           transform="rotate(-90 80 80)"
         />
 
@@ -437,6 +445,19 @@ function SentimentCard({ sentiment }: any) {
           transform="rotate(-90 80 80)"
         />
 
+        {/* positive (top layer) */}
+        <circle
+          cx="80"
+          cy="80"
+          r={r}
+          stroke="#22c55e"
+          strokeWidth="12"
+          fill="none"
+          strokeDasharray={c}
+          strokeDashoffset={offsetPositive}
+          transform="rotate(-90 80 80)"
+        />
+
         <text
           x="50%"
           y="50%"
@@ -448,7 +469,6 @@ function SentimentCard({ sentiment }: any) {
         </text>
       </svg>
 
-      {/* Legend */}
       <div className="grid grid-cols-3 gap-2 text-xs font-semibold text-gray-600">
         <div className="flex items-center gap-2">
           <span className="w-2.5 h-2.5 rounded-full bg-green-500" />
@@ -467,15 +487,14 @@ function SentimentCard({ sentiment }: any) {
   );
 }
 
-
 function NpsCard({ nps }: { nps: number }) {
   const level =
-    nps >= 8 ? "Promoters" : nps >= 5 ? "Passives" : "Detractors";
+    nps >= 9 ? "Promoters" : nps >= 7 ? "Passives" : "Detractors";
 
   const color =
-    nps >= 8
+    nps >= 9
       ? "text-green-600 bg-green-50"
-      : nps >= 5
+      : nps >= 7
       ? "text-blue-600 bg-blue-50"
       : "text-red-600 bg-red-50";
 
@@ -491,9 +510,9 @@ function NpsCard({ nps }: { nps: number }) {
       </div>
 
       <div className="mt-4 text-xs text-gray-500 leading-relaxed">
-        <p>• 0–4: Detractors (이탈 위험)</p>
-        <p>• 5–7: Passives (보통)</p>
-        <p>• 8–10: Promoters (추천 고객)</p>
+        <p>• 9–10: Promoters (추천, 재방문 의사 높음)</p>
+        <p>• 7–8: Passives (무난, 보통)</p>
+        <p>• 0–6: Detractors (불만, 이탈 위험)</p>
       </div>
     </Card>
   );
