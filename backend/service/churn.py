@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 
 def calculate_churn_score(
     avg_rating: float,
@@ -40,7 +40,9 @@ def calculate_churn_score(
     # - 30일 이내는 정상 활동으로 간주 (점수 부여 없음)
     # - 30일 초과 시, 최대 90일까지 선형 증가
     #   예) 45일 → 약 5점, 60일 → 약 10점, 90일 이상 → 30점
-    days_inactive = (datetime.utcnow() - last_review_at).days
+    now = datetime.now(timezone.utc)
+    days_inactive = (now - last_review_at).days
+
     if days_inactive > 30:
         score += min(days_inactive, 90) / 90 * 30
 

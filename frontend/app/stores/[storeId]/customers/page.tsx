@@ -14,44 +14,6 @@ import {
   Loader2,
 } from "lucide-react";
 
-/* ================= MOCK ================= */
-const MOCK = {
-  summary: {
-    total_customers: 42,
-    risky_customers: 8,
-    avg_sentiment_score: 7.6,
-  },
-  customers: [
-    {
-      author_name: "홍길동",
-      total_reviews: 5,
-      avg_rating: 3.4,
-      last_review_at: "2026-01-05",
-      sentiment: "negative",
-      churn_probability: 0.78,
-      risk_level: "HIGH",
-    },
-    {
-      author_name: "김인주",
-      total_reviews: 3,
-      avg_rating: 4.7,
-      last_review_at: "2026-01-09",
-      sentiment: "positive",
-      churn_probability: 0.12,
-      risk_level: "LOW",
-    },
-    {
-      author_name: "이서연",
-      total_reviews: 2,
-      avg_rating: 3.9,
-      last_review_at: "2026-01-02",
-      sentiment: "neutral",
-      churn_probability: 0.45,
-      risk_level: "MEDIUM",
-    },
-  ],
-};
-
 /* ================= API ================= */
 const API_BASE =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
@@ -94,12 +56,42 @@ export default function CustomersPage() {
     };
   }, [router]);
 
-  /* ================= 데이터 로드 (MOCK) ================= */
+  /* ================= 고객 데이터 로드 ================= */
   useEffect(() => {
-    if (!checking) {
-      setData(MOCK);
-    }
-  }, [checking]);
+    if (checking) return;
+
+    const loadCustomers = async () => {
+      try {
+        const res = await fetch(
+          `${API_BASE}/stores/${storeId}/customers`,
+          { credentials: "include" }
+        );
+        const json = await res.json();
+
+        // API → UI 모델 변환
+        setData({
+          summary: {
+            total_customers: json.total_customers,
+            risky_customers: json.high_risk,
+            avg_sentiment_score: json.average_satisfaction,
+          },
+          customers: json.customers.map((c: any) => ({
+            author_name: c.author_name,
+            total_reviews: c.review_count,
+            avg_rating: c.avg_rating,
+            last_review_at: c.last_activity,
+            sentiment: c.sentiment,
+            churn_probability: c.churn_score / 100,
+            risk_level: c.churn_level,
+          })),
+        });
+      } catch (e) {
+        console.error(e);
+      }
+    };
+
+    loadCustomers();
+  }, [checking, storeId]);
 
   /* ================= 로그아웃 ================= */
   const handleLogout = async () => {
@@ -224,7 +216,6 @@ export default function CustomersPage() {
                   hover:bg-gray-50 transition
                 "
               >
-                {/* 고객 */}
                 <div className="md:col-span-2">
                   <p className="font-semibold text-gray-900 text-base">
                     {c.author_name}
@@ -234,31 +225,20 @@ export default function CustomersPage() {
                   </p>
                 </div>
 
-                {/* 평점 */}
                 <InfoBlock label="평점" value={c.avg_rating} />
+                <InfoBlock label="최근 활동" value={c.last_review_at} />
 
-                {/* 최근 활동 */}
-                <InfoBlock
-                  label="최근 활동"
-                  value={c.last_review_at}
-                />
-
-                {/* 감성 */}
                 <div>
-                  <p className="text-sm text-gray-500 mb-1">
-                    감성
-                  </p>
+                  <p className="text-sm text-gray-500 mb-1">감성</p>
                   <Sentiment sentiment={c.sentiment} />
                 </div>
 
-                {/* 이탈 확률 */}
                 <InfoBlock
                   label="이탈 확률"
                   value={`${(c.churn_probability * 100).toFixed(0)}%`}
                   bold
                 />
 
-                {/* 위험도 */}
                 <div className="flex justify-start md:justify-end">
                   <Risk level={c.risk_level} />
                 </div>
@@ -280,9 +260,7 @@ function Kpi({ icon, label, value }: any) {
         <div className="w-14 h-14 rounded-2xl bg-gray-100 flex items-center justify-center">
           {icon}
         </div>
-        <p className="text-gray-500 font-semibold">
-          {label}
-        </p>
+        <p className="text-gray-500 font-semibold">{label}</p>
       </div>
       <p className="text-4xl font-extrabold tracking-tight text-gray-900">
         {value}
@@ -302,9 +280,7 @@ function InfoBlock({
 }) {
   return (
     <div>
-      <p className="text-sm text-gray-500 mb-1">
-        {label}
-      </p>
+      <p className="text-sm text-gray-500 mb-1">{label}</p>
       <p
         className={`${
           bold ? "font-extrabold" : "font-semibold"
