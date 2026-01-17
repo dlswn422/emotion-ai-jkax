@@ -207,37 +207,57 @@ export default function DashboardPage() {
   return (
     <main className="min-h-screen bg-slate-100">
       <PrintStyle />
-
       {/* ================= HEADER ================= */}
       <header className="sticky top-0 z-40 bg-white border-b no-print">
-        <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
-          <button onClick={() => router.push("/")} className="nav-btn">
-            <Home className="w-4 h-4" /> 메인으로
-          </button>
+        <div className="max-w-6xl mx-auto px-6 h-16
+                  grid grid-cols-3 items-center">
 
-          <div className="flex items-center gap-4">
+          {/* ⬅️ LEFT */}
+          <div className="flex items-center">
+            <button
+              onClick={() => router.push("/")}
+              className="flex items-center gap-2 text-sm font-semibold text-gray-600 hover:text-blue-600"
+            >
+              <Home className="w-4 h-4" />
+              메인으로
+            </button>
+          </div>
+
+          {/* ⬜ CENTER (균형용, 비워둠) */}
+          <div />
+
+          {/* ➡️ RIGHT */}
+          <div className="flex items-center justify-end gap-3 flex-nowrap">
             <button
               onClick={() => window.print()}
-              className="flex items-center gap-2 px-4 py-2 rounded-md bg-slate-900 text-white text-sm font-semibold hover:bg-slate-800"
+              className="flex items-center gap-2 px-4 py-2 rounded-md
+                   bg-slate-900 text-white text-sm font-semibold
+                   hover:bg-slate-800 whitespace-nowrap"
             >
               <Download className="w-4 h-4" />
               PDF 다운로드
             </button>
 
-            <button onClick={() => router.push("/upload")} className="nav-btn">
-              <ArrowLeft className="w-4 h-4" /> 다시 분석
+            <button
+              onClick={() => router.push("/upload")}
+              className="flex items-center gap-2 text-sm font-semibold
+                   text-gray-600 hover:text-blue-600 whitespace-nowrap"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              다시 분석
             </button>
 
             <button
               onClick={() => router.push("/login")}
-              className="nav-btn hover:text-red-500"
+              className="flex items-center gap-2 text-sm font-semibold
+                   text-gray-600 hover:text-red-500 whitespace-nowrap"
             >
-              <LogOut className="w-4 h-4" /> 로그아웃
+              <LogOut className="w-4 h-4" />
+              로그아웃
             </button>
           </div>
         </div>
       </header>
-
       {/* ================= ✅ 공통 로딩 오버레이 ================= */}
       {(pageEntering || loading) && (
         <div

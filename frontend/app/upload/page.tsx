@@ -5,9 +5,11 @@ import { useRouter } from "next/navigation";
 import Papa from "papaparse";
 import * as XLSX from "xlsx";
 import axios from "axios";
+
 import {
   UploadCloud,
   Eye,
+  Home,
   PlayCircle,
   ArrowLeft,
   Loader2,
@@ -182,27 +184,37 @@ export default function UploadPage() {
   return (
     <main className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 relative">
       {/* ================= 🔧 FIXED HEADER ================= */}
-      <header className="fixed top-0 left-0 right-0 z-50 bg-white/90 backdrop-blur border-b">
-        <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
-          <button
-            onClick={handleGoHome}
-            className="flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-blue-600"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            메인으로
-          </button>
+      <header className="sticky top-0 z-40 bg-white border-b no-print">
+        <div className="max-w-6xl mx-auto px-6 h-16
+                  grid grid-cols-3 items-center">
 
-          <button
-            onClick={handleLogout}
-            className="flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-red-500"
-          >
-            <LogOut className="w-4 h-4" />
-            로그아웃
-          </button>
+          {/* ⬅️ LEFT */}
+          <div className="flex items-center">
+            <button
+              onClick={() => router.push("/")}
+              className="flex items-center gap-2 text-sm font-semibold text-gray-600 hover:text-blue-600"
+            >
+              <Home className="w-4 h-4" />
+              메인으로
+            </button>
+          </div>
+
+          {/* ⬜ CENTER (균형용, 비워둠) */}
+          <div />
+
+          {/* ➡️ RIGHT */}
+          <div className="flex items-center justify-end gap-3 flex-nowrap">
+            <button
+              onClick={() => router.push("/login")}
+              className="flex items-center gap-2 text-sm font-semibold
+                   text-gray-600 hover:text-red-500 whitespace-nowrap"
+            >
+              <LogOut className="w-4 h-4" />
+              로그아웃
+            </button>
+          </div>
         </div>
       </header>
-
-      {/* ================= 🔧 LOADING OVERLAY (HEADER 제외) ================= */}
       {/* ================= 🔧 LOADING OVERLAY (HEADER 제외) ================= */}
       {overlay !== "none" && (
         <div
