@@ -30,7 +30,6 @@ def analyze_cx_dashboard_api(
     - store_id
     - 기간(from ~ to)
     """
-    print("🔥 CX ANALYSIS API HIT")
     return analyze_store_cx_by_period(
         store_id=store_id,
         from_date=from_date,

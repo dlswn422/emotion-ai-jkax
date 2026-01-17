@@ -46,6 +46,44 @@ const MOCK_STORES: Record<string, any> = {
 const API_BASE =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
+/* ================= Date Utils ================= */
+function formatDate(date: Date) {
+  return date.toISOString().split("T")[0];
+}
+
+function getDateRange(
+  type: "7d" | "30d" | "3m" | "6m" | "all"
+): { from: string; to: string } {
+  const today = new Date();
+  const end = formatDate(today);
+
+  if (type === "all") {
+    return { from: "2000-01-01", to: formatDate(today) };
+  }
+
+  const start = new Date(today);
+
+  switch (type) {
+    case "7d":
+      start.setDate(today.getDate() - 7);
+      break;
+    case "30d":
+      start.setDate(today.getDate() - 30);
+      break;
+    case "3m":
+      start.setMonth(today.getMonth() - 3);
+      break;
+    case "6m":
+      start.setMonth(today.getMonth() - 6);
+      break;
+  }
+
+  return {
+    from: formatDate(start),
+    to: end,
+  };
+}
+
 /* ================= Header ================= */
 function StoreHeader({
   onBack,
@@ -95,7 +133,6 @@ export default function StoreDetailPage() {
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
 
-  /** ✅ 분석 로딩 상태 */
   const [analyzing, setAnalyzing] = useState(false);
 
   /* ================= 로그인 + MOCK 로드 ================= */
@@ -134,21 +171,27 @@ export default function StoreDetailPage() {
     };
   }, [decodedStoreId, router]);
 
-  /* ================= Analyze ================= */
+  /* ✅ 모달 열릴 때 기본값: 최근 6개월 */
+  useEffect(() => {
+    if (!showAnalyzeModal) return;
+    const { from, to } = getDateRange("6m");
+    setFromDate(from);
+    setToDate(to);
+  }, [showAnalyzeModal]);
+
   const handleAnalyze = () => {
     if (!fromDate || !toDate || analyzing) return;
 
     setAnalyzing(true);
     setShowAnalyzeModal(false);
 
-    // UX용 짧은 딜레이
     setTimeout(() => {
       router.push(
         `/cx-dashboard?storeId=${encodeURIComponent(
           decodedStoreId
         )}&from=${fromDate}&to=${toDate}`
       );
-    }, 500);
+    }, 400);
   };
 
   /* ================= Render ================= */
@@ -159,38 +202,35 @@ export default function StoreDetailPage() {
         onLogout={() => router.replace("/login")}
       />
 
-      {/* ✅ 분석 이동 로딩 오버레이 */}
       {analyzing && (
         <div className="absolute inset-0 z-50 bg-white/70 backdrop-blur flex flex-col items-center justify-center">
           <Loader2 className="w-10 h-10 text-blue-600 animate-spin mb-4" />
           <p className="font-semibold text-gray-700">
-            리뷰 분석 화면으로 이동 중…
+            AI 분석 화면으로 이동 중…
           </p>
         </div>
       )}
 
-      {/* 로딩 */}
       {checking && (
         <div className="flex-1 flex items-center justify-center">
           <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
         </div>
       )}
 
-      {/* 실패 */}
       {!checking && error && (
-        <div className="flex-1 flex items-center justify-center">
-          <AlertTriangle className="w-10 h-10 text-red-500" />
+        <div className="flex-1 flex items-center justify-center text-red-500">
+          <AlertTriangle className="w-10 h-10" />
         </div>
       )}
 
-      {/* 정상 */}
       {!checking && !error && store && (() => {
         const hasReviews = store.review_count > 0;
 
         return (
-          <section className="max-w-6xl mx-auto px-6 py-16 space-y-14 flex-1">
-            {/* HERO */}
-            <section className="bg-white rounded-3xl p-10 shadow-sm">
+          <section className="max-w-6xl mx-auto px-6 py-16 space-y-16 flex-1">
+            {/* STORE OVERVIEW */}
+            <section className="relative bg-white rounded-3xl p-10 shadow-sm">
+              <div className="absolute left-0 top-0 h-full w-1.5 bg-blue-600 rounded-l-3xl" />
               <div className="flex gap-6">
                 <div className="w-16 h-16 rounded-2xl bg-blue-50 flex items-center justify-center">
                   <Store className="w-8 h-8 text-blue-600" />
@@ -207,7 +247,7 @@ export default function StoreDetailPage() {
                     )}
                   </div>
 
-                  <p className="text-sm text-gray-500 mb-2">
+                  <p className="text-sm text-gray-500 mb-3">
                     {store.category} · {store.address}
                   </p>
 
@@ -223,7 +263,7 @@ export default function StoreDetailPage() {
               </div>
             </section>
 
-            {/* METRICS */}
+            {/* KPI */}
             <section className="grid grid-cols-1 md:grid-cols-3 gap-8">
               <Metric
                 icon={<Star className="w-6 h-6 text-yellow-400" />}
@@ -231,8 +271,8 @@ export default function StoreDetailPage() {
                 value={hasReviews ? store.avg_rating : "—"}
                 sub={
                   hasReviews
-                    ? "Google 리뷰 기준 평균 평점"
-                    : "리뷰 수집 후 평점이 표시됩니다"
+                    ? "Google 리뷰 기준"
+                    : "리뷰 수집 후 표시됩니다"
                 }
               />
               <Metric
@@ -241,19 +281,15 @@ export default function StoreDetailPage() {
                 value={`${store.review_count}개`}
                 sub={
                   hasReviews
-                    ? "분석 가능한 리뷰 데이터"
-                    : "Google 리뷰 동기화 대기 중"
+                    ? "분석 가능한 데이터"
+                    : "리뷰 동기화 대기 중"
                 }
               />
               <Metric
                 icon={<Sparkles className="w-6 h-6 text-purple-500" />}
-                label="분석 항목"
+                label="AI 분석 항목"
                 value="감성 · 키워드 · 요약"
-                sub={
-                  hasReviews
-                    ? "감성 · 키워드 · 요약 분석 제공"
-                    : "리뷰 수집 후 분석 기능이 활성화됩니다"
-                }
+                sub="CX 인사이트 자동 분석"
               />
             </section>
 
@@ -265,9 +301,7 @@ export default function StoreDetailPage() {
                     아직 분석할 리뷰가 없습니다
                   </h2>
                   <p className="text-gray-600 mb-8">
-                    Google 리뷰가 수집되면
-                    <br />
-                    고객 인사이트 분석을 시작할 수 있습니다
+                    리뷰가 수집되면 고객 인사이트 분석을 시작할 수 있습니다
                   </p>
 
                   <button
@@ -280,10 +314,10 @@ export default function StoreDetailPage() {
               ) : (
                 <>
                   <h2 className="text-2xl font-extrabold mb-3">
-                    이 매장의 리뷰를 분석해보세요
+                    이 매장의 고객 경험을 분석해보세요
                   </h2>
                   <p className="text-gray-600 mb-8">
-                    Google 리뷰 기반 고객 인사이트 제공
+                    Google 리뷰 기반 CX 인사이트 제공
                   </p>
 
                   <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -315,13 +349,42 @@ export default function StoreDetailPage() {
         );
       })()}
 
-      {/* 분석 기간 모달 */}
+      {/* ================= 분석 기간 모달 ================= */}
       {showAnalyzeModal && (
         <Modal onClose={() => setShowAnalyzeModal(false)}>
-          <h3 className="text-xl font-extrabold mb-6 flex items-center gap-2">
+          <h3 className="text-xl font-extrabold mb-4 flex items-center gap-2">
             <Calendar className="w-5 h-5 text-blue-600" />
             분석 기간 선택
           </h3>
+
+          {/* 빠른 선택 */}
+          <div className="grid grid-cols-2 gap-3 mb-6">
+            <QuickButton label="최근 7일" onClick={() => {
+              const r = getDateRange("7d");
+              setFromDate(r.from);
+              setToDate(r.to);
+            }} />
+            <QuickButton label="최근 30일" onClick={() => {
+              const r = getDateRange("30d");
+              setFromDate(r.from);
+              setToDate(r.to);
+            }} />
+            <QuickButton label="최근 3개월" onClick={() => {
+              const r = getDateRange("3m");
+              setFromDate(r.from);
+              setToDate(r.to);
+            }} />
+            <QuickButton label="최근 6개월" onClick={() => {
+              const r = getDateRange("6m");
+              setFromDate(r.from);
+              setToDate(r.to);
+            }} />
+            <QuickButton label="전체" onClick={() => {
+              const r = getDateRange("all");
+              setFromDate(r.from);
+              setToDate(r.to);
+            }} />
+          </div>
 
           <div className="space-y-4 mb-8">
             <InputDate label="시작일" value={fromDate} onChange={setFromDate} />
@@ -355,7 +418,9 @@ function Metric({ icon, label, value, sub }: any) {
   return (
     <div className="bg-white rounded-3xl p-8 shadow-sm">
       <div className="flex items-center gap-4 mb-3">
-        {icon}
+        <div className="w-10 h-10 rounded-xl bg-gray-50 flex items-center justify-center">
+          {icon}
+        </div>
         <span className="text-gray-500 font-semibold">{label}</span>
       </div>
       <div className="text-3xl font-extrabold mb-1">{value}</div>
@@ -386,5 +451,25 @@ function InputDate({ label, value, onChange }: any) {
         className="w-full border rounded-xl px-4 py-2"
       />
     </div>
+  );
+}
+
+function QuickButton({
+  label,
+  onClick,
+}: {
+  label: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className="px-4 py-2 rounded-xl border border-gray-200
+                 bg-gray-50 text-sm font-semibold text-gray-700
+                 hover:bg-blue-50 hover:border-blue-200 hover:text-blue-600
+                 transition"
+    >
+      {label}
+    </button>
   );
 }
