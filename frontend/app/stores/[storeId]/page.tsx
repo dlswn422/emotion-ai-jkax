@@ -331,7 +331,7 @@ export default function StoreDetailPage() {
 
                   <div className="flex flex-col sm:flex-row gap-4 justify-center">
                     {/* 리뷰 관리 */}
-                    <button
+                    {/* <button
                       onClick={() =>
                         router.push(
                           `/stores/${encodeURIComponent(
@@ -343,7 +343,7 @@ export default function StoreDetailPage() {
                     >
                       <MessageSquare className="w-5 h-5" />
                       리뷰 관리
-                    </button>
+                    </button> */}
 
                     {/* 리뷰 분석 */}
                     <button
