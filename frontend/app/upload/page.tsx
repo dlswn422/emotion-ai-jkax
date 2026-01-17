@@ -14,7 +14,7 @@ import {
   LogOut,
 } from "lucide-react";
 
-/* ✅ API BASE */
+/* ================= API BASE ================= */
 const API_BASE =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -29,9 +29,7 @@ type OverlayType =
 export default function UploadPage() {
   const router = useRouter();
 
-  /* =========================
-     상태
-  ========================= */
+  /* ================= 상태 ================= */
   const [checking, setChecking] = useState(true);
   const [file, setFile] = useState<File | null>(null);
   const [previewData, setPreviewData] = useState<any[]>([]);
@@ -39,9 +37,7 @@ export default function UploadPage() {
   const [showPreview, setShowPreview] = useState(false);
   const [overlay, setOverlay] = useState<OverlayType>("none");
 
-  /* =========================
-     로그인 가드
-  ========================= */
+  /* ================= 로그인 가드 ================= */
   useEffect(() => {
     let cancelled = false;
 
@@ -69,9 +65,7 @@ export default function UploadPage() {
     };
   }, [router]);
 
-  /* =========================
-     로그아웃
-  ========================= */
+  /* ================= 로그아웃 ================= */
   const handleLogout = async () => {
     setOverlay("logout");
     try {
@@ -84,17 +78,13 @@ export default function UploadPage() {
     }
   };
 
-  /* =========================
-     메인 이동
-  ========================= */
+  /* ================= 메인 이동 ================= */
   const handleGoHome = () => {
     setOverlay("home");
     setTimeout(() => router.push("/"), 600);
   };
 
-  /* =========================
-     파일 업로드 & 파싱 (로딩 포함)
-  ========================= */
+  /* ================= 파일 업로드 ================= */
   const handleFile = async (f: File) => {
     setOverlay("file");
 
@@ -129,9 +119,7 @@ export default function UploadPage() {
     }
   };
 
-  /* =========================
-     미리보기 토글 (로딩 포함)
-  ========================= */
+  /* ================= 미리보기 ================= */
   const handlePreviewToggle = () => {
     if (previewData.length === 0) return;
 
@@ -142,9 +130,7 @@ export default function UploadPage() {
     }, 400);
   };
 
-  /* =========================
-     AI 분석 실행
-  ========================= */
+  /* ================= AI 분석 ================= */
   const handleAnalyze = async () => {
     if (!file || totalRows === 0) return;
 
@@ -172,19 +158,10 @@ export default function UploadPage() {
     }
   };
 
-  /* =========================
-     초기 로딩
-  ========================= */
   if (checking) {
     return (
-      <main className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100
-                       flex items-center justify-center">
-        <div className="flex flex-col items-center">
-          <Loader2 className="w-9 h-9 text-blue-600 animate-spin mb-4" />
-          <p className="text-sm font-semibold text-gray-600">
-            상태 확인 중…
-          </p>
-        </div>
+      <main className="min-h-screen flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
       </main>
     );
   }
@@ -195,29 +172,16 @@ export default function UploadPage() {
       : {
           home: "메인 화면으로 이동 중…",
           logout: "로그아웃 중…",
-          analyze: "AI가 리뷰를 분석 중입니다…",
+          analyze: "AI가 리뷰를 분석하고 있습니다…",
           file: "파일을 불러오는 중…",
           preview: "미리보기 준비 중…",
         }[overlay];
 
-  /* =========================
-     UI
-  ========================= */
+  /* ================= UI ================= */
   return (
     <main className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 relative">
-      {/* 공통 로딩 오버레이 */}
-      {overlay !== "none" && (
-        <div className="absolute inset-0 z-50 bg-white/70 backdrop-blur
-                        flex flex-col items-center justify-center">
-          <Loader2 className="w-10 h-10 text-blue-600 animate-spin mb-4" />
-          <p className="font-semibold text-gray-700">
-            {overlayMessage}
-          </p>
-        </div>
-      )}
-
-      {/* Header */}
-      <header className="bg-white/80 backdrop-blur border-b">
+      {/* ================= 🔧 FIXED HEADER ================= */}
+      <header className="fixed top-0 left-0 right-0 z-50 bg-white/90 backdrop-blur border-b">
         <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
           <button
             onClick={handleGoHome}
@@ -237,7 +201,20 @@ export default function UploadPage() {
         </div>
       </header>
 
-      <section className="max-w-5xl mx-auto px-6 py-20">
+      {/* ================= 🔧 LOADING OVERLAY (HEADER 제외) ================= */}
+      {overlay !== "none" && (
+        <div className="fixed inset-x-0 top-[72px] bottom-0 z-40
+                        bg-white/70 backdrop-blur
+                        flex flex-col items-center justify-center">
+          <Loader2 className="w-10 h-10 text-blue-600 animate-spin mb-4" />
+          <p className="font-semibold text-gray-700">
+            {overlayMessage}
+          </p>
+        </div>
+      )}
+
+      {/* ================= CONTENT ================= */}
+      <section className="max-w-5xl mx-auto px-6 pt-32 pb-20">
         {/* Title */}
         <div className="text-center mb-14">
           <h1 className="text-4xl font-extrabold mb-4">
