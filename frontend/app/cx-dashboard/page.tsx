@@ -3,7 +3,12 @@
 /* ✅ prerender / SSG 완전 차단 */
 export const dynamic = "force-dynamic";
 
-import { Suspense, useEffect, useState } from "react";
+import {
+  Suspense,
+  useEffect,
+  useState,
+  useRef,
+} from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   ArrowLeft,
@@ -52,6 +57,8 @@ function CxDashboardInner() {
   const to = searchParams.get("to");
   const storeId = searchParams.get("storeId");
 
+  const abortRef = useRef<AbortController | null>(null);
+
   const [checking, setChecking] = useState(true);
   const [loading, setLoading] = useState(true);
   const [analysis, setAnalysis] = useState<any | null>(null);
@@ -92,6 +99,8 @@ function CxDashboardInner() {
     if (!storeId) return;
 
     let cancelled = false;
+    const controller = new AbortController();
+    abortRef.current = controller;
 
     const fetchAnalysis = async () => {
       setLoading(true);
@@ -107,6 +116,7 @@ function CxDashboardInner() {
           {
             method: "POST",
             credentials: "include",
+            signal: controller.signal,
           }
         );
 
@@ -123,83 +133,27 @@ function CxDashboardInner() {
 
         if (!cancelled) setAnalysis(json);
       } catch (e: any) {
-        if (!cancelled) setError(e.message || "CX 분석 실패");
+        if (e.name !== "AbortError" && !cancelled) {
+          setError(e.message || "CX 분석 실패");
+        }
       } finally {
         if (!cancelled) setLoading(false);
       }
     };
 
     fetchAnalysis();
+
     return () => {
       cancelled = true;
+      controller.abort();
     };
   }, [storeId, from, to]);
 
   /* ================= 상태 처리 ================= */
-
-  if (checking || loading) {
+  if (checking) {
     return (
       <main className="min-h-screen flex items-center justify-center bg-gray-100">
         <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
-      </main>
-    );
-  }
-
-  /* 🔴 리뷰 없음 */
-  if (analysis?.total === 0) {
-  const periodLabel =
-    from && to ? `${from} ~ ${to}` : "선택된 기간";
-
-  return (
-    <main className="relative min-h-screen bg-gray-100 px-6 py-12">
-      {/* 상단 헤더는 그대로 유지 */}
-      <div className="max-w-6xl mx-auto bg-white rounded-2xl px-12 py-10 shadow-md">
-        {/* HEADER */}
-        <section className="border-b pb-6 mb-16">
-          <span className="text-xs tracking-widest font-bold text-blue-600">
-            CX STRATEGIC REPORT
-          </span>
-          <h1 className="text-3xl font-extrabold mt-2 tracking-tight">
-            고객경험(CX) 분석 보고서
-          </h1>
-
-          <div className="text-sm font-semibold text-gray-500 mt-3 flex justify-between">
-            <span>Store ID: {storeId}</span>
-            <span>Analysis Period: {periodLabel}</span>
-          </div>
-        </section>
-
-        {/* EMPTY STATE */}
-        <section className="flex flex-col items-center justify-center py-24">
-          <div className="w-16 h-16 rounded-full bg-blue-50 flex items-center justify-center mb-6">
-            <Sparkles className="w-8 h-8 text-blue-500" />
-          </div>
-
-          <h2 className="text-xl font-extrabold text-gray-800 mb-2">
-            아직 분석할 리뷰가 없습니다
-          </h2>
-
-          <p className="text-sm text-gray-500 text-center leading-relaxed max-w-md">
-            선택한 기간에 수집된 리뷰가 없어<br />
-            CX 분석을 진행할 수 없습니다.
-          </p>
-
-          <div className="mt-6 text-xs text-gray-400 text-center">
-            · 기간을 늘려보세요<br />
-            · 리뷰 수집이 아직 완료되지 않았을 수 있어요
-          </div>
-        </section>
-      </div>
-    </main>
-  );
-}
-
-
-  /* 🔴 에러 */
-  if (error) {
-    return (
-      <main className="min-h-screen flex items-center justify-center bg-gray-100">
-        <p className="text-sm font-semibold text-red-600">{error}</p>
       </main>
     );
   }
@@ -224,7 +178,7 @@ function CxDashboardInner() {
         <button
           onClick={() => {
             setNavigatingBack(true);
-            setTimeout(() => router.back(), 400);
+            setTimeout(() => router.back(), 300);
           }}
           className="flex items-center gap-2 text-sm font-semibold
                      text-gray-600 hover:text-gray-900 transition"
@@ -239,7 +193,7 @@ function CxDashboardInner() {
             setTimeout(() => {
               window.print();
               setDownloading(false);
-            }, 400);
+            }, 300);
           }}
           className="flex items-center gap-2 px-4 py-2
                      bg-slate-900 hover:bg-slate-800
@@ -252,7 +206,7 @@ function CxDashboardInner() {
       </div>
 
       <div className="max-w-6xl mx-auto bg-white rounded-2xl px-12 py-10 space-y-16 shadow-md">
-        {/* ================= HEADER ================= */}
+        {/* ================= HEADER (항상 표시) ================= */}
         <section className="border-b pb-6">
           <span className="text-xs tracking-widest font-bold text-blue-600">
             CX STRATEGIC REPORT
@@ -267,49 +221,113 @@ function CxDashboardInner() {
           </div>
         </section>
 
-        {/* ================= EXECUTIVE SUMMARY ================= */}
-        <section className="relative bg-blue-50 rounded-xl px-8 py-6 pl-12">
-          <div className="absolute left-0 top-0 h-full w-1.5 bg-blue-600 rounded-l-xl" />
-          <h2 className="text-lg font-extrabold text-blue-700 mb-3 flex items-center gap-2">
-            <Sparkles className="w-5 h-5" />
-            Executive Summary
-          </h2>
-          <p className="text-sm leading-relaxed font-medium text-gray-700">
-            “{analysis.executive_summary.summary}”
-          </p>
-        </section>
+        {/* ================= AI ANALYSIS LOADING ================= */}
+        {loading && (
+          <section className="flex flex-col items-center justify-center py-32 text-center">
+            <div className="w-16 h-16 rounded-full bg-blue-50 flex items-center justify-center mb-6">
+              <Sparkles className="w-8 h-8 text-blue-600 animate-pulse" />
+            </div>
 
-        {/* ================= KPI ================= */}
-        <section className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          <OverallRatingCard rating={analysis.rating} />
-          <SentimentCard sentiment={analysis.kpi.sentiment} />
-          <NpsCard nps={analysis.kpi.nps} />
-        </section>
+            <h2 className="text-xl font-extrabold text-gray-800 mb-2">
+              AI가 고객 리뷰를 분석 중입니다
+            </h2>
 
-        {/* ================= SCORE TREND ================= */}
-        <section className="mt-10">
-          <ScoreTrendCard />
-        </section>
+            <p className="text-sm text-gray-500 leading-relaxed mb-6">
+              선택한 기간의 리뷰를 종합해<br />
+              CX 인사이트를 생성하고 있어요.
+            </p>
 
-        {/* ================= DRIVERS / IMPROVEMENTS ================= */}
-        <section className="grid grid-cols-1 md:grid-cols-2 gap-10">
-          <ProgressBlock
-            title="🔥 Key Drivers of Satisfaction"
-            items={analysis.drivers_of_satisfaction}
-            color="blue"
-          />
-          <ProgressBlock
-            title="🛠 Areas for Improvement"
-            items={analysis.areas_for_improvement}
-            color="gray"
-          />
-        </section>
+            <Loader2 className="w-6 h-6 animate-spin text-gray-400 mb-8" />
 
-        {/* ================= INSIGHTS / ACTION ================= */}
-        <section className="grid grid-cols-1 md:grid-cols-2 gap-10">
-          <InsightsCard insights={analysis.strategic_insights} />
-          <RiskCard plan={analysis.risk_and_action_plan} />
-        </section>
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  abortRef.current?.abort();
+                  router.back();
+                }}
+                className="px-4 py-2 rounded-lg border text-sm font-semibold
+                           text-gray-600 hover:bg-gray-50"
+              >
+                분석 중단
+              </button>
+
+              <button
+                onClick={() => router.back()}
+                className="px-4 py-2 rounded-lg bg-slate-900
+                           text-white text-sm font-semibold hover:bg-slate-800"
+              >
+                이전 화면
+              </button>
+            </div>
+          </section>
+        )}
+
+        {/* ================= 리뷰 없음 ================= */}
+        {!loading && analysis?.total === 0 && (
+          <section className="flex flex-col items-center justify-center py-24">
+            <Sparkles className="w-8 h-8 text-blue-500 mb-4" />
+            <h2 className="text-xl font-extrabold mb-2">
+              아직 분석할 리뷰가 없습니다
+            </h2>
+            <p className="text-sm text-gray-500 text-center">
+              기간을 변경하거나 리뷰 수집 후 다시 시도해주세요.
+            </p>
+          </section>
+        )}
+
+        {/* ================= 에러 ================= */}
+        {!loading && error && (
+          <section className="py-24 text-center text-red-600 font-semibold">
+            {error}
+          </section>
+        )}
+
+        {/* ================= 결과 ================= */}
+        {!loading && analysis?.executive_summary && (
+          <>
+            {/* EXECUTIVE SUMMARY */}
+            <section className="relative bg-blue-50 rounded-xl px-8 py-6 pl-12">
+              <div className="absolute left-0 top-0 h-full w-1.5 bg-blue-600 rounded-l-xl" />
+              <h2 className="text-lg font-extrabold text-blue-700 mb-3 flex items-center gap-2">
+                <Sparkles className="w-5 h-5" />
+                Executive Summary
+              </h2>
+              <p className="text-sm leading-relaxed font-medium text-gray-700">
+                “{analysis.executive_summary.summary}”
+              </p>
+            </section>
+
+            {/* KPI */}
+            <section className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              <OverallRatingCard rating={analysis.rating} />
+              <SentimentCard sentiment={analysis.kpi.sentiment} />
+              <NpsCard nps={analysis.kpi.nps} />
+            </section>
+
+            {/* SCORE TREND */}
+            <ScoreTrendCard />
+
+            {/* DRIVERS / IMPROVEMENTS */}
+            <section className="grid grid-cols-1 md:grid-cols-2 gap-10">
+              <ProgressBlock
+                title="🔥 Key Drivers of Satisfaction"
+                items={analysis.drivers_of_satisfaction}
+                color="blue"
+              />
+              <ProgressBlock
+                title="🛠 Areas for Improvement"
+                items={analysis.areas_for_improvement}
+                color="gray"
+              />
+            </section>
+
+            {/* INSIGHTS / ACTION */}
+            <section className="grid grid-cols-1 md:grid-cols-2 gap-10">
+              <InsightsCard insights={analysis.strategic_insights} />
+              <RiskCard plan={analysis.risk_and_action_plan} />
+            </section>
+          </>
+        )}
 
         <footer className="border-t pt-6 text-xs font-semibold text-gray-400 flex justify-between">
           <span>CONFIDENTIAL – FOR INTERNAL USE ONLY</span>
@@ -321,7 +339,6 @@ function CxDashboardInner() {
 }
 
 /* ================= Shared Components (UI 유지) ================= */
-
 function Card({ children }: { children: React.ReactNode }) {
   return (
     <div className="relative rounded-xl border border-gray-200 p-6 shadow-sm bg-white h-full">
