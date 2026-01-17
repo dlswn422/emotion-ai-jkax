@@ -6,7 +6,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.sessions import SessionMiddleware
 
-from backend.api import analysis, auth, stores, google_business, dashboard
+from backend.api import analysis, auth, stores, google_business, dashboard, customers
 
 app = FastAPI(title="Emotion AI Backend")
 
@@ -45,3 +45,4 @@ app.include_router(auth.router)
 app.include_router(analysis.router)
 app.include_router(dashboard.router)
 app.include_router(google_business.router)
+app.include_router(customers.router)
