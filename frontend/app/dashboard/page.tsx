@@ -358,9 +358,8 @@ export default function DashboardPage() {
 
                 {/* ✅ Tooltip 라벨 수정 */}
                 <Tooltip
-                  formatter={(value: number) => [`${value}개`, "리뷰 개수"]}
+                  formatter={(value) => [`${value ?? 0}개`, "리뷰 개수"]}
                 />
-
                 <Bar dataKey="value">
                   {sentimentData.map((e, i) => (
                     <Cell key={i} fill={e.color} />
