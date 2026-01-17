@@ -25,7 +25,7 @@ const MOCK_STORES: Record<string, any> = {
     category: "이탈리안 레스토랑",
     status: "OPEN",
     avg_rating: 4.6,
-    review_count: 0,
+    review_count: 4,
     description:
       "강남에서 운영 중인 이탈리안 레스토랑으로, 신선한 재료와 정성스러운 파스타로 꾸준히 사랑받고 있습니다.",
     last_synced_at: "2026-01-16T12:40:00Z",

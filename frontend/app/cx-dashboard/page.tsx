@@ -22,67 +22,11 @@ import {
   CartesianGrid,
   Area,
   Line,
-  ReferenceArea
 } from "recharts";
 
 /* ✅ API BASE */
 const API_BASE =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-
-/* ================= MOCK ================= */
-const MOCK = {
-  client: "예원식당 (YEWON Restaurant)",
-  source: "Google Reviews",
-
-  summary:
-    "전반적인 고객 만족도가 평균 4.92점(5점 만점)으로 최상위 수준을 유지하고 있습니다. 특히 음식 품질과 직원의 서비스 응대가 핵심 강점으로 식별되었으며, 이탈 위험도가 낮아 안정적인 성장세가 기대됩니다.",
-
-  rating: 4.92,
-  nps: 9.54,
-
-  sentiment: {
-    positive: 92.3,
-    neutral: 5.4,
-    negative: 2.3,
-  },
-
-  keywords: ["친절한 서비스", "음식 맛", "가성비", "재방문 의사"],
-
-  drivers: [
-    { label: "음식 퀄리티 (Taste & Quality)", value: 53.8 },
-    { label: "직원 응대 (Service)", value: 23.1 },
-    { label: "기타 (Others)", value: 23.1 },
-  ],
-
-  improvements: [
-    { label: "메뉴 설명 부족 (Menu Guide)", value: 46.2 },
-    { label: "기타 (Others)", value: 30.8 },
-    { label: "가격/가성비 (Value)", value: 15.4 },
-    { label: "고기 품질 일관성 (Consistency)", value: 15.4 },
-  ],
-
-  insights: [
-    {
-      title: "우수한 고객 만족도 유지",
-      desc: "평균 4.92점으로 업계 상위 1% 수준의 만족도를 유지하고 있습니다.",
-    },
-    {
-      title: "강력한 구전 마케팅 잠재력",
-      desc: "NPS 9.54점으로 재방문 및 추천 가능성이 매우 높습니다.",
-    },
-    {
-      title: "서비스 접점(MOT) 개선 필요",
-      desc: "메뉴 설명 부족은 객단가 상승 기회 손실로 이어질 수 있습니다.",
-    },
-  ],
-
-  actionPlan: [
-    { area: "경험 강화", action: "메뉴 설명 및 추천 멘트 강화" },
-    { area: "메뉴 개선", action: "시그니처 메뉴 시각적 강조" },
-    { area: "프로모션", action: "재방문 고객 혜택 지속 운영" },
-    { area: "품질 관리", action: "고기 품질 일일 점검 체계 강화" },
-  ],
-};
 
 /* ================= ENTRY ================= */
 export default function CxDashboardPage() {
@@ -109,6 +53,10 @@ function CxDashboardInner() {
   const storeId = searchParams.get("storeId");
 
   const [checking, setChecking] = useState(true);
+  const [loading, setLoading] = useState(true);
+  const [analysis, setAnalysis] = useState<any | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
   const [downloading, setDownloading] = useState(false);
   const [navigatingBack, setNavigatingBack] = useState(false);
 
@@ -139,10 +87,119 @@ function CxDashboardInner() {
     };
   }, [router]);
 
-  if (checking) {
+  /* ================= CX 분석 API ================= */
+  useEffect(() => {
+    if (!storeId) return;
+
+    let cancelled = false;
+
+    const fetchAnalysis = async () => {
+      setLoading(true);
+      setError(null);
+
+      try {
+        const params = new URLSearchParams({ store_id: storeId });
+        if (from) params.append("from", from);
+        if (to) params.append("to", to);
+
+        const res = await fetch(
+          `${API_BASE}/analysis/cx-analysis?${params.toString()}`,
+          {
+            method: "POST",
+            credentials: "include",
+          }
+        );
+
+        const json = await res.json();
+
+        if (json?.total === 0) {
+          setAnalysis(json);
+          return;
+        }
+
+        if (!json?.executive_summary?.summary) {
+          throw new Error("분석 결과 형식이 올바르지 않습니다.");
+        }
+
+        if (!cancelled) setAnalysis(json);
+      } catch (e: any) {
+        if (!cancelled) setError(e.message || "CX 분석 실패");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+
+    fetchAnalysis();
+    return () => {
+      cancelled = true;
+    };
+  }, [storeId, from, to]);
+
+  /* ================= 상태 처리 ================= */
+
+  if (checking || loading) {
     return (
       <main className="min-h-screen flex items-center justify-center bg-gray-100">
         <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
+      </main>
+    );
+  }
+
+  /* 🔴 리뷰 없음 */
+  if (analysis?.total === 0) {
+  const periodLabel =
+    from && to ? `${from} ~ ${to}` : "선택된 기간";
+
+  return (
+    <main className="relative min-h-screen bg-gray-100 px-6 py-12">
+      {/* 상단 헤더는 그대로 유지 */}
+      <div className="max-w-6xl mx-auto bg-white rounded-2xl px-12 py-10 shadow-md">
+        {/* HEADER */}
+        <section className="border-b pb-6 mb-16">
+          <span className="text-xs tracking-widest font-bold text-blue-600">
+            CX STRATEGIC REPORT
+          </span>
+          <h1 className="text-3xl font-extrabold mt-2 tracking-tight">
+            고객경험(CX) 분석 보고서
+          </h1>
+
+          <div className="text-sm font-semibold text-gray-500 mt-3 flex justify-between">
+            <span>Store ID: {storeId}</span>
+            <span>Analysis Period: {periodLabel}</span>
+          </div>
+        </section>
+
+        {/* EMPTY STATE */}
+        <section className="flex flex-col items-center justify-center py-24">
+          <div className="w-16 h-16 rounded-full bg-blue-50 flex items-center justify-center mb-6">
+            <Sparkles className="w-8 h-8 text-blue-500" />
+          </div>
+
+          <h2 className="text-xl font-extrabold text-gray-800 mb-2">
+            아직 분석할 리뷰가 없습니다
+          </h2>
+
+          <p className="text-sm text-gray-500 text-center leading-relaxed max-w-md">
+            선택한 기간에 수집된 리뷰가 없어<br />
+            CX 분석을 진행할 수 없습니다.
+          </p>
+
+          <div className="mt-6 text-xs text-gray-400 text-center">
+            · 기간을 늘려보세요<br />
+            · 리뷰 수집이 아직 완료되지 않았을 수 있어요
+          </div>
+        </section>
+      </div>
+    </main>
+  );
+}
+
+
+  /* 🔴 에러 */
+  if (error) {
+    return (
+      <main className="min-h-screen flex items-center justify-center bg-gray-100">
+        <p className="text-sm font-semibold text-red-600">{error}</p>
       </main>
     );
   }
@@ -152,27 +209,22 @@ function CxDashboardInner() {
 
   return (
     <main className="relative min-h-screen bg-gray-100 px-6 py-12">
-      {/* ================= 이동 / 다운로드 로딩 ================= */}
       {(downloading || navigatingBack) && (
         <div className="absolute inset-0 z-50 bg-white/70 backdrop-blur
                         flex flex-col items-center justify-center">
           <Loader2 className="w-8 h-8 animate-spin text-slate-700 mb-3" />
           <p className="text-sm font-semibold text-gray-600">
-            {downloading
-              ? "PDF 생성 중…"
-              : "이전 화면으로 이동 중…"}
+            {downloading ? "PDF 생성 중…" : "이전 화면으로 이동 중…"}
           </p>
         </div>
       )}
 
-      {/* Actions */}
+      {/* ================= ACTIONS ================= */}
       <div className="max-w-6xl mx-auto flex justify-between mb-8 print:hidden">
         <button
           onClick={() => {
             setNavigatingBack(true);
-            setTimeout(() => {
-              router.back();
-            }, 400);
+            setTimeout(() => router.back(), 400);
           }}
           className="flex items-center gap-2 text-sm font-semibold
                      text-gray-600 hover:text-gray-900 transition"
@@ -200,7 +252,7 @@ function CxDashboardInner() {
       </div>
 
       <div className="max-w-6xl mx-auto bg-white rounded-2xl px-12 py-10 space-y-16 shadow-md">
-        {/* Header */}
+        {/* ================= HEADER ================= */}
         <section className="border-b pb-6">
           <span className="text-xs tracking-widest font-bold text-blue-600">
             CX STRATEGIC REPORT
@@ -210,17 +262,12 @@ function CxDashboardInner() {
           </h1>
 
           <div className="text-sm font-semibold text-gray-500 mt-3 flex justify-between">
-            <span>Client: {MOCK.client}</span>
+            <span>Store ID: {storeId}</span>
             <span>Analysis Period: {periodLabel}</span>
-          </div>
-
-          <div className="text-sm font-semibold text-gray-500 mt-1 text-right">
-            Source: {MOCK.source}
-            {storeId && ` · Store ID: ${storeId}`}
           </div>
         </section>
 
-        {/* Executive Summary */}
+        {/* ================= EXECUTIVE SUMMARY ================= */}
         <section className="relative bg-blue-50 rounded-xl px-8 py-6 pl-12">
           <div className="absolute left-0 top-0 h-full w-1.5 bg-blue-600 rounded-l-xl" />
           <h2 className="text-lg font-extrabold text-blue-700 mb-3 flex items-center gap-2">
@@ -228,39 +275,40 @@ function CxDashboardInner() {
             Executive Summary
           </h2>
           <p className="text-sm leading-relaxed font-medium text-gray-700">
-            “{MOCK.summary}”
+            “{analysis.executive_summary.summary}”
           </p>
         </section>
 
-        {/* KPI */}
+        {/* ================= KPI ================= */}
         <section className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          <OverallRatingCard />
-          <SentimentCard />
-          <NpsCard />
+          <OverallRatingCard rating={analysis.rating} />
+          <SentimentCard sentiment={analysis.kpi.sentiment} />
+          <NpsCard nps={analysis.kpi.nps} />
         </section>
-        {/* KPI */}
+
+        {/* ================= SCORE TREND ================= */}
         <section className="mt-10">
           <ScoreTrendCard />
         </section>
-          
-        {/* Drivers / Improvements */}
+
+        {/* ================= DRIVERS / IMPROVEMENTS ================= */}
         <section className="grid grid-cols-1 md:grid-cols-2 gap-10">
           <ProgressBlock
             title="🔥 Key Drivers of Satisfaction"
-            items={MOCK.drivers}
+            items={analysis.drivers_of_satisfaction}
             color="blue"
           />
           <ProgressBlock
             title="🛠 Areas for Improvement"
-            items={MOCK.improvements}
+            items={analysis.areas_for_improvement}
             color="gray"
           />
         </section>
 
-        {/* Insights / Risk */}
+        {/* ================= INSIGHTS / ACTION ================= */}
         <section className="grid grid-cols-1 md:grid-cols-2 gap-10">
-          <InsightsCard />
-          <RiskCard />
+          <InsightsCard insights={analysis.strategic_insights} />
+          <RiskCard plan={analysis.risk_and_action_plan} />
         </section>
 
         <footer className="border-t pt-6 text-xs font-semibold text-gray-400 flex justify-between">
@@ -272,7 +320,7 @@ function CxDashboardInner() {
   );
 }
 
-/* ================= Shared Components ================= */
+/* ================= Shared Components (UI 유지) ================= */
 
 function Card({ children }: { children: React.ReactNode }) {
   return (
@@ -283,235 +331,155 @@ function Card({ children }: { children: React.ReactNode }) {
   );
 }
 
-/* ================= KPI Cards ================= */
-
-function OverallRatingCard() {
+function OverallRatingCard({ rating }: { rating: number }) {
   return (
     <Card>
       <h3 className="text-lg font-extrabold text-gray-800 mb-4">
         OVERALL RATING
       </h3>
-
       <div className="flex items-end gap-3">
-        <div className="text-5xl font-extrabold text-blue-600 tracking-tight">
-          {MOCK.rating}
+        <div className="text-5xl font-extrabold text-blue-600">
+          {rating}
         </div>
         <div className="text-lg font-semibold text-gray-400">/ 5.0</div>
       </div>
-
       <div className="flex gap-1 mt-2">
         {[...Array(5)].map((_, i) => (
           <Star key={i} className="w-4 h-4 text-yellow-400" />
         ))}
       </div>
-
-      <p className="mt-2 text-sm font-medium text-gray-600">
-        고객 전반 만족도 지표
-      </p>
     </Card>
   );
 }
 
-/* ================= Sentiment + Legend ================= */
-
-function SentimentCard() {
+function SentimentCard({ sentiment }: any) {
   const r = 56;
   const c = 2 * Math.PI * r;
-  const p = MOCK.sentiment.positive / 100;
+  const p = sentiment.positive / 100;
 
   return (
     <Card>
-      <h3 className="text-lg font-extrabold text-gray-800 mb-4">
+      <h3 className="text-lg font-extrabold mb-4">
         SENTIMENT ANALYSIS
       </h3>
-
-      <div className="flex flex-col items-center gap-4 drop-shadow-sm">
-        <svg width="160" height="160">
-          <circle
-            cx="80"
-            cy="80"
-            r={r}
-            stroke="#e5e7eb"
-            strokeWidth="12"
-            fill="none"
-          />
-          <circle
-            cx="80"
-            cy="80"
-            r={r}
-            stroke="#22c55e"
-            strokeWidth="12"
-            fill="none"
-            strokeDasharray={c}
-            strokeDashoffset={c * (1 - p)}
-            strokeLinecap="round"
-            transform="rotate(-90 80 80)"
-          />
-          <text
-            x="50%"
-            y="50%"
-            textAnchor="middle"
-            dominantBaseline="middle"
-            className="text-xl font-extrabold fill-gray-700"
-          >
-            {MOCK.sentiment.positive}%
-          </text>
-        </svg>
-
-        {/* Legend */}
-        <div className="flex gap-4 text-sm font-semibold text-gray-600">
-          <LegendItem color="bg-green-500" label="긍정" />
-          <LegendItem color="bg-yellow-400" label="중립" />
-          <LegendItem color="bg-red-500" label="부정" />
-        </div>
-      </div>
+      <svg width="160" height="160" className="mx-auto">
+        <circle cx="80" cy="80" r={r} stroke="#e5e7eb" strokeWidth="12" fill="none" />
+        <circle
+          cx="80"
+          cy="80"
+          r={r}
+          stroke="#22c55e"
+          strokeWidth="12"
+          fill="none"
+          strokeDasharray={c}
+          strokeDashoffset={c * (1 - p)}
+          strokeLinecap="round"
+          transform="rotate(-90 80 80)"
+        />
+        <text
+          x="50%"
+          y="50%"
+          textAnchor="middle"
+          dominantBaseline="middle"
+          className="text-xl font-extrabold fill-gray-700"
+        >
+          {sentiment.positive}%
+        </text>
+      </svg>
     </Card>
   );
 }
 
-function LegendItem({
-  color,
-  label,
-}: {
-  color: string;
-  label: string;
-}) {
-  return (
-    <div className="flex items-center gap-1.5">
-      <span className={`w-3 h-3 rounded-full ${color}`} />
-      <span>{label}</span>
-    </div>
-  );
-}
-
-/* ================= Other Cards ================= */
-
-function NpsCard() {
+function NpsCard({ nps }: { nps: number }) {
   const r = 56;
   const c = 2 * Math.PI * r;
-  const p = MOCK.nps / 10;
+  const p = nps / 10;
 
   return (
     <Card>
-      <h3 className="text-lg font-extrabold text-gray-800 mb-4">
+      <h3 className="text-lg font-extrabold mb-4">
         RECOMMENDATION (NPS)
       </h3>
-
-      <div className="flex flex-col items-center gap-5 drop-shadow-sm">
-        <svg width="160" height="160">
-          <circle cx="80" cy="80" r={r} stroke="#e5e7eb" strokeWidth="12" fill="none" />
-          <circle
-            cx="80"
-            cy="80"
-            r={r}
-            stroke="#2563eb"
-            strokeWidth="12"
-            fill="none"
-            strokeDasharray={c}
-            strokeDashoffset={c * (1 - p)}
-            strokeLinecap="round"
-            transform="rotate(-90 80 80)"
-          />
-          <text
-            x="50%"
-            y="50%"
-            textAnchor="middle"
-            dominantBaseline="middle"
-            className="text-xl font-extrabold fill-gray-700"
-          >
-            {MOCK.nps}
-          </text>
-        </svg>
-      </div>
+      <svg width="160" height="160" className="mx-auto">
+        <circle cx="80" cy="80" r={r} stroke="#e5e7eb" strokeWidth="12" fill="none" />
+        <circle
+          cx="80"
+          cy="80"
+          r={r}
+          stroke="#2563eb"
+          strokeWidth="12"
+          fill="none"
+          strokeDasharray={c}
+          strokeDashoffset={c * (1 - p)}
+          strokeLinecap="round"
+          transform="rotate(-90 80 80)"
+        />
+        <text
+          x="50%"
+          y="50%"
+          textAnchor="middle"
+          dominantBaseline="middle"
+          className="text-xl font-extrabold fill-gray-700"
+        >
+          {nps}
+        </text>
+      </svg>
     </Card>
   );
 }
 
 function ProgressBlock({ title, items, color }: any) {
-  const bar =
-    color === "blue" ? "bg-blue-600" : "bg-gray-500";
-
+  const bar = color === "blue" ? "bg-blue-600" : "bg-gray-500";
   return (
     <Card>
-      <div className="pb-3 mb-5 border-b">
-        <h3 className="text-lg font-extrabold text-gray-800">
-          {title}
-        </h3>
-      </div>
-
-      <div className="space-y-6">
-        {items.map((i: any) => (
-          <div key={i.label}>
-            <div className="flex justify-between text-sm font-medium mb-1">
-              <span>{i.label}</span>
-              <span>{i.value}%</span>
-            </div>
-            <div className="h-2.5 bg-gray-200 rounded-full">
-              <div
-                className={`h-2.5 rounded-full ${bar}`}
-                style={{ width: `${i.value}%` }}
-              />
-            </div>
+      <h3 className="text-lg font-extrabold mb-5">{title}</h3>
+      {items.map((i: any) => (
+        <div key={i.label} className="mb-4">
+          <div className="flex justify-between text-sm mb-1">
+            <span>{i.label}</span>
+            <span>{i.value}%</span>
           </div>
-        ))}
-      </div>
+          <div className="h-2.5 bg-gray-200 rounded-full">
+            <div
+              className={`h-2.5 rounded-full ${bar}`}
+              style={{ width: `${i.value}%` }}
+            />
+          </div>
+        </div>
+      ))}
     </Card>
   );
 }
 
-function InsightsCard() {
+function InsightsCard({ insights }: any) {
   return (
     <Card>
-      <div className="pb-3 mb-5 border-b">
-        <h3 className="text-lg font-extrabold text-blue-600 flex items-center gap-2">
-          <Sparkles className="w-5 h-5" />
-          AI Strategic Insights
-        </h3>
-      </div>
-
-      <div className="space-y-6">
-        {MOCK.insights.map((i, idx) => (
-          <div key={i.title} className="flex gap-4">
-            <div className="w-7 h-7 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs font-extrabold">
-              {idx + 1}
-            </div>
-            <div>
-              <p className="font-semibold text-gray-800">{i.title}</p>
-              <p className="text-sm font-medium text-gray-600 mt-1 leading-relaxed">
-                {i.desc}
-              </p>
-            </div>
-          </div>
-        ))}
-      </div>
+      <h3 className="text-lg font-extrabold text-blue-600 mb-4">
+        AI Strategic Insights
+      </h3>
+      {insights.map((i: any, idx: number) => (
+        <div key={idx} className="mb-4">
+          <p className="font-semibold">{i.title}</p>
+          <p className="text-sm text-gray-600">{i.description}</p>
+        </div>
+      ))}
     </Card>
   );
 }
 
-function RiskCard() {
+function RiskCard({ plan }: any) {
   return (
     <Card>
-      <div className="pb-3 mb-5 border-b">
-        <h3 className="text-lg font-extrabold text-gray-800 flex items-center gap-2">
-          <ShieldCheck className="w-5 h-5 text-green-600" />
-          Risk Management & Action Plan
-        </h3>
-      </div>
-
-      <table className="w-full text-sm">
-        <tbody>
-          {MOCK.actionPlan.map((a) => (
-            <tr key={a.area} className="border-t">
-              <td className="py-3 font-semibold text-gray-800 w-1/3">
-                {a.area}
-              </td>
-              <td className="py-3 font-medium text-gray-600">
-                {a.action}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      <h3 className="text-lg font-extrabold mb-4 flex items-center gap-2">
+        <ShieldCheck className="w-5 h-5 text-green-600" />
+        Action Plan
+      </h3>
+      {plan.actions.map((a: any, idx: number) => (
+        <div key={idx} className="mb-3">
+          <p className="font-semibold">{a.area}</p>
+          <p className="text-sm text-gray-600">{a.action}</p>
+        </div>
+      ))}
     </Card>
   );
 }
