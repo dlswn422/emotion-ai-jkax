@@ -1,4 +1,4 @@
-from fastapi import APIRouter, UploadFile, File, Depends, Body
+from fastapi import APIRouter, UploadFile, File, Depends, Query
 from sqlalchemy.orm import Session
 
 
@@ -18,11 +18,11 @@ async def analyze_file(
     return await analyze_file_sentiment(file)
 
 
-@router.post("/cx")
+@router.post("/cx-analysis")
 def analyze_cx_dashboard_api(
-    store_id: str = Body(...),
-    from_date: str = Body(...),
-    to_date: str = Body(...),
+    store_id: str = Query(..., description="store_id"),
+    from_date: str = Query(..., alias="from"),
+    to_date: str = Query(..., alias="to"),
     db: Session = Depends(get_db),
 ):
     """
@@ -30,6 +30,7 @@ def analyze_cx_dashboard_api(
     - store_id
     - 기간(from ~ to)
     """
+    print("🔥 CX ANALYSIS API HIT")
     return analyze_store_cx_by_period(
         store_id=store_id,
         from_date=from_date,

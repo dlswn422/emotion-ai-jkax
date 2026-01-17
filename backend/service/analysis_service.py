@@ -28,7 +28,7 @@ def analyze_store_cx_by_period(
     reviews = (
         db.query(GoogleReview)
         .filter(
-            GoogleReview.place_id == store_id,
+            GoogleReview.store_id == store_id,
             GoogleReview.created_at_google >= _parse_date(from_date),
             GoogleReview.created_at_google <= _parse_date(to_date),
         )
