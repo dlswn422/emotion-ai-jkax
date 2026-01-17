@@ -332,22 +332,43 @@ function Card({ children }: { children: React.ReactNode }) {
 }
 
 function OverallRatingCard({ rating }: { rating: number }) {
+  const fullStars = Math.floor(rating);
+  const hasHalf = rating - fullStars >= 0.5;
+
   return (
     <Card>
       <h3 className="text-lg font-extrabold text-gray-800 mb-4">
         OVERALL RATING
       </h3>
-      <div className="flex items-end gap-3">
+
+      <div className="flex items-end gap-3 mb-3">
         <div className="text-5xl font-extrabold text-blue-600">
-          {rating}
+          {rating.toFixed(1)}
         </div>
         <div className="text-lg font-semibold text-gray-400">/ 5.0</div>
       </div>
-      <div className="flex gap-1 mt-2">
-        {[...Array(5)].map((_, i) => (
-          <Star key={i} className="w-4 h-4 text-yellow-400" />
-        ))}
+
+      <div className="flex items-center gap-1 mb-2">
+        {[...Array(5)].map((_, i) => {
+          if (i < fullStars) {
+            return <Star key={i} className="w-4 h-4 text-yellow-400 fill-yellow-400" />;
+          }
+          if (i === fullStars && hasHalf) {
+            return (
+              <Star
+                key={i}
+                className="w-4 h-4 text-yellow-400"
+                style={{ clipPath: "inset(0 50% 0 0)" }}
+              />
+            );
+          }
+          return <Star key={i} className="w-4 h-4 text-gray-300" />;
+        })}
       </div>
+
+      <p className="text-xs text-gray-500">
+        고객 리뷰 기반 종합 만족도 점수
+      </p>
     </Card>
   );
 }
@@ -355,15 +376,25 @@ function OverallRatingCard({ rating }: { rating: number }) {
 function SentimentCard({ sentiment }: any) {
   const r = 56;
   const c = 2 * Math.PI * r;
-  const p = sentiment.positive / 100;
+
+  const pPositive = sentiment.positive / 100;
+  const pNeutral = sentiment.neutral / 100;
+  const pNegative = sentiment.negative / 100;
+
+  const offsetPositive = c * (1 - pPositive);
+  const offsetNeutral = offsetPositive - c * pNeutral;
 
   return (
     <Card>
       <h3 className="text-lg font-extrabold mb-4">
         SENTIMENT ANALYSIS
       </h3>
-      <svg width="160" height="160" className="mx-auto">
+
+      <svg width="160" height="160" className="mx-auto mb-4">
+        {/* base */}
         <circle cx="80" cy="80" r={r} stroke="#e5e7eb" strokeWidth="12" fill="none" />
+
+        {/* positive */}
         <circle
           cx="80"
           cy="80"
@@ -372,10 +403,23 @@ function SentimentCard({ sentiment }: any) {
           strokeWidth="12"
           fill="none"
           strokeDasharray={c}
-          strokeDashoffset={c * (1 - p)}
-          strokeLinecap="round"
+          strokeDashoffset={offsetPositive}
           transform="rotate(-90 80 80)"
         />
+
+        {/* neutral */}
+        <circle
+          cx="80"
+          cy="80"
+          r={r}
+          stroke="#9ca3af"
+          strokeWidth="12"
+          fill="none"
+          strokeDasharray={c}
+          strokeDashoffset={offsetNeutral}
+          transform="rotate(-90 80 80)"
+        />
+
         <text
           x="50%"
           y="50%"
@@ -386,44 +430,54 @@ function SentimentCard({ sentiment }: any) {
           {sentiment.positive}%
         </text>
       </svg>
+
+      {/* Legend */}
+      <div className="grid grid-cols-3 gap-2 text-xs font-semibold text-gray-600">
+        <div className="flex items-center gap-2">
+          <span className="w-2.5 h-2.5 rounded-full bg-green-500" />
+          긍정 {sentiment.positive}%
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="w-2.5 h-2.5 rounded-full bg-gray-400" />
+          중립 {sentiment.neutral}%
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="w-2.5 h-2.5 rounded-full bg-red-500" />
+          부정 {sentiment.negative}%
+        </div>
+      </div>
     </Card>
   );
 }
 
+
 function NpsCard({ nps }: { nps: number }) {
-  const r = 56;
-  const c = 2 * Math.PI * r;
-  const p = nps / 10;
+  const level =
+    nps >= 8 ? "Promoters" : nps >= 5 ? "Passives" : "Detractors";
+
+  const color =
+    nps >= 8
+      ? "text-green-600 bg-green-50"
+      : nps >= 5
+      ? "text-blue-600 bg-blue-50"
+      : "text-red-600 bg-red-50";
 
   return (
     <Card>
       <h3 className="text-lg font-extrabold mb-4">
         RECOMMENDATION (NPS)
       </h3>
-      <svg width="160" height="160" className="mx-auto">
-        <circle cx="80" cy="80" r={r} stroke="#e5e7eb" strokeWidth="12" fill="none" />
-        <circle
-          cx="80"
-          cy="80"
-          r={r}
-          stroke="#2563eb"
-          strokeWidth="12"
-          fill="none"
-          strokeDasharray={c}
-          strokeDashoffset={c * (1 - p)}
-          strokeLinecap="round"
-          transform="rotate(-90 80 80)"
-        />
-        <text
-          x="50%"
-          y="50%"
-          textAnchor="middle"
-          dominantBaseline="middle"
-          className="text-xl font-extrabold fill-gray-700"
-        >
-          {nps}
-        </text>
-      </svg>
+
+      <div className={`rounded-xl p-4 text-center ${color}`}>
+        <div className="text-4xl font-extrabold mb-1">{nps}</div>
+        <div className="text-sm font-semibold">{level}</div>
+      </div>
+
+      <div className="mt-4 text-xs text-gray-500 leading-relaxed">
+        <p>• 0–4: Detractors (이탈 위험)</p>
+        <p>• 5–7: Passives (보통)</p>
+        <p>• 8–10: Promoters (추천 고객)</p>
+      </div>
     </Card>
   );
 }
