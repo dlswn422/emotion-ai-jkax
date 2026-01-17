@@ -12,6 +12,7 @@ import {
   ArrowLeft,
   Loader2,
   LogOut,
+  Sparkles
 } from "lucide-react";
 
 /* ================= API BASE ================= */
@@ -170,12 +171,12 @@ export default function UploadPage() {
     overlay === "none"
       ? ""
       : {
-          home: "메인 화면으로 이동 중…",
-          logout: "로그아웃 중…",
-          analyze: "AI가 리뷰를 분석하고 있습니다…",
-          file: "파일을 불러오는 중…",
-          preview: "미리보기 준비 중…",
-        }[overlay];
+        home: "메인 화면으로 이동 중…",
+        logout: "로그아웃 중…",
+        analyze: "AI가 리뷰를 분석하고 있습니다…",
+        file: "파일을 불러오는 중…",
+        preview: "미리보기 준비 중…",
+      }[overlay];
 
   /* ================= UI ================= */
   return (
@@ -202,14 +203,31 @@ export default function UploadPage() {
       </header>
 
       {/* ================= 🔧 LOADING OVERLAY (HEADER 제외) ================= */}
+      {/* ================= 🔧 LOADING OVERLAY (HEADER 제외) ================= */}
       {overlay !== "none" && (
-        <div className="fixed inset-x-0 top-[72px] bottom-0 z-40
-                        bg-white/70 backdrop-blur
-                        flex flex-col items-center justify-center">
-          <Loader2 className="w-10 h-10 text-blue-600 animate-spin mb-4" />
-          <p className="font-semibold text-gray-700">
-            {overlayMessage}
-          </p>
+        <div
+          className="fixed inset-x-0 top-[72px] bottom-0 z-40
+               bg-white
+               flex flex-col items-center justify-center"
+        >
+          {overlay === "analyze" ? (
+            <>
+              {/* ✨ AI 분석 로딩 (디자인 통일) */}
+              <Sparkles className="w-9 h-9 text-blue-600 mb-4 animate-pulse" />
+              <Loader2 className="w-7 h-7 text-gray-400 animate-spin mb-4" />
+              <p className="text-sm font-semibold text-gray-600">
+                AI가 고객 경험 데이터를 분석 중입니다…
+              </p>
+            </>
+          ) : (
+            <>
+              {/* 🔄 일반 로딩 */}
+              <Loader2 className="w-9 h-9 text-blue-600 animate-spin mb-4" />
+              <p className="font-semibold text-gray-700">
+                {overlayMessage}
+              </p>
+            </>
+          )}
         </div>
       )}
 

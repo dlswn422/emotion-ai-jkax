@@ -31,6 +31,7 @@ import {
   LogOut,
   Loader2,
   Download,
+  Sparkles,
 } from "lucide-react";
 
 /* ================= API BASE ================= */
@@ -101,9 +102,25 @@ function PrintStyle() {
 /* ================= PAGE ================= */
 export default function DashboardPage() {
   const router = useRouter();
+
   const [checking, setChecking] = useState(true);
   const [loading, setLoading] = useState(true);
+
+  // ✅ 페이지 진입 로딩 (강제 1프레임)
+  const [pageEntering, setPageEntering] = useState(true);
+
   const [data, setData] = useState<AnalysisResult | null>(null);
+
+  /* ---------- 페이지 진입 시 무조건 로딩 ---------- */
+  useEffect(() => {
+    setPageEntering(true);
+
+    const id = setTimeout(() => {
+      setPageEntering(false);
+    }, 350); // UX용 (300~400ms 추천)
+
+    return () => clearTimeout(id);
+  }, []);
 
   /* ---------- 로그인 체크 ---------- */
   useEffect(() => {
@@ -156,7 +173,7 @@ export default function DashboardPage() {
     setLoading(false);
   }, []);
 
-  if (checking || loading) {
+  if (checking) {
     return (
       <main className="min-h-screen flex items-center justify-center bg-slate-100">
         <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
@@ -183,11 +200,8 @@ export default function DashboardPage() {
   const issueMatrix = data.cx_report.issue_matrix;
 
   const totalCount = data.positive + data.neutral + data.negative;
-
   const positiveRatio =
-    totalCount > 0
-      ? Math.round((data.positive / totalCount) * 100)
-      : 0;
+    totalCount > 0 ? Math.round((data.positive / totalCount) * 100) : 0;
 
   /* ================= RENDER ================= */
   return (
@@ -195,7 +209,7 @@ export default function DashboardPage() {
       <PrintStyle />
 
       {/* ================= HEADER ================= */}
-      <header className="sticky top-0 z-30 bg-white border-b no-print">
+      <header className="sticky top-0 z-40 bg-white border-b no-print">
         <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
           <button onClick={() => router.push("/")} className="nav-btn">
             <Home className="w-4 h-4" /> 메인으로
@@ -224,6 +238,27 @@ export default function DashboardPage() {
         </div>
       </header>
 
+      {/* ================= ✅ 공통 로딩 오버레이 ================= */}
+      {(pageEntering || loading) && (
+        <div
+          className="fixed inset-0 z-50
+               bg-white
+               flex flex-col items-center justify-center"
+        >
+          {/* ✨ 아이콘 */}
+          <Sparkles className="w-9 h-9 text-blue-600 mb-4 animate-pulse" />
+
+          {/* ⏳ 원형 로더 */}
+          <div className="mb-4">
+            <Loader2 className="w-7 h-7 text-gray-400 animate-spin" />
+          </div>
+
+          {/* 📝 문구 */}
+          <p className="text-sm font-semibold text-gray-600">
+            AI가 고객 경험 데이터를 분석 중입니다…
+          </p>
+        </div>
+      )}
       {/* ================= PDF 출력 영역 ================= */}
       <section
         id="print-area"
