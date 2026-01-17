@@ -58,7 +58,7 @@ function getDateRange(
   const end = formatDate(today);
 
   if (type === "all") {
-    return { from: "2000-01-01", to: formatDate(today) };
+    return { from: "2000-01-01", to: end };
   }
 
   const start = new Date(today);
@@ -78,10 +78,7 @@ function getDateRange(
       break;
   }
 
-  return {
-    from: formatDate(start),
-    to: end,
-  };
+  return { from: formatDate(start), to: end };
 }
 
 /* ================= Header ================= */
@@ -134,6 +131,7 @@ export default function StoreDetailPage() {
   const [toDate, setToDate] = useState("");
 
   const [analyzing, setAnalyzing] = useState(false);
+  const [navigatingCustomers, setNavigatingCustomers] = useState(false);
 
   /* ================= 로그인 + MOCK 로드 ================= */
   useEffect(() => {
@@ -202,6 +200,17 @@ export default function StoreDetailPage() {
         onLogout={() => router.replace("/login")}
       />
 
+      {/* 고객 분석 이동 오버레이 */}
+      {navigatingCustomers && (
+        <div className="absolute inset-0 z-50 bg-white/70 backdrop-blur flex flex-col items-center justify-center">
+          <Loader2 className="w-10 h-10 text-purple-600 animate-spin mb-4" />
+          <p className="font-semibold text-gray-700">
+            고객 분석 화면으로 이동 중…
+          </p>
+        </div>
+      )}
+
+      {/* 리뷰 분석 이동 오버레이 */}
       {analyzing && (
         <div className="absolute inset-0 z-50 bg-white/70 backdrop-blur flex flex-col items-center justify-center">
           <Loader2 className="w-10 h-10 text-blue-600 animate-spin mb-4" />
@@ -321,6 +330,22 @@ export default function StoreDetailPage() {
                   </p>
 
                   <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                    {/* 리뷰 관리 */}
+                    <button
+                      onClick={() =>
+                        router.push(
+                          `/stores/${encodeURIComponent(
+                            decodedStoreId
+                          )}/reviews`
+                        )
+                      }
+                      className="px-8 py-4 rounded-2xl border border-gray-200 bg-gray-50 text-gray-700 font-semibold hover:bg-gray-100 flex items-center gap-2 justify-center"
+                    >
+                      <MessageSquare className="w-5 h-5" />
+                      리뷰 관리
+                    </button>
+
+                    {/* 리뷰 분석 */}
                     <button
                       onClick={() => setShowAnalyzeModal(true)}
                       className="px-12 py-4 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold shadow-md hover:from-blue-700 hover:to-indigo-700"
@@ -328,15 +353,19 @@ export default function StoreDetailPage() {
                       리뷰 분석 시작
                     </button>
 
+                    {/* 고객 분석 */}
                     <button
-                      onClick={() =>
-                        router.push(
-                          `/stores/${encodeURIComponent(
-                            decodedStoreId
-                          )}/customers`
-                        )
-                      }
-                      className="px-8 py-4 rounded-2xl border border-blue-200 bg-blue-50 text-blue-700 font-semibold hover:bg-blue-100 flex items-center gap-2 justify-center"
+                      onClick={() => {
+                        setNavigatingCustomers(true);
+                        setTimeout(() => {
+                          router.push(
+                            `/stores/${encodeURIComponent(
+                              decodedStoreId
+                            )}/customers`
+                          );
+                        }, 600);
+                      }}
+                      className="px-8 py-4 rounded-2xl border border-purple-200 bg-purple-50 text-purple-700 font-semibold hover:bg-purple-100 flex items-center gap-2 justify-center"
                     >
                       <Users className="w-5 h-5" />
                       고객 분석
@@ -357,7 +386,6 @@ export default function StoreDetailPage() {
             분석 기간 선택
           </h3>
 
-          {/* 빠른 선택 */}
           <div className="grid grid-cols-2 gap-3 mb-6">
             <QuickButton label="최근 7일" onClick={() => {
               const r = getDateRange("7d");

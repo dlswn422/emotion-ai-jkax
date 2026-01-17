@@ -20,14 +20,14 @@ const MOCK_STORES = [
     name: "인주네 파스타",
     address: "서울 강남구",
     rating: 4.6,
-    reviews: 128,
+    reviews: 4,
   },
   {
     id: "store_2",
-    name: "문인주 카페",
-    address: "서울 마포구",
-    rating: 4.3,
-    reviews: 76,
+    name: "인주네 중식집",
+    address: "서울 구로구",
+    rating: null,
+    reviews: 0,
   },
 ];
 
