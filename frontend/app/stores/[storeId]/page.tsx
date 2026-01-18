@@ -22,14 +22,14 @@ import AppHeader from "../../../components/common/AppHeader";
 /* ================= MOCK ================= */
 const MOCK_STORES: Record<string, any> = {
   store_1: {
-    name: "인주네 파스타",
-    address: "서울 강남구",
-    category: "이탈리안 레스토랑",
+    name: "Yewon Korean Restaurant 예원 한식당",
+    address: "Jl. Purnawarman No.4A",
+    category: "한식당",
     status: "OPEN",
     avg_rating: 4.6,
-    review_count: 4,
+    review_count: 414,
     description:
-      "강남에서 운영 중인 이탈리안 레스토랑으로, 신선한 재료와 정성스러운 파스타로 꾸준히 사랑받고 있습니다.",
+      "Korean restaurant YEWON ❤️ We will serve Traditional K-Food & Dynamic K-Culture",
     last_synced_at: "2026-01-16T12:40:00Z",
   },
   store_2: {

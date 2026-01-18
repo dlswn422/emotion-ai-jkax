@@ -17,10 +17,10 @@ import AppHeader from "@/components/common/AppHeader";
 const MOCK_STORES = [
   {
     id: "store_1",
-    name: "인주네 파스타",
-    address: "서울 강남구",
+    name: "Yewon Korean Restaurant 예원 한식당",
+    address: "Jl. Purnawarman No.4A",
     rating: 4.6,
-    reviews: 4,
+    reviews: 414,
   },
   {
     id: "store_2",
