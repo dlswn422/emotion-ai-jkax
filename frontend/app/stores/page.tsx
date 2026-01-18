@@ -7,7 +7,7 @@ import {
   MapPin,
   Star,
   ArrowRight,
-  ArrowLeft,
+  Home,
   LogOut,
   Loader2,
   RefreshCcw,
@@ -26,7 +26,7 @@ const MOCK_STORES = [
     id: "store_2",
     name: "인주네 중식집",
     address: "서울 구로구",
-    rating: null, // 리뷰 없음
+    rating: null,
     reviews: 0,
   },
 ];
@@ -80,13 +80,19 @@ export default function StoresPage() {
   /* ================= 로그아웃 ================= */
   const handleLogout = async () => {
     setOverlay("logout");
+
     try {
       await fetch(`${API_BASE}/auth/logout`, {
         method: "POST",
         credentials: "include",
       });
     } finally {
-      setTimeout(() => router.replace("/login"), 600);
+      // ✅ 로그아웃 직후 자동 로그인 방지 플래그
+      sessionStorage.setItem("just_logged_out", "1");
+
+      setTimeout(() => {
+        router.replace("/login");
+      }, 600);
     }
   };
 
@@ -137,11 +143,11 @@ export default function StoresPage() {
     overlay === "none"
       ? ""
       : {
-          home: "메인 화면으로 이동 중…",
-          logout: "로그아웃 중…",
-          store: "매장 상세 화면으로 이동 중…",
-          sync: "최신 리뷰를 동기화하는 중…",
-        }[overlay];
+        home: "메인 화면으로 이동 중…",
+        logout: "로그아웃 중…",
+        store: "매장 상세 화면으로 이동 중…",
+        sync: "최신 리뷰를 동기화하는 중…",
+      }[overlay];
 
   /* ================= UI ================= */
   return (
@@ -179,26 +185,35 @@ export default function StoresPage() {
       )}
 
       {/* Header */}
-      <header className="bg-white/80 backdrop-blur border-b">
-        <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-          <button
-            onClick={goHome}
-            className="flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-blue-600"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            메인으로
-          </button>
+      {/* ================= 🔧 FIXED HEADER ================= */}
+      <header className="sticky top-0 z-40 bg-white border-b">
+        <div className="max-w-6xl mx-auto px-6 h-16 grid grid-cols-3 items-center">
+          {/* ⬅️ LEFT */}
+          <div className="flex items-center">
+            <button
+              onClick={() => router.push("/")}
+              className="flex items-center gap-2 text-sm font-semibold text-gray-600 hover:text-blue-600"
+            >
+              <Home className="w-4 h-4" />
+              메인으로
+            </button>
+          </div>
 
-          <button
-            onClick={handleLogout}
-            className="flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-red-500"
-          >
-            <LogOut className="w-4 h-4" />
-            로그아웃
-          </button>
+          {/* ⬜ CENTER (균형용) */}
+          <div />
+
+          {/* ➡️ RIGHT */}
+          <div className="flex items-center justify-end">
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-2 text-sm font-semibold text-gray-600 hover:text-red-500"
+            >
+              <LogOut className="w-4 h-4" />
+              로그아웃
+            </button>
+          </div>
         </div>
       </header>
-
       <section className="max-w-6xl mx-auto px-6 py-20">
         {/* Title + Sync Button */}
         <div className="mb-14 flex items-center justify-between">
@@ -211,24 +226,14 @@ export default function StoresPage() {
             </p>
           </div>
 
-          {/* 🔄 세련된 동기화 버튼 */}
           <button
             onClick={syncReviews}
             disabled={overlay !== "none"}
-            className="
-              relative group flex items-center gap-2 px-7 py-3.5 rounded-2xl
-              bg-gradient-to-r from-blue-600 to-indigo-600
-              text-white font-semibold
-              shadow-lg shadow-blue-200/40
-              hover:shadow-xl hover:-translate-y-0.5
-              transition
-              disabled:opacity-60
-            "
+            className="relative group flex items-center gap-2 px-7 py-3.5 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold shadow-lg shadow-blue-200/40 hover:shadow-xl hover:-translate-y-0.5 transition disabled:opacity-60"
           >
             <RefreshCcw
-              className={`w-4 h-4 ${
-                overlay === "sync" ? "animate-spin" : ""
-              }`}
+              className={`w-4 h-4 ${overlay === "sync" ? "animate-spin" : ""
+                }`}
             />
             최신 리뷰 동기화
           </button>
@@ -244,7 +249,6 @@ export default function StoresPage() {
                 key={store.id}
                 className="bg-white rounded-3xl p-8 border border-gray-100 shadow-sm hover:shadow-2xl transition hover:-translate-y-1"
               >
-                {/* Header */}
                 <div className="flex items-center justify-between mb-6">
                   <div className="flex items-center gap-4">
                     <div className="w-12 h-12 rounded-2xl bg-blue-50 flex items-center justify-center">
@@ -265,7 +269,6 @@ export default function StoresPage() {
                   </span>
                 </div>
 
-                {/* Metrics */}
                 <div className="flex items-center gap-6 mb-8">
                   <div className="flex items-center gap-2 text-lg font-semibold">
                     <Star className="w-5 h-5 text-yellow-400" />
@@ -277,7 +280,6 @@ export default function StoresPage() {
                   </div>
                 </div>
 
-                {/* CTA */}
                 <button
                   onClick={() => {
                     setOverlay("store");

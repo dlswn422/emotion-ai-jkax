@@ -4,35 +4,37 @@
 export const dynamic = "force-dynamic";
 
 import {
-  Suspense,
-  useEffect,
-  useState,
-  useRef,
+    Suspense,
+    useEffect,
+    useState,
+    useRef,
 } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
-  ArrowLeft,
-  Download,
-  Sparkles,
-  ShieldCheck,
-  Star,
-  Loader2,
+    Home,
+    ArrowLeft,
+    Download,
+    Sparkles,
+    ShieldCheck,
+    Star,
+    Loader2,
+    LogOut,
 } from "lucide-react";
 import {
-  ResponsiveContainer,
-  ComposedChart,
-  XAxis,
-  YAxis,
-  Tooltip,
-  CartesianGrid,
-  Area,
-  Line,
+    ResponsiveContainer,
+    ComposedChart,
+    XAxis,
+    YAxis,
+    Tooltip,
+    CartesianGrid,
+    Area,
+    Line,
 } from "recharts";
 
 /* ================= PRINT STYLE ================= */
 function PrintStyle() {
-  return (
-    <style jsx global>{`
+    return (
+        <style jsx global>{`
       html,
       body {
         background: white !important;
@@ -60,672 +62,706 @@ function PrintStyle() {
         }
       }
     `}</style>
-  );
+    );
 }
 
 /* ================= API BASE ================= */
 const API_BASE =
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+    process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 /* ================= ENTRY ================= */
 export default function CxDashboardPage() {
-  return (
-    <Suspense
-      fallback={
-        <main className="min-h-screen flex items-center justify-center bg-white">
-          <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
-        </main>
-      }
-    >
-      <PrintStyle />
-      <CxDashboardInner />
-    </Suspense>
-  );
+    return (
+        <Suspense
+            fallback={
+                <main className="min-h-screen flex items-center justify-center bg-white">
+                    <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
+                </main>
+            }
+        >
+            <PrintStyle />
+            <CxDashboardInner />
+        </Suspense>
+    );
 }
 
 /* ================= PAGE ================= */
 function CxDashboardInner() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
+    const router = useRouter();
+    const searchParams = useSearchParams();
 
-  const storeId = searchParams.get("storeId");
-  const from = searchParams.get("from");
-  const to = searchParams.get("to");
+    const storeId = searchParams.get("storeId");
+    const from = searchParams.get("from");
+    const to = searchParams.get("to");
 
-  const abortRef = useRef<AbortController | null>(null);
+    const abortRef = useRef<AbortController | null>(null);
 
-  const [checking, setChecking] = useState(true);
-  const [loading, setLoading] = useState(true);
-  const [analysis, setAnalysis] = useState<any | null>(null);
-  const [error, setError] = useState<string | null>(null);
+    const [checking, setChecking] = useState(true);
+    const [loading, setLoading] = useState(true);
+    const [analysis, setAnalysis] = useState<any | null>(null);
+    const [error, setError] = useState<string | null>(null);
 
-  const [downloading, setDownloading] = useState(false);
-  const [navigatingBack, setNavigatingBack] = useState(false);
+    const [downloading, setDownloading] = useState(false);
+    const [navigatingBack, setNavigatingBack] = useState(false);
+    const [loggingOut, setLoggingOut] = useState(false);
 
-  /* ================= 로그인 가드 ================= */
-  useEffect(() => {
-    let cancelled = false;
+    /* ================= 로그인 가드 ================= */
+    useEffect(() => {
+        let cancelled = false;
 
-    const checkLogin = async () => {
-      try {
-        const res = await fetch(`${API_BASE}/auth/status`, {
-          credentials: "include",
-        });
-        const auth = await res.json();
+        const checkLogin = async () => {
+            try {
+                const res = await fetch(`${API_BASE}/auth/status`, {
+                    credentials: "include",
+                });
+                const auth = await res.json();
 
-        if (!auth.logged_in) {
-          router.replace("/login");
-        }
-      } catch {
-        router.replace("/login");
-      } finally {
-        if (!cancelled) setChecking(false);
-      }
-    };
-
-    checkLogin();
-    return () => {
-      cancelled = true;
-    };
-  }, [router]);
-
-  /* ================= CX 분석 ================= */
-  useEffect(() => {
-    if (!storeId) return;
-
-    const controller = new AbortController();
-
-    // ✅ 먼저 로딩 상태를 화면에 그리게 함
-    setLoading(true);
-
-    const id = requestAnimationFrame(() => {
-      const fetchAnalysis = async () => {
-        try {
-          const params = new URLSearchParams({ store_id: storeId });
-          if (from) params.append("from", from);
-          if (to) params.append("to", to);
-
-          const res = await fetch(
-            `${API_BASE}/analysis/cx-analysis?${params.toString()}`,
-            {
-              method: "POST",
-              credentials: "include",
-              signal: controller.signal,
+                if (!auth.logged_in) {
+                    router.replace("/login");
+                }
+            } catch {
+                router.replace("/login");
+            } finally {
+                if (!cancelled) setChecking(false);
             }
-          );
+        };
 
-          const json = await res.json();
-          setAnalysis(json);
-        } catch (e: any) {
-          if (e.name !== "AbortError") {
-            setError("CX 분석 실패");
-          }
+        checkLogin();
+        return () => {
+            cancelled = true;
+        };
+    }, [router]);
+
+    /* ================= 로그아웃 ================= */
+    const handleLogout = async () => {
+        setLoggingOut(true);
+        try {
+            await fetch(`${API_BASE}/auth/logout`, {
+                method: "POST",
+                credentials: "include",
+            });
         } finally {
-          setLoading(false);
+            sessionStorage.setItem("just_logged_out", "1");
+            router.replace("/login");
         }
-      };
-
-      fetchAnalysis();
-    });
-
-    return () => {
-      cancelAnimationFrame(id);
-      controller.abort();
     };
-  }, [storeId, from, to]);
 
-  if (checking) {
+    /* ================= CX 분석 ================= */
+    useEffect(() => {
+        if (!storeId) return;
+
+        const controller = new AbortController();
+        setLoading(true);
+
+        const id = requestAnimationFrame(() => {
+            const fetchAnalysis = async () => {
+                try {
+                    const params = new URLSearchParams({ store_id: storeId });
+                    if (from) params.append("from", from);
+                    if (to) params.append("to", to);
+
+                    const res = await fetch(
+                        `${API_BASE}/analysis/cx-analysis?${params.toString()}`,
+                        {
+                            method: "POST",
+                            credentials: "include",
+                            signal: controller.signal,
+                        }
+                    );
+
+                    const json = await res.json();
+                    setAnalysis(json);
+                } catch (e: any) {
+                    if (e.name !== "AbortError") {
+                        setError("CX 분석 실패");
+                    }
+                } finally {
+                    setLoading(false);
+                }
+            };
+
+            fetchAnalysis();
+        });
+
+        return () => {
+            cancelAnimationFrame(id);
+            controller.abort();
+        };
+    }, [storeId, from, to]);
+
+    if (checking) {
+        return (
+            <main className="min-h-screen flex items-center justify-center bg-white">
+                <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
+            </main>
+        );
+    }
+
+    const periodLabel =
+        from && to ? `${from} ~ ${to}` : "전체 기간";
+
     return (
-      <main className="min-h-screen flex items-center justify-center bg-white">
-        <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
-      </main>
-    );
-  }
+        <main className="min-h-screen bg-white">
+            {/* ================= 공통 헤더 ================= */}
+            <header className="sticky top-0 z-40 bg-white border-b print-hidden">
+                <div className="max-w-6xl mx-auto px-6 h-16 grid grid-cols-3 items-center">
+                    {/* LEFT */}
+                    <div className="flex items-center">
+                        <button
+                            onClick={() => router.push("/")}
+                            className="flex items-center gap-2 text-sm font-semibold text-gray-600 hover:text-blue-600"
+                        >
+                            <Home className="w-4 h-4" />
+                            메인으로
+                        </button>
+                    </div>
 
-  const periodLabel =
-    from && to ? `${from} ~ ${to}` : "전체 기간";
+                    <div />
 
-  return (
-    <main className="min-h-screen bg-white">
-      {/* ================= FIXED HEADER ================= */}
-      <header className="fixed top-0 inset-x-0 z-40 bg-white border-b print-hidden">
-        <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
-          <button
-            onClick={() => {
-              setNavigatingBack(true);
-              setTimeout(() => router.back(), 300);
-            }}
-            className="flex items-center gap-2 text-sm font-semibold text-gray-600"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            뒤로가기
-          </button>
+                    {/* RIGHT */}
+                    <div className="flex items-center justify-end gap-3">
+                        <button
+                            onClick={() => {
+                                setDownloading(true);
+                                setTimeout(() => {
+                                    window.print();
+                                    setDownloading(false);
+                                }, 300);
+                            }}
+                            className="flex items-center gap-2 px-4 py-2
+                         bg-slate-900 text-white text-sm font-semibold
+                         rounded-md hover:bg-slate-800"
+                        >
+                            <Download className="w-4 h-4" />
+                            PDF 다운로드
+                        </button>
 
-          <button
-            onClick={() => {
-              setDownloading(true);
-              setTimeout(() => {
-                window.print();
-                setDownloading(false);
-              }, 300);
-            }}
-            className="flex items-center gap-2 px-4 py-2 bg-slate-900 text-white text-sm font-semibold rounded-lg"
-          >
-            <Download className="w-4 h-4" />
-            PDF 다운로드
-          </button>
-        </div>
-      </header>
+                        <button
+                            onClick={handleLogout}
+                            className="flex items-center gap-2 text-sm font-semibold
+                         text-gray-600 hover:text-red-500"
+                        >
+                            <LogOut className="w-4 h-4" />
+                            로그아웃
+                        </button>
+                    </div>
+                </div>
+            </header>
 
-      {/* ================= PDF / NAV OVERLAY ================= */}
-      {(downloading || navigatingBack) && (
-        <div className="fixed inset-0 z-50 bg-white/70 backdrop-blur flex flex-col items-center justify-center">
-          <Loader2 className="w-8 h-8 animate-spin text-gray-600 mb-3" />
-          <p className="text-sm font-semibold text-gray-600">
-            {downloading ? "PDF 생성 중…" : "이전 화면으로 이동 중…"}
-          </p>
-        </div>
-      )}
-
-      {/* ================= ✅ AI LOADING OVERLAY (HEADER 살아있음) ================= */}
-      {loading && !downloading && !navigatingBack && (
-        <div className="fixed inset-x-0 top-14 bottom-0 z-30 bg-white/70 backdrop-blur
+            {/* ================= OVERLAY ================= */}
+            {(downloading || navigatingBack || loggingOut) && (
+                <div className="fixed inset-0 z-50 bg-white/70 backdrop-blur
                         flex flex-col items-center justify-center">
-          <Sparkles className="w-8 h-8 text-blue-600 mb-3 animate-pulse" />
-          <Loader2 className="w-6 h-6 animate-spin text-gray-500 mb-3" />
-          <p className="text-sm font-semibold text-gray-600">
-            AI가 고객 경험 데이터를 분석 중입니다…
-          </p>
-        </div>
-      )}
+                    <Loader2 className="w-8 h-8 animate-spin text-gray-600 mb-3" />
+                    <p className="text-sm font-semibold text-gray-600">
+                        {downloading
+                            ? "PDF 생성 중…"
+                            : loggingOut
+                                ? "로그아웃 중…"
+                                : "이전 화면으로 이동 중…"}
+                    </p>
+                </div>
+            )}
 
-      {/* ================= CONTENT ================= */}
-      <div className="pt-20 px-6">
-        <div
-          id="print-area"
-          className="max-w-6xl mx-auto bg-white rounded-2xl px-12 py-10 space-y-16"
-        >
-          {/* ================= HEADER ================= */}
-          <section className="border-b pb-6">
-            <span className="text-xs tracking-widest font-bold text-blue-600">
-              CX STRATEGIC REPORT
-            </span>
-            <h1 className="text-3xl font-extrabold mt-2">
-              고객경험(CX) 분석 보고서
-            </h1>
+            {/* ================= AI LOADING ================= */}
+            {loading && !downloading && !loggingOut && (
+                <div className="fixed inset-x-0 top-16 bottom-0 z-30 bg-white/70 backdrop-blur
+                        flex flex-col items-center justify-center">
+                    <Sparkles className="w-8 h-8 text-blue-600 mb-3 animate-pulse" />
+                    <Loader2 className="w-6 h-6 animate-spin text-gray-500 mb-3" />
+                    <p className="text-sm font-semibold text-gray-600">
+                        AI가 고객 경험 데이터를 분석 중입니다…
+                    </p>
+                </div>
+            )}
 
-            <div className="text-sm font-semibold text-gray-500 mt-3 flex justify-between">
-              <span>Store ID: {storeId}</span>
-              <span>Analysis Period: {periodLabel}</span>
+            {/* ================= CONTENT ================= */}
+            <div className="pt-24 px-6">
+                <div
+                    id="print-area"
+                    className="max-w-6xl mx-auto bg-white rounded-2xl px-12 py-10 space-y-16"
+                >
+                    {/* ================= HEADER ================= */}
+                    <section className="border-b pb-6">
+                        <span className="text-xs tracking-widest font-bold text-blue-600">
+                            CX STRATEGIC REPORT
+                        </span>
+                        <h1 className="text-3xl font-extrabold mt-2">
+                            고객경험(CX) 분석 보고서
+                        </h1>
+
+                        <div className="text-sm font-semibold text-gray-500 mt-3 flex justify-between">
+                            <span>Store ID: {storeId}</span>
+                            <span>Analysis Period: {periodLabel}</span>
+                        </div>
+                    </section>
+
+                    {!loading && analysis?.executive_summary && (
+                        <>
+                            <section className="relative bg-blue-50 rounded-xl px-8 py-6 pl-12">
+                                <div className="absolute left-0 top-0 h-full w-1.5 bg-blue-600 rounded-l-xl" />
+                                <h2 className="text-lg font-extrabold text-blue-700 mb-3">
+                                    Executive Summary
+                                </h2>
+                                <p className="text-sm text-gray-700">
+                                    “{analysis.executive_summary.summary}”
+                                </p>
+                            </section>
+
+                            <section className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                                <OverallRatingCard rating={analysis.rating} />
+                                <SentimentCard sentiment={analysis.kpi.sentiment} />
+                                <NpsCard nps={analysis.kpi.nps} />
+                            </section>
+
+                            <ScoreTrendCard />
+
+                            <section className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                                <ProgressBlock
+                                    title="🔥 Key Drivers of Satisfaction"
+                                    items={analysis.drivers_of_satisfaction}
+                                    color="blue"
+                                />
+                                <ProgressBlock
+                                    title="🛠 Areas for Improvement"
+                                    items={analysis.areas_for_improvement}
+                                    color="gray"
+                                />
+                            </section>
+
+                            <section className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                                <InsightsCard insights={analysis.strategic_insights} />
+                                <RiskCard plan={analysis.risk_and_action_plan} />
+                            </section>
+                        </>
+                    )}
+
+                    <footer className="border-t pt-6 text-xs font-semibold text-gray-400 flex justify-between">
+                        <span>CONFIDENTIAL – FOR INTERNAL USE ONLY</span>
+                        <span>Generated by CX AI Analyst System © 2026</span>
+                    </footer>
+                </div>
             </div>
-          </section>
-          {/* ================= RESULT ================= */}
-          {!loading && analysis?.executive_summary && (
-            <>
-              <section className="relative bg-blue-50 rounded-xl px-8 py-6 pl-12">
-                <div className="absolute left-0 top-0 h-full w-1.5 bg-blue-600 rounded-l-xl" />
-                <h2 className="text-lg font-extrabold text-blue-700 mb-3">
-                  Executive Summary
-                </h2>
-                <p className="text-sm text-gray-700">
-                  “{analysis.executive_summary.summary}”
-                </p>
-              </section>
-
-              <section className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                <OverallRatingCard rating={analysis.rating} />
-                <SentimentCard sentiment={analysis.kpi.sentiment} />
-                <NpsCard nps={analysis.kpi.nps} />
-              </section>
-
-              <ScoreTrendCard />
-
-              <section className="grid grid-cols-1 md:grid-cols-2 gap-10">
-                <ProgressBlock
-                  title="🔥 Key Drivers of Satisfaction"
-                  items={analysis.drivers_of_satisfaction}
-                  color="blue"
-                />
-                <ProgressBlock
-                  title="🛠 Areas for Improvement"
-                  items={analysis.areas_for_improvement}
-                  color="gray"
-                />
-              </section>
-
-              <section className="grid grid-cols-1 md:grid-cols-2 gap-10">
-                <InsightsCard insights={analysis.strategic_insights} />
-                <RiskCard plan={analysis.risk_and_action_plan} />
-              </section>
-            </>
-          )}
-
-          <footer className="border-t pt-6 text-xs font-semibold text-gray-400 flex justify-between">
-            <span>CONFIDENTIAL – FOR INTERNAL USE ONLY</span>
-            <span>Generated by CX AI Analyst System © 2026</span>
-          </footer>
-        </div>
-      </div>
-    </main>
-  );
+        </main>
+    );
 }
 
 /* ================= Shared Components (UI 유지) ================= */
 function Card({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="relative rounded-xl border border-gray-200 p-6 shadow-sm bg-white h-full">
-      <div className="absolute left-0 top-0 h-full w-1 bg-gray-100 rounded-l-xl" />
-      <div className="pl-2">{children}</div>
-    </div>
-  );
+    return (
+        <div className="relative rounded-xl border border-gray-200 p-6 shadow-sm bg-white h-full">
+            <div className="absolute left-0 top-0 h-full w-1 bg-gray-100 rounded-l-xl" />
+            <div className="pl-2">{children}</div>
+        </div>
+    );
 }
 
 function OverallRatingCard({ rating }: { rating: number }) {
-  const fullStars = Math.floor(rating);
-  const hasHalf = rating - fullStars >= 0.5;
+    const fullStars = Math.floor(rating);
+    const hasHalf = rating - fullStars >= 0.5;
 
-  return (
-    <Card>
-      <h3 className="text-lg font-extrabold text-gray-800 mb-4">
-        OVERALL RATING
-      </h3>
+    return (
+        <Card>
+            <h3 className="text-lg font-extrabold text-gray-800 mb-4">
+                OVERALL RATING
+            </h3>
 
-      <div className="flex items-end gap-3 mb-3">
-        <div className="text-5xl font-extrabold text-blue-600">
-          {rating.toFixed(1)}
-        </div>
-        <div className="text-lg font-semibold text-gray-400">/ 5.0</div>
-      </div>
+            <div className="flex items-end gap-3 mb-3">
+                <div className="text-5xl font-extrabold text-blue-600">
+                    {rating.toFixed(1)}
+                </div>
+                <div className="text-lg font-semibold text-gray-400">/ 5.0</div>
+            </div>
 
-      <div className="flex items-center gap-1 mb-2">
-        {[...Array(5)].map((_, i) => {
-          if (i < fullStars) {
-            return <Star key={i} className="w-4 h-4 text-yellow-400 fill-yellow-400" />;
-          }
-          if (i === fullStars && hasHalf) {
-            return (
-              <Star
-                key={i}
-                className="w-4 h-4 text-yellow-400"
-                style={{ clipPath: "inset(0 50% 0 0)" }}
-              />
-            );
-          }
-          return <Star key={i} className="w-4 h-4 text-gray-300" />;
-        })}
-      </div>
+            <div className="flex items-center gap-1 mb-2">
+                {[...Array(5)].map((_, i) => {
+                    if (i < fullStars) {
+                        return <Star key={i} className="w-4 h-4 text-yellow-400 fill-yellow-400" />;
+                    }
+                    if (i === fullStars && hasHalf) {
+                        return (
+                            <Star
+                                key={i}
+                                className="w-4 h-4 text-yellow-400"
+                                style={{ clipPath: "inset(0 50% 0 0)" }}
+                            />
+                        );
+                    }
+                    return <Star key={i} className="w-4 h-4 text-gray-300" />;
+                })}
+            </div>
 
-      <p className="text-xs text-gray-500">
-        고객 리뷰 기반 종합 만족도 점수
-      </p>
-    </Card>
-  );
+            <p className="text-xs text-gray-500">
+                고객 리뷰 기반 종합 만족도 점수
+            </p>
+        </Card>
+    );
 }
 
 function SentimentCard({ sentiment }: any) {
-  const r = 56;
-  const c = 2 * Math.PI * r;
+    const r = 56;
+    const c = 2 * Math.PI * r;
 
-  const pPositive = sentiment.positive / 100;
-  const pNeutral = sentiment.neutral / 100;
-  const pNegative = sentiment.negative / 100;
+    const pPositive = sentiment.positive / 100;
+    const pNeutral = sentiment.neutral / 100;
+    const pNegative = sentiment.negative / 100;
 
-  const offsetNegative = c * (1 - pNegative);
-  const offsetNeutral = offsetNegative - c * pNeutral;
-  const offsetPositive = offsetNeutral - c * pPositive;
+    const offsetNegative = c * (1 - pNegative);
+    const offsetNeutral = offsetNegative - c * pNeutral;
+    const offsetPositive = offsetNeutral - c * pPositive;
 
-  return (
-    <Card>
-      <h3 className="text-lg font-extrabold mb-4">
-        SENTIMENT ANALYSIS
-      </h3>
+    return (
+        <Card>
+            <h3 className="text-lg font-extrabold mb-4">
+                SENTIMENT ANALYSIS
+            </h3>
 
-      <svg width="160" height="160" className="mx-auto mb-4">
-        {/* base */}
-        <circle
-          cx="80"
-          cy="80"
-          r={r}
-          stroke="#e5e7eb"
-          strokeWidth="12"
-          fill="none"
-        />
+            <svg width="160" height="160" className="mx-auto mb-4">
+                {/* base */}
+                <circle
+                    cx="80"
+                    cy="80"
+                    r={r}
+                    stroke="#e5e7eb"
+                    strokeWidth="12"
+                    fill="none"
+                />
 
-        {/* negative */}
-        <circle
-          cx="80"
-          cy="80"
-          r={r}
-          stroke="#ef4444"
-          strokeWidth="12"
-          fill="none"
-          strokeDasharray={c}
-          strokeDashoffset={offsetNegative}
-          transform="rotate(-90 80 80)"
-        />
+                {/* negative */}
+                <circle
+                    cx="80"
+                    cy="80"
+                    r={r}
+                    stroke="#ef4444"
+                    strokeWidth="12"
+                    fill="none"
+                    strokeDasharray={c}
+                    strokeDashoffset={offsetNegative}
+                    transform="rotate(-90 80 80)"
+                />
 
-        {/* neutral */}
-        <circle
-          cx="80"
-          cy="80"
-          r={r}
-          stroke="#9ca3af"
-          strokeWidth="12"
-          fill="none"
-          strokeDasharray={c}
-          strokeDashoffset={offsetNeutral}
-          transform="rotate(-90 80 80)"
-        />
+                {/* neutral */}
+                <circle
+                    cx="80"
+                    cy="80"
+                    r={r}
+                    stroke="#9ca3af"
+                    strokeWidth="12"
+                    fill="none"
+                    strokeDasharray={c}
+                    strokeDashoffset={offsetNeutral}
+                    transform="rotate(-90 80 80)"
+                />
 
-        {/* positive (top layer) */}
-        <circle
-          cx="80"
-          cy="80"
-          r={r}
-          stroke="#22c55e"
-          strokeWidth="12"
-          fill="none"
-          strokeDasharray={c}
-          strokeDashoffset={offsetPositive}
-          transform="rotate(-90 80 80)"
-        />
+                {/* positive (top layer) */}
+                <circle
+                    cx="80"
+                    cy="80"
+                    r={r}
+                    stroke="#22c55e"
+                    strokeWidth="12"
+                    fill="none"
+                    strokeDasharray={c}
+                    strokeDashoffset={offsetPositive}
+                    transform="rotate(-90 80 80)"
+                />
 
-        <text
-          x="50%"
-          y="50%"
-          textAnchor="middle"
-          dominantBaseline="middle"
-          className="text-xl font-extrabold fill-gray-700"
-        >
-          {sentiment.positive}%
-        </text>
-      </svg>
+                <text
+                    x="50%"
+                    y="50%"
+                    textAnchor="middle"
+                    dominantBaseline="middle"
+                    className="text-xl font-extrabold fill-gray-700"
+                >
+                    {sentiment.positive}%
+                </text>
+            </svg>
 
-      <div className="grid grid-cols-3 gap-2 text-xs font-semibold text-gray-600">
-        <div className="flex items-center gap-2">
-          <span className="w-2.5 h-2.5 rounded-full bg-green-500" />
-          긍정 {sentiment.positive}%
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="w-2.5 h-2.5 rounded-full bg-gray-400" />
-          중립 {sentiment.neutral}%
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="w-2.5 h-2.5 rounded-full bg-red-500" />
-          부정 {sentiment.negative}%
-        </div>
-      </div>
-    </Card>
-  );
+            <div className="grid grid-cols-3 gap-2 text-xs font-semibold text-gray-600">
+                <div className="flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-full bg-green-500" />
+                    긍정 {sentiment.positive}%
+                </div>
+                <div className="flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-full bg-gray-400" />
+                    중립 {sentiment.neutral}%
+                </div>
+                <div className="flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-full bg-red-500" />
+                    부정 {sentiment.negative}%
+                </div>
+            </div>
+        </Card>
+    );
 }
 
 function NpsCard({ nps }: { nps: number }) {
-  const level =
-    nps >= 9 ? "Promoters" : nps >= 7 ? "Passives" : "Detractors";
+    const level =
+        nps >= 9 ? "Promoters" : nps >= 7 ? "Passives" : "Detractors";
 
-  const color =
-    nps >= 9
-      ? "text-green-600 bg-green-50"
-      : nps >= 7
-        ? "text-blue-600 bg-blue-50"
-        : "text-red-600 bg-red-50";
+    const color =
+        nps >= 9
+            ? "text-green-600 bg-green-50"
+            : nps >= 7
+                ? "text-blue-600 bg-blue-50"
+                : "text-red-600 bg-red-50";
 
-  return (
-    <Card>
-      <h3 className="text-lg font-extrabold mb-4">
-        RECOMMENDATION (NPS)
-      </h3>
+    return (
+        <Card>
+            <h3 className="text-lg font-extrabold mb-4">
+                RECOMMENDATION (NPS)
+            </h3>
 
-      <div className={`rounded-xl p-4 text-center ${color}`}>
-        <div className="text-4xl font-extrabold mb-1">{nps}</div>
-        <div className="text-sm font-semibold">{level}</div>
-      </div>
+            <div className={`rounded-xl p-4 text-center ${color}`}>
+                <div className="text-4xl font-extrabold mb-1">{nps}</div>
+                <div className="text-sm font-semibold">{level}</div>
+            </div>
 
-      <div className="mt-4 text-xs text-gray-500 leading-relaxed">
-        <p>• 9–10: Promoters (추천, 재방문 의사 높음)</p>
-        <p>• 7–8: Passives (무난, 보통)</p>
-        <p>• 0–6: Detractors (불만, 이탈 위험)</p>
-      </div>
-    </Card>
-  );
+            <div className="mt-4 text-xs text-gray-500 leading-relaxed">
+                <p>• 9–10: Promoters (추천, 재방문 의사 높음)</p>
+                <p>• 7–8: Passives (무난, 보통)</p>
+                <p>• 0–6: Detractors (불만, 이탈 위험)</p>
+            </div>
+        </Card>
+    );
 }
 
 function ProgressBlock({ title, items, color }: any) {
-  const bar = color === "blue" ? "bg-blue-600" : "bg-gray-500";
-  return (
-    <Card>
-      <h3 className="text-lg font-extrabold mb-5">{title}</h3>
-      {items.map((i: any) => (
-        <div key={i.label} className="mb-4">
-          <div className="flex justify-between text-sm mb-1">
-            <span>{i.label}</span>
-            <span>{i.value}%</span>
-          </div>
-          <div className="h-2.5 bg-gray-200 rounded-full">
-            <div
-              className={`h-2.5 rounded-full ${bar}`}
-              style={{ width: `${i.value}%` }}
-            />
-          </div>
-        </div>
-      ))}
-    </Card>
-  );
+    const bar = color === "blue" ? "bg-blue-600" : "bg-gray-500";
+    return (
+        <Card>
+            <h3 className="text-lg font-extrabold mb-5">{title}</h3>
+            {items.map((i: any) => (
+                <div key={i.label} className="mb-4">
+                    <div className="flex justify-between text-sm mb-1">
+                        <span>{i.label}</span>
+                        <span>{i.value}%</span>
+                    </div>
+                    <div className="h-2.5 bg-gray-200 rounded-full">
+                        <div
+                            className={`h-2.5 rounded-full ${bar}`}
+                            style={{ width: `${i.value}%` }}
+                        />
+                    </div>
+                </div>
+            ))}
+        </Card>
+    );
 }
 
 function InsightsCard({ insights }: any) {
-  return (
-    <Card>
-      <h3 className="text-lg font-extrabold text-blue-600 mb-4">
-        AI Strategic Insights
-      </h3>
-      {insights.map((i: any, idx: number) => (
-        <div key={idx} className="mb-4">
-          <p className="font-semibold">{i.title}</p>
-          <p className="text-sm text-gray-600">{i.description}</p>
-        </div>
-      ))}
-    </Card>
-  );
+    return (
+        <Card>
+            <h3 className="text-lg font-extrabold text-blue-600 mb-4">
+                AI Strategic Insights
+            </h3>
+            {insights.map((i: any, idx: number) => (
+                <div key={idx} className="mb-4">
+                    <p className="font-semibold">{i.title}</p>
+                    <p className="text-sm text-gray-600">{i.description}</p>
+                </div>
+            ))}
+        </Card>
+    );
 }
 
 function RiskCard({ plan }: any) {
-  return (
-    <Card>
-      <h3 className="text-lg font-extrabold mb-4 flex items-center gap-2">
-        <ShieldCheck className="w-5 h-5 text-green-600" />
-        Action Plan
-      </h3>
-      {plan.actions.map((a: any, idx: number) => (
-        <div key={idx} className="mb-3">
-          <p className="font-semibold">{a.area}</p>
-          <p className="text-sm text-gray-600">{a.action}</p>
-        </div>
-      ))}
-    </Card>
-  );
+    return (
+        <Card>
+            <h3 className="text-lg font-extrabold mb-4 flex items-center gap-2">
+                <ShieldCheck className="w-5 h-5 text-green-600" />
+                Action Plan
+            </h3>
+            {plan.actions.map((a: any, idx: number) => (
+                <div key={idx} className="mb-3">
+                    <p className="font-semibold">{a.area}</p>
+                    <p className="text-sm text-gray-600">{a.action}</p>
+                </div>
+            ))}
+        </Card>
+    );
 }
 
 function ScoreTrendCard() {
-  const searchParams = useSearchParams();
-  const storeId = searchParams.get("storeId");
-  const from = searchParams.get("from");
-  const to = searchParams.get("to");
+    const searchParams = useSearchParams();
+    const storeId = searchParams.get("storeId");
+    const from = searchParams.get("from");
+    const to = searchParams.get("to");
 
-  const [unit, setUnit] = useState<"day" | "month">("day");
-  const [data, setData] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+    const [unit, setUnit] = useState<"day" | "month">("day");
+    const [data, setData] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    if (!storeId) return;
+    useEffect(() => {
+        if (!storeId) return;
 
-    let cancelled = false;
+        let cancelled = false;
 
-    const fetchTrend = async () => {
-      setLoading(true);
-      try {
-        const params = new URLSearchParams({
-          store_id: storeId,
-          unit,
-        });
+        const fetchTrend = async () => {
+            setLoading(true);
+            try {
+                const params = new URLSearchParams({
+                    store_id: storeId,
+                    unit,
+                });
 
-        if (from) params.append("from", from);
-        if (to) params.append("to", to);
+                if (from) params.append("from", from);
+                if (to) params.append("to", to);
 
-        const res = await fetch(
-          `${API_BASE}/dashboard/rating-trend?${params.toString()}`,
-          { credentials: "include" }
-        );
+                const res = await fetch(
+                    `${API_BASE}/dashboard/rating-trend?${params.toString()}`,
+                    { credentials: "include" }
+                );
 
-        const json = await res.json();
-        if (!cancelled) setData(json);
-      } catch (e) {
-        console.error("평점 추이 조회 실패", e);
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    };
+                const json = await res.json();
+                if (!cancelled) setData(json);
+            } catch (e) {
+                console.error("평점 추이 조회 실패", e);
+            } finally {
+                if (!cancelled) setLoading(false);
+            }
+        };
 
-    fetchTrend();
-    return () => {
-      cancelled = true;
-    };
-  }, [storeId, from, to, unit]);
+        fetchTrend();
+        return () => {
+            cancelled = true;
+        };
+    }, [storeId, from, to, unit]);
 
-  return (
-    <Card>
-      {/* ================= Header ================= */}
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h3 className="text-lg font-extrabold text-gray-800">
-            평점 점수 추이
-          </h3>
-          <p className="text-sm text-gray-500 mt-1">
-            고객 전반 만족도 변화
-          </p>
-        </div>
+    return (
+        <Card>
+            {/* ================= Header ================= */}
+            <div className="flex items-center justify-between mb-6">
+                <div>
+                    <h3 className="text-lg font-extrabold text-gray-800">
+                        평점 점수 추이
+                    </h3>
+                    <p className="text-sm text-gray-500 mt-1">
+                        고객 전반 만족도 변화
+                    </p>
+                </div>
 
-        <div className="flex gap-2">
-          {(["day", "month"] as const).map((v) => (
-            <button
-              key={v}
-              onClick={() => setUnit(v)}
-              className={`px-3 py-1 rounded-lg text-sm font-semibold transition ${unit === v
-                ? "bg-blue-600 text-white shadow-sm"
-                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                }`}
-            >
-              {v === "day" ? "일별" : "월별"}
-            </button>
-          ))}
-        </div>
-      </div>
+                <div className="flex gap-2">
+                    {(["day", "month"] as const).map((v) => (
+                        <button
+                            key={v}
+                            onClick={() => setUnit(v)}
+                            className={`px-3 py-1 rounded-lg text-sm font-semibold transition ${unit === v
+                                ? "bg-blue-600 text-white shadow-sm"
+                                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                                }`}
+                        >
+                            {v === "day" ? "일별" : "월별"}
+                        </button>
+                    ))}
+                </div>
+            </div>
 
-      {/* ================= Chart ================= */}
-      <div className="h-[300px] relative">
-        {loading ? (
-          <div className="absolute inset-0 flex items-center justify-center">
-            <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
-          </div>
-        ) : (
-          <ResponsiveContainer width="100%" height="100%">
-            <ComposedChart data={data}>
-              {/* Gradient (부드러운 라인 아래 음영) */}
-              <defs>
-                <linearGradient id="scoreGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#2563eb" stopOpacity={0.18} />
-                  <stop offset="100%" stopColor="#2563eb" stopOpacity={0.03} />
-                </linearGradient>
-              </defs>
+            {/* ================= Chart ================= */}
+            <div className="h-[300px] relative">
+                {loading ? (
+                    <div className="absolute inset-0 flex items-center justify-center">
+                        <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
+                    </div>
+                ) : (
+                    <ResponsiveContainer width="100%" height="100%">
+                        <ComposedChart data={data}>
+                            {/* Gradient (부드러운 라인 아래 음영) */}
+                            <defs>
+                                <linearGradient id="scoreGradient" x1="0" y1="0" x2="0" y2="1">
+                                    <stop offset="0%" stopColor="#2563eb" stopOpacity={0.18} />
+                                    <stop offset="100%" stopColor="#2563eb" stopOpacity={0.03} />
+                                </linearGradient>
+                            </defs>
 
-              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                            <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
 
-              <XAxis
-                dataKey="date"
-                axisLine={false}
-                tick={{ fontSize: 12, fill: "#6b7280" }}
-              />
-              <YAxis
-                domain={[3, 5]}
-                axisLine={false}
-                tick={{ fontSize: 12, fill: "#6b7280" }}
-              />
+                            <XAxis
+                                dataKey="date"
+                                axisLine={false}
+                                tick={{ fontSize: 12, fill: "#6b7280" }}
+                            />
+                            <YAxis
+                                domain={[3, 5]}
+                                axisLine={false}
+                                tick={{ fontSize: 12, fill: "#6b7280" }}
+                            />
 
-              <Tooltip
-                formatter={(v: any) => [`${v}점`, "평균 평점"]}
-                labelFormatter={(label, payload: any) =>
-                  payload?.[0]?.payload?.highlight
-                    ? `${label} (급변 구간)`
-                    : label
-                }
-              />
+                            <Tooltip
+                                formatter={(v: any) => [`${v}점`, "평균 평점"]}
+                                labelFormatter={(label, payload: any) =>
+                                    payload?.[0]?.payload?.highlight
+                                        ? `${label} (급변 구간)`
+                                        : label
+                                }
+                            />
 
-              {/* Area (화이트 배경 + 은은한 음영) */}
-              <Area
-                type="monotone"
-                dataKey="avg_rating"
-                stroke="none"
-                fill="url(#scoreGradient)"
-              />
+                            {/* Area (화이트 배경 + 은은한 음영) */}
+                            <Area
+                                type="monotone"
+                                dataKey="avg_rating"
+                                stroke="none"
+                                fill="url(#scoreGradient)"
+                            />
 
-              {/* Line + Highlight Dot */}
-              <Line
-                type="monotone"
-                dataKey="avg_rating"
-                stroke="#2563eb"
-                strokeWidth={3}
-                dot={(p: any) => {
-                  if (!p.cx || !p.cy) return null;
+                            {/* Line + Highlight Dot */}
+                            <Line
+                                type="monotone"
+                                dataKey="avg_rating"
+                                stroke="#2563eb"
+                                strokeWidth={3}
+                                dot={(p: any) => {
+                                    if (!p.cx || !p.cy) return null;
 
-                  if (p.payload.highlight) {
-                    return (
-                      <g>
-                        {/* glow */}
-                        <circle
-                          cx={p.cx}
-                          cy={p.cy}
-                          r={14}
-                          fill="#fee2e2"
-                        />
-                        {/* core */}
-                        <circle
-                          cx={p.cx}
-                          cy={p.cy}
-                          r={6}
-                          fill="#dc2626"
-                          stroke="#ffffff"
-                          strokeWidth={2}
-                        />
-                      </g>
-                    );
-                  }
+                                    if (p.payload.highlight) {
+                                        return (
+                                            <g>
+                                                {/* glow */}
+                                                <circle
+                                                    cx={p.cx}
+                                                    cy={p.cy}
+                                                    r={14}
+                                                    fill="#fee2e2"
+                                                />
+                                                {/* core */}
+                                                <circle
+                                                    cx={p.cx}
+                                                    cy={p.cy}
+                                                    r={6}
+                                                    fill="#dc2626"
+                                                    stroke="#ffffff"
+                                                    strokeWidth={2}
+                                                />
+                                            </g>
+                                        );
+                                    }
 
-                  return (
-                    <circle
-                      cx={p.cx}
-                      cy={p.cy}
-                      r={3}
-                      fill="#2563eb"
-                    />
-                  );
-                }}
-                activeDot={{ r: 6 }}
-              />
-            </ComposedChart>
-          </ResponsiveContainer>
-        )}
-      </div>
-      {/* ================= Legend ================= */}
-      <div className="flex gap-6 text-sm font-semibold text-gray-500 mt-4">
-        <div className="flex items-center gap-2">
-          <span className="w-3 h-3 rounded-full bg-blue-600" />
-          평균 평점
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="w-3 h-3 rounded-full bg-red-500" />
-          급변 구간
-        </div>
-      </div>
-    </Card>
-  );
+                                    return (
+                                        <circle
+                                            cx={p.cx}
+                                            cy={p.cy}
+                                            r={3}
+                                            fill="#2563eb"
+                                        />
+                                    );
+                                }}
+                                activeDot={{ r: 6 }}
+                            />
+                        </ComposedChart>
+                    </ResponsiveContainer>
+                )}
+            </div>
+            {/* ================= Legend ================= */}
+            <div className="flex gap-6 text-sm font-semibold text-gray-500 mt-4">
+                <div className="flex items-center gap-2">
+                    <span className="w-3 h-3 rounded-full bg-blue-600" />
+                    평균 평점
+                </div>
+                <div className="flex items-center gap-2">
+                    <span className="w-3 h-3 rounded-full bg-red-500" />
+                    급변 구간
+                </div>
+            </div>
+        </Card>
+    );
 }

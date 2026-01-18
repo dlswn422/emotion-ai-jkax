@@ -6,12 +6,12 @@ import {
   Users,
   AlertTriangle,
   TrendingDown,
-  ArrowLeft,
   Smile,
   Meh,
   Frown,
   LogOut,
   Loader2,
+  Home,
 } from "lucide-react";
 
 /* ================= API ================= */
@@ -68,7 +68,6 @@ export default function CustomersPage() {
         );
         const json = await res.json();
 
-        // API → UI 모델 변환
         setData({
           summary: {
             total_customers: json.total_customers,
@@ -102,9 +101,8 @@ export default function CustomersPage() {
         credentials: "include",
       });
     } finally {
-      setTimeout(() => {
-        router.replace("/login");
-      }, 600);
+      sessionStorage.setItem("just_logged_out", "1");
+      router.replace("/login");
     }
   };
 
@@ -118,18 +116,13 @@ export default function CustomersPage() {
   }
 
   const overlayMessage =
-    overlay === "back"
-      ? "매장 상세 화면으로 이동 중…"
-      : overlay === "logout"
-      ? "로그아웃 중…"
-      : "";
+    overlay === "logout" ? "로그아웃 중…" : "";
 
   return (
     <main className="relative min-h-screen bg-gray-50">
       {/* ================= 이동 로딩 오버레이 ================= */}
       {overlay !== "none" && (
-        <div className="absolute inset-0 z-50 bg-white/70 backdrop-blur
-                        flex flex-col items-center justify-center">
+        <div className="absolute inset-0 z-50 bg-white/70 backdrop-blur flex flex-col items-center justify-center">
           <Loader2 className="w-9 h-9 animate-spin text-blue-600 mb-4" />
           <p className="text-sm font-semibold text-gray-600">
             {overlayMessage}
@@ -137,29 +130,32 @@ export default function CustomersPage() {
         </div>
       )}
 
-      {/* ================= Header ================= */}
-      <header className="bg-white/80 backdrop-blur border-b">
-        <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-          <button
-            onClick={() => {
-              setOverlay("back");
-              setTimeout(() => {
-                router.push(`/stores/${storeId}`);
-              }, 600);
-            }}
-            className="flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-blue-600"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            매장 상세
-          </button>
+      {/* ================= 🔧 FIXED HEADER (공통 디자인) ================= */}
+      <header className="sticky top-0 z-40 bg-white border-b">
+        <div className="max-w-6xl mx-auto px-6 h-16 grid grid-cols-3 items-center">
+          {/* LEFT */}
+          <div className="flex items-center">
+            <button
+              onClick={() => router.push(`/stores/${storeId}`)}
+              className="flex items-center gap-2 text-sm font-semibold text-gray-600 hover:text-blue-600"
+            >
+              <Home className="w-4 h-4" />
+              메인으로
+            </button>
+          </div>
 
-          <button
-            onClick={handleLogout}
-            className="flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-red-500"
-          >
-            <LogOut className="w-4 h-4" />
-            로그아웃
-          </button>
+          <div />
+
+          {/* RIGHT */}
+          <div className="flex items-center justify-end">
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-2 text-sm font-semibold text-gray-600 hover:text-red-500"
+            >
+              <LogOut className="w-4 h-4" />
+              로그아웃
+            </button>
+          </div>
         </div>
       </header>
 
@@ -209,12 +205,7 @@ export default function CustomersPage() {
             {data.customers.map((c: any, idx: number) => (
               <div
                 key={idx}
-                className="
-                  px-10 py-6
-                  grid grid-cols-1 md:grid-cols-7 gap-6
-                  items-center
-                  hover:bg-gray-50 transition
-                "
+                className="px-10 py-6 grid grid-cols-1 md:grid-cols-7 gap-6 items-center hover:bg-gray-50 transition"
               >
                 <div className="md:col-span-2">
                   <p className="font-semibold text-gray-900 text-base">
