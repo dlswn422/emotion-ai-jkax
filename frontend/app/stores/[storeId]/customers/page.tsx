@@ -14,6 +14,8 @@ import {
   Home,
 } from "lucide-react";
 
+import AppHeader from "../../../../components/common/AppHeader";
+
 /* ================= API ================= */
 const API_BASE =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
@@ -130,34 +132,8 @@ export default function CustomersPage() {
         </div>
       )}
 
-      {/* ================= 🔧 FIXED HEADER (공통 디자인) ================= */}
-      <header className="sticky top-0 z-40 bg-white border-b">
-        <div className="max-w-6xl mx-auto px-6 h-16 grid grid-cols-3 items-center">
-          {/* LEFT */}
-          <div className="flex items-center">
-            <button
-              onClick={() => router.push(`/stores/${storeId}`)}
-              className="flex items-center gap-2 text-sm font-semibold text-gray-600 hover:text-blue-600"
-            >
-              <Home className="w-4 h-4" />
-              메인으로
-            </button>
-          </div>
-
-          <div />
-
-          {/* RIGHT */}
-          <div className="flex items-center justify-end">
-            <button
-              onClick={handleLogout}
-              className="flex items-center gap-2 text-sm font-semibold text-gray-600 hover:text-red-500"
-            >
-              <LogOut className="w-4 h-4" />
-              로그아웃
-            </button>
-          </div>
-        </div>
-      </header>
+      {/* ✅ 공통 헤더 */}
+      <AppHeader variant="app" />
 
       {/* ================= Content ================= */}
       <section className="max-w-6xl mx-auto px-6 py-20 space-y-20">

@@ -4,36 +4,38 @@
 export const dynamic = "force-dynamic";
 
 import {
-  Suspense,
-  useEffect,
-  useState,
-  useRef,
+    Suspense,
+    useEffect,
+    useState,
+    useRef,
 } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
-  Home,
-  Download,
-  Sparkles,
-  Star,
-  Loader2,
-  LogOut,
-  ShieldCheck
+    Home,
+    Download,
+    Sparkles,
+    Star,
+    Loader2,
+    LogOut,
+    ShieldCheck
 } from "lucide-react";
 import {
-  ResponsiveContainer,
-  ComposedChart,
-  XAxis,
-  YAxis,
-  Tooltip,
-  CartesianGrid,
-  Area,
-  Line,
+    ResponsiveContainer,
+    ComposedChart,
+    XAxis,
+    YAxis,
+    Tooltip,
+    CartesianGrid,
+    Area,
+    Line,
 } from "recharts";
+
+import AppHeader from "../../components/common/AppHeader";
 
 /* ================= PRINT STYLE ================= */
 function PrintStyle() {
-  return (
-    <style jsx global>{`
+    return (
+        <style jsx global>{`
       html,
       body {
         background: white !important;
@@ -61,229 +63,210 @@ function PrintStyle() {
         }
       }
     `}</style>
-  );
+    );
 }
 
 /* ================= API BASE ================= */
 const API_BASE =
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+    process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 /* ================= ENTRY ================= */
 export default function CxDashboardPage() {
-  return (
-    <Suspense
-      fallback={
-        <main className="min-h-screen flex items-center justify-center bg-white">
-          <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
-        </main>
-      }
-    >
-      <PrintStyle />
-      <CxDashboardInner />
-    </Suspense>
-  );
+    return (
+        <Suspense
+            fallback={
+                <main className="min-h-screen flex items-center justify-center bg-white">
+                    <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
+                </main>
+            }
+        >
+            <PrintStyle />
+            <CxDashboardInner />
+        </Suspense>
+    );
 }
 
 /* ================= PAGE ================= */
 function CxDashboardInner() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
+    const router = useRouter();
+    const searchParams = useSearchParams();
 
-  const storeId = searchParams.get("storeId");
-  const from = searchParams.get("from");
-  const to = searchParams.get("to");
+    const storeId = searchParams.get("storeId");
+    const from = searchParams.get("from");
+    const to = searchParams.get("to");
 
-  const abortRef = useRef<AbortController | null>(null);
+    const abortRef = useRef<AbortController | null>(null);
 
-  const [checking, setChecking] = useState(true);
-  const [loading, setLoading] = useState(true);
-  const [analysis, setAnalysis] = useState<any | null>(null);
+    const [checking, setChecking] = useState(true);
+    const [loading, setLoading] = useState(true);
+    const [analysis, setAnalysis] = useState<any | null>(null);
 
-  const [downloading, setDownloading] = useState(false);
-  const [loggingOut, setLoggingOut] = useState(false);
+    const [downloading, setDownloading] = useState(false);
+    const [loggingOut, setLoggingOut] = useState(false);
 
-  /* ================= 로그인 가드 ================= */
-  useEffect(() => {
-    let cancelled = false;
+    /* ================= 로그인 가드 ================= */
+    useEffect(() => {
+        let cancelled = false;
 
-    const checkLogin = async () => {
-      try {
-        const res = await fetch(`${API_BASE}/auth/status`, {
-          credentials: "include",
-        });
-        const auth = await res.json();
+        const checkLogin = async () => {
+            try {
+                const res = await fetch(`${API_BASE}/auth/status`, {
+                    credentials: "include",
+                });
+                const auth = await res.json();
 
-        if (!auth.logged_in) {
-          router.replace("/login");
-        }
-      } catch {
-        router.replace("/login");
-      } finally {
-        if (!cancelled) setChecking(false);
-      }
-    };
-
-    checkLogin();
-    return () => {
-      cancelled = true;
-    };
-  }, [router]);
-
-  /* ================= 로그아웃 ================= */
-  const handleLogout = async () => {
-    setLoggingOut(true);
-    try {
-      await fetch(`${API_BASE}/auth/logout`, {
-        method: "POST",
-        credentials: "include",
-      });
-    } finally {
-      sessionStorage.setItem("just_logged_out", "1");
-      router.replace("/login");
-    }
-  };
-
-  /* ================= CX 분석 ================= */
-  useEffect(() => {
-    if (!storeId) return;
-
-    const controller = new AbortController();
-    setLoading(true);
-
-    const id = requestAnimationFrame(() => {
-      const fetchAnalysis = async () => {
-        try {
-          const params = new URLSearchParams({ store_id: storeId });
-          if (from) params.append("from", from);
-          if (to) params.append("to", to);
-
-          const res = await fetch(
-            `${API_BASE}/analysis/cx-analysis?${params.toString()}`,
-            {
-              method: "POST",
-              credentials: "include",
-              signal: controller.signal,
+                if (!auth.logged_in) {
+                    router.replace("/login");
+                }
+            } catch {
+                router.replace("/login");
+            } finally {
+                if (!cancelled) setChecking(false);
             }
-          );
+        };
 
-          const json = await res.json();
-          setAnalysis(json);
-        } catch (e: any) {
-          if (e.name !== "AbortError") {
-            console.error(e);
-          }
+        checkLogin();
+        return () => {
+            cancelled = true;
+        };
+    }, [router]);
+
+    /* ================= 로그아웃 ================= */
+    const handleLogout = async () => {
+        setLoggingOut(true);
+        try {
+            await fetch(`${API_BASE}/auth/logout`, {
+                method: "POST",
+                credentials: "include",
+            });
         } finally {
-          setLoading(false);
+            sessionStorage.setItem("just_logged_out", "1");
+            router.replace("/login");
         }
-      };
-
-      fetchAnalysis();
-    });
-
-    return () => {
-      cancelAnimationFrame(id);
-      controller.abort();
     };
-  }, [storeId, from, to]);
 
-  if (checking) {
+    /* ================= CX 분석 ================= */
+    useEffect(() => {
+        if (!storeId) return;
+
+        const controller = new AbortController();
+        setLoading(true);
+
+        const id = requestAnimationFrame(() => {
+            const fetchAnalysis = async () => {
+                try {
+                    const params = new URLSearchParams({ store_id: storeId });
+                    if (from) params.append("from", from);
+                    if (to) params.append("to", to);
+
+                    const res = await fetch(
+                        `${API_BASE}/analysis/cx-analysis?${params.toString()}`,
+                        {
+                            method: "POST",
+                            credentials: "include",
+                            signal: controller.signal,
+                        }
+                    );
+
+                    const json = await res.json();
+                    setAnalysis(json);
+                } catch (e: any) {
+                    if (e.name !== "AbortError") {
+                        console.error(e);
+                    }
+                } finally {
+                    setLoading(false);
+                }
+            };
+
+            fetchAnalysis();
+        });
+
+        return () => {
+            cancelAnimationFrame(id);
+            controller.abort();
+        };
+    }, [storeId, from, to]);
+
+    if (checking) {
+        return (
+            <main className="min-h-screen flex items-center justify-center bg-white">
+                <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
+            </main>
+        );
+    }
+
+    const periodLabel =
+        from && to ? `${from} ~ ${to}` : "전체 기간";
+
     return (
-      <main className="min-h-screen flex items-center justify-center bg-white">
-        <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
-      </main>
-    );
-  }
+        <main className="min-h-screen bg-white">
+            {/* ✅ 공통 헤더 */}
+            <AppHeader variant="app" />
 
-  const periodLabel =
-    from && to ? `${from} ~ ${to}` : "전체 기간";
+            {/* ================= OVERLAY ================= */}
+            {(downloading || loggingOut) && (
+                <div className="fixed inset-0 z-50 bg-white/70 backdrop-blur flex flex-col items-center justify-center">
+                    <Loader2 className="w-8 h-8 animate-spin text-gray-600 mb-3" />
+                    <p className="text-sm font-semibold text-gray-600">
+                        {downloading ? "PDF 생성 중…" : "로그아웃 중…"}
+                    </p>
+                </div>
+            )}
 
-  return (
-    <main className="min-h-screen bg-white">
-      {/* ================= 공통 헤더 ================= */}
-      <header className="sticky top-0 z-40 bg-white border-b print-hidden">
-        <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
-          <button
-            onClick={() => router.push("/")}
-            className="flex items-center gap-2 text-sm font-semibold text-gray-600 hover:text-blue-600"
-          >
-            <Home className="w-4 h-4" />
-            메인으로
-          </button>
+            {/* ================= AI LOADING ================= */}
+            {loading && !downloading && !loggingOut && (
+                <div className="fixed inset-x-0 top-16 bottom-0 z-30 bg-white/70 backdrop-blur flex flex-col items-center justify-center">
+                    <Sparkles className="w-8 h-8 text-blue-600 mb-3 animate-pulse" />
+                    <Loader2 className="w-6 h-6 animate-spin text-gray-500 mb-3" />
+                    <p className="text-sm font-semibold text-gray-600">
+                        AI가 고객 경험 데이터를 분석 중입니다…
+                    </p>
+                </div>
+            )}
 
-          <button
-            onClick={handleLogout}
-            className="flex items-center gap-2 text-sm font-semibold text-gray-600 hover:text-red-500"
-          >
-            <LogOut className="w-4 h-4" />
-            로그아웃
-          </button>
-        </div>
-      </header>
+            {/* ================= CONTENT ================= */}
+            <div className="pt-24 px-6">
+                <div
+                    id="print-area"
+                    className="max-w-6xl mx-auto bg-white rounded-2xl px-12 py-10 space-y-16"
+                >
+                    {/* ================= TITLE ================= */}
+                    <section className="border-b pb-6 flex items-start justify-between gap-6">
+                        <div>
+                            <span className="text-xs tracking-widest font-bold text-blue-600">
+                                CX STRATEGIC REPORT
+                            </span>
+                            <h1 className="text-3xl font-extrabold mt-2">
+                                고객경험(CX) 분석 보고서
+                            </h1>
 
-      {/* ================= OVERLAY ================= */}
-      {(downloading || loggingOut) && (
-        <div className="fixed inset-0 z-50 bg-white/70 backdrop-blur flex flex-col items-center justify-center">
-          <Loader2 className="w-8 h-8 animate-spin text-gray-600 mb-3" />
-          <p className="text-sm font-semibold text-gray-600">
-            {downloading ? "PDF 생성 중…" : "로그아웃 중…"}
-          </p>
-        </div>
-      )}
+                            <div className="text-sm font-semibold text-gray-500 mt-3 flex gap-6">
+                                <span>Store ID: {storeId}</span>
+                                <span>Analysis Period: {periodLabel}</span>
+                            </div>
+                        </div>
 
-      {/* ================= AI LOADING ================= */}
-      {loading && !downloading && !loggingOut && (
-        <div className="fixed inset-x-0 top-16 bottom-0 z-30 bg-white/70 backdrop-blur flex flex-col items-center justify-center">
-          <Sparkles className="w-8 h-8 text-blue-600 mb-3 animate-pulse" />
-          <Loader2 className="w-6 h-6 animate-spin text-gray-500 mb-3" />
-          <p className="text-sm font-semibold text-gray-600">
-            AI가 고객 경험 데이터를 분석 중입니다…
-          </p>
-        </div>
-      )}
-
-      {/* ================= CONTENT ================= */}
-      <div className="pt-24 px-6">
-        <div
-          id="print-area"
-          className="max-w-6xl mx-auto bg-white rounded-2xl px-12 py-10 space-y-16"
-        >
-          {/* ================= TITLE ================= */}
-          <section className="border-b pb-6 flex items-start justify-between gap-6">
-            <div>
-              <span className="text-xs tracking-widest font-bold text-blue-600">
-                CX STRATEGIC REPORT
-              </span>
-              <h1 className="text-3xl font-extrabold mt-2">
-                고객경험(CX) 분석 보고서
-              </h1>
-
-              <div className="text-sm font-semibold text-gray-500 mt-3 flex gap-6">
-                <span>Store ID: {storeId}</span>
-                <span>Analysis Period: {periodLabel}</span>
-              </div>
-            </div>
-
-            {/* ✅ PDF 버튼 (타이틀 우측 / 프린트 제외) */}
-            <button
-              onClick={() => {
-                setDownloading(true);
-                setTimeout(() => {
-                  window.print();
-                  setDownloading(false);
-                }, 300);
-              }}
-              className="no-print flex items-center gap-2 px-5 py-3 rounded-xl
+                        <button
+                            onClick={() => {
+                                setDownloading(true);
+                                setTimeout(() => {
+                                    window.print();
+                                    setDownloading(false);
+                                }, 300);
+                            }}
+                            className="no-print flex items-center gap-2 px-5 py-3 rounded-xl
                          bg-gradient-to-r from-slate-800 to-slate-900
                          text-white text-sm font-semibold shadow-lg
                          hover:from-slate-700 hover:to-slate-800"
-            >
-              <Download className="w-4 h-4" />
-              PDF 다운로드
-            </button>
-          </section>
+                        >
+                            <Download className="w-4 h-4" />
+                            PDF 다운로드
+                        </button>
+                    </section>
 
-          {/* ===== 이하 기존 리포트 내용 그대로 ===== */}
-          {!loading && analysis?.executive_summary && (
+                    {/* ===== 이하 기존 리포트 내용 그대로 ===== */}
+                    {!loading && analysis?.executive_summary && (
                         <>
                             <section className="relative bg-blue-50 rounded-xl px-8 py-6 pl-12">
                                 <div className="absolute left-0 top-0 h-full w-1.5 bg-blue-600 rounded-l-xl" />
