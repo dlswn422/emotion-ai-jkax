@@ -5,15 +5,16 @@ import { useRouter } from "next/navigation";
 import {
   UploadCloud,
   MapPin,
-  LogOut,
   Loader2,
 } from "lucide-react";
+
+import AppHeader from "../components/common/AppHeader";
 
 /* ✅ API BASE */
 const API_BASE =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
-type OverlayType = "none" | "stores" | "upload" | "logout";
+type OverlayType = "none" | "stores" | "upload";
 
 export default function Home() {
   const router = useRouter();
@@ -87,24 +88,6 @@ export default function Home() {
     );
   }
 
-
-  /* =========================
-     로그아웃 (로딩 포함)
-  ========================= */
-  const handleLogout = async () => {
-    setOverlay("logout");
-    try {
-      await fetch(`${API_BASE}/auth/logout`, {
-        method: "POST",
-        credentials: "include",
-      });
-    } finally {
-      setTimeout(() => {
-        router.replace("/login");
-      }, 600);
-    }
-  };
-
   /* =========================
      설문 데이터 분석 이동
   ========================= */
@@ -138,7 +121,6 @@ export default function Home() {
       : {
           stores: "매장 목록으로 이동 중…",
           upload: "설문 데이터 업로드 화면으로 이동 중…",
-          logout: "로그아웃 중…",
         }[overlay];
 
   /* =========================
@@ -146,6 +128,9 @@ export default function Home() {
   ========================= */
   return (
     <main className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 relative">
+      {/* ✅ 공통 헤더 (메인용) */}
+      <AppHeader variant="home" />
+
       {/* 공통 로딩 오버레이 */}
       {overlay !== "none" && (
         <div className="absolute inset-0 z-50 bg-white/70 backdrop-blur
@@ -191,23 +176,6 @@ export default function Home() {
           </div>
         </div>
       )}
-
-      {/* Header */}
-      <header className="bg-white/80 backdrop-blur border-b">
-        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-          <div className="text-lg font-extrabold tracking-tight text-blue-600">
-            Review Insight
-          </div>
-
-          <button
-            onClick={handleLogout}
-            className="inline-flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-red-500 transition"
-          >
-            <LogOut className="w-4 h-4" />
-            로그아웃
-          </button>
-        </div>
-      </header>
 
       {/* Hero */}
       <section className="max-w-7xl mx-auto px-6 py-32 text-center">

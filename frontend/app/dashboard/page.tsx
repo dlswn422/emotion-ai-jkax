@@ -20,20 +20,18 @@ import {
     LabelList,
 } from "recharts";
 import {
-    ArrowLeft,
-    Home,
     BarChart3,
     PieChart as PieIcon,
     Star,
     Tag,
     ListChecks,
     AlertTriangle,
-    LogOut,
     Loader2,
     Download,
     Sparkles,
 } from "lucide-react";
 
+import AppHeader from "@/components/common/AppHeader";
 /* ================= API BASE ================= */
 const API_BASE =
     process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
@@ -162,18 +160,6 @@ export default function DashboardPage() {
         setLoading(false);
     }, []);
 
-    const handleLogout = async () => {
-        try {
-            await fetch(`${API_BASE}/auth/logout`, {
-                method: "POST",
-                credentials: "include",
-            });
-        } finally {
-            sessionStorage.setItem("just_logged_out", "1");
-            router.replace("/login");
-        }
-    };
-
     if (checking) {
         return (
             <main className="min-h-screen flex items-center justify-center bg-slate-100">
@@ -207,30 +193,8 @@ export default function DashboardPage() {
         <main className="min-h-screen bg-slate-100">
             <PrintStyle />
 
-            {/* ================= HEADER ================= */}
-            <header className="sticky top-0 z-40 bg-white border-b no-print">
-                <div className="max-w-6xl mx-auto px-6 h-16 grid grid-cols-3 items-center">
-                    <div>
-                        <button
-                            onClick={() => router.push("/")}
-                            className="flex items-center gap-2 text-sm font-semibold text-gray-600 hover:text-blue-600"
-                        >
-                            <Home className="w-4 h-4" />
-                            메인으로
-                        </button>
-                    </div>
-                    <div />
-                    <div className="flex justify-end">
-                        <button
-                            onClick={handleLogout}
-                            className="flex items-center gap-2 text-sm font-semibold text-gray-600 hover:text-red-500"
-                        >
-                            <LogOut className="w-4 h-4" />
-                            로그아웃
-                        </button>
-                    </div>
-                </div>
-            </header>
+            {/* ✅ 공통 헤더 */}
+            <AppHeader variant="app" />
 
             {(pageEntering || loading) && (
                 <div className="fixed inset-0 z-50 bg-white flex flex-col items-center justify-center">
@@ -263,15 +227,9 @@ export default function DashboardPage() {
 
                     <button
                         onClick={() => window.print()}
-                        className="
-              no-print
-              flex items-center gap-2
-              px-4 py-2.5
-              rounded-xl
-              bg-slate-900 text-white
-              text-sm font-semibold
-              hover:bg-slate-800 transition
-            "
+                        className="no-print flex items-center gap-2 px-4 py-2.5 rounded-xl
+                       bg-slate-900 text-white text-sm font-semibold
+                       hover:bg-slate-800 transition"
                     >
                         <Download className="w-4 h-4" />
                         PDF 다운로드

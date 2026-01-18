@@ -9,12 +9,12 @@ import axios from "axios";
 import {
   UploadCloud,
   Eye,
-  Home,
   PlayCircle,
   Loader2,
-  LogOut,
   Sparkles,
 } from "lucide-react";
+
+import AppHeader from "../../components/common/AppHeader";
 
 /* ================= API BASE ================= */
 const API_BASE =
@@ -66,25 +66,6 @@ export default function UploadPage() {
       cancelled = true;
     };
   }, [router]);
-
-  /* ================= 로그아웃 ================= */
-  const handleLogout = async () => {
-    setOverlay("logout");
-
-    try {
-      await fetch(`${API_BASE}/auth/logout`, {
-        method: "POST",
-        credentials: "include",
-      });
-    } finally {
-      // ✅ 로그아웃 직후 자동 로그인 방지용 플래그
-      sessionStorage.setItem("just_logged_out", "1");
-
-      setTimeout(() => {
-        router.replace("/login");
-      }, 600);
-    }
-  };
 
   /* ================= 파일 업로드 ================= */
   const handleFile = async (f: File) => {
@@ -173,48 +154,23 @@ export default function UploadPage() {
     overlay === "none"
       ? ""
       : {
-        home: "메인 화면으로 이동 중…",
-        logout: "로그아웃 중…",
-        analyze: "AI가 리뷰를 분석하고 있습니다…",
-        file: "파일을 불러오는 중…",
-        preview: "미리보기 준비 중…",
-      }[overlay];
+          home: "메인 화면으로 이동 중…",
+          logout: "로그아웃 중…",
+          analyze: "AI가 리뷰를 분석하고 있습니다…",
+          file: "파일을 불러오는 중…",
+          preview: "미리보기 준비 중…",
+        }[overlay];
 
   /* ================= UI ================= */
   return (
     <main className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 relative">
-      {/* ================= HEADER ================= */}
-      <header className="sticky top-0 z-40 bg-white border-b">
-        <div className="max-w-6xl mx-auto px-6 h-16 grid grid-cols-3 items-center">
-          {/* LEFT */}
-          <div className="flex items-center">
-            <button
-              onClick={() => router.push("/")}
-              className="flex items-center gap-2 text-sm font-semibold text-gray-600 hover:text-blue-600"
-            >
-              <Home className="w-4 h-4" />
-              메인으로
-            </button>
-          </div>
-
-          <div />
-
-          {/* RIGHT */}
-          <div className="flex items-center justify-end">
-            <button
-              onClick={handleLogout}
-              className="flex items-center gap-2 text-sm font-semibold text-gray-600 hover:text-red-500"
-            >
-              <LogOut className="w-4 h-4" />
-              로그아웃
-            </button>
-          </div>
-        </div>
-      </header>
+      {/* ✅ 공통 헤더 */}
+      <AppHeader variant="app" />
 
       {/* ================= LOADING OVERLAY ================= */}
       {overlay !== "none" && (
-        <div className="fixed inset-x-0 top-[72px] bottom-0 z-40 bg-white flex flex-col items-center justify-center">
+        <div className="fixed inset-x-0 top-[64px] bottom-0 z-40 bg-white/70 backdrop-blur
+                        flex flex-col items-center justify-center">
           {overlay === "analyze" ? (
             <>
               <Sparkles className="w-9 h-9 text-blue-600 mb-4 animate-pulse" />
@@ -249,7 +205,9 @@ export default function UploadPage() {
         </div>
 
         {/* Upload Box */}
-        <label className="block bg-white rounded-3xl border-2 border-dashed border-blue-200 p-16 text-center cursor-pointer transition hover:border-blue-400 hover:shadow-md">
+        <label className="block bg-white rounded-3xl border-2 border-dashed border-blue-200
+                          p-16 text-center cursor-pointer transition
+                          hover:border-blue-400 hover:shadow-md">
           <UploadCloud className="mx-auto w-14 h-14 text-blue-600 mb-5" />
           <p className="text-lg font-semibold mb-2">
             파일을 드래그하거나 클릭하여 업로드
@@ -295,7 +253,9 @@ export default function UploadPage() {
                 <button
                   onClick={handleAnalyze}
                   disabled={overlay !== "none" || totalRows === 0}
-                  className="px-6 py-3 rounded-xl bg-blue-600 text-white font-semibold hover:bg-blue-700 shadow-lg disabled:opacity-50"
+                  className="px-6 py-3 rounded-xl bg-blue-600 text-white
+                             font-semibold hover:bg-blue-700 shadow-lg
+                             disabled:opacity-50"
                 >
                   <PlayCircle className="inline w-5 h-5 mr-1" />
                   AI 분석 실행
