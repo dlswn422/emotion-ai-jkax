@@ -7,11 +7,11 @@ import {
   MapPin,
   Star,
   ArrowRight,
-  Home,
-  LogOut,
   Loader2,
   RefreshCcw,
 } from "lucide-react";
+
+import AppHeader from "@/components/common/AppHeader";
 
 /* ================= MOCK ================= */
 const MOCK_STORES = [
@@ -35,12 +35,7 @@ const MOCK_STORES = [
 const API_BASE =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
-type OverlayType =
-  | "none"
-  | "home"
-  | "logout"
-  | "store"
-  | "sync";
+type OverlayType = "none" | "home" | "logout" | "store" | "sync";
 
 export default function StoresPage() {
   const router = useRouter();
@@ -76,31 +71,6 @@ export default function StoresPage() {
       cancelled = true;
     };
   }, [router]);
-
-  /* ================= 로그아웃 ================= */
-  const handleLogout = async () => {
-    setOverlay("logout");
-
-    try {
-      await fetch(`${API_BASE}/auth/logout`, {
-        method: "POST",
-        credentials: "include",
-      });
-    } finally {
-      // ✅ 로그아웃 직후 자동 로그인 방지 플래그
-      sessionStorage.setItem("just_logged_out", "1");
-
-      setTimeout(() => {
-        router.replace("/login");
-      }, 600);
-    }
-  };
-
-  /* ================= 메인 이동 ================= */
-  const goHome = () => {
-    setOverlay("home");
-    setTimeout(() => router.push("/"), 600);
-  };
 
   /* ================= 🔄 최신 리뷰 동기화 ================= */
   const syncReviews = async () => {
@@ -143,26 +113,27 @@ export default function StoresPage() {
     overlay === "none"
       ? ""
       : {
-        home: "메인 화면으로 이동 중…",
-        logout: "로그아웃 중…",
-        store: "매장 상세 화면으로 이동 중…",
-        sync: "최신 리뷰를 동기화하는 중…",
-      }[overlay];
+          home: "메인 화면으로 이동 중…",
+          logout: "로그아웃 중…",
+          store: "매장 상세 화면으로 이동 중…",
+          sync: "최신 리뷰를 동기화하는 중…",
+        }[overlay];
 
   /* ================= UI ================= */
   return (
     <main className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 relative">
-      {/* 공통 로딩 오버레이 */}
+      {/* ✅ 공통 헤더 */}
+      <AppHeader variant="app" />
+
+      {/* ================= 로딩 오버레이 ================= */}
       {overlay !== "none" && (
-        <div className="absolute inset-0 z-40 bg-white/70 backdrop-blur flex flex-col items-center justify-center">
+        <div className="fixed inset-x-0 top-[64px] bottom-0 z-40 bg-white/70 backdrop-blur flex flex-col items-center justify-center">
           <Loader2 className="w-10 h-10 text-blue-600 animate-spin mb-4" />
-          <p className="font-semibold text-gray-700">
-            {overlayMessage}
-          </p>
+          <p className="font-semibold text-gray-700">{overlayMessage}</p>
         </div>
       )}
 
-      {/* 실패 모달 */}
+      {/* ================= 실패 모달 ================= */}
       {syncError && (
         <div className="fixed inset-0 z-50 bg-black/30 flex items-center justify-center">
           <div className="bg-white rounded-3xl p-8 w-[90%] max-w-md shadow-2xl">
@@ -184,38 +155,9 @@ export default function StoresPage() {
         </div>
       )}
 
-      {/* Header */}
-      {/* ================= 🔧 FIXED HEADER ================= */}
-      <header className="sticky top-0 z-40 bg-white border-b">
-        <div className="max-w-6xl mx-auto px-6 h-16 grid grid-cols-3 items-center">
-          {/* ⬅️ LEFT */}
-          <div className="flex items-center">
-            <button
-              onClick={() => router.push("/")}
-              className="flex items-center gap-2 text-sm font-semibold text-gray-600 hover:text-blue-600"
-            >
-              <Home className="w-4 h-4" />
-              메인으로
-            </button>
-          </div>
-
-          {/* ⬜ CENTER (균형용) */}
-          <div />
-
-          {/* ➡️ RIGHT */}
-          <div className="flex items-center justify-end">
-            <button
-              onClick={handleLogout}
-              className="flex items-center gap-2 text-sm font-semibold text-gray-600 hover:text-red-500"
-            >
-              <LogOut className="w-4 h-4" />
-              로그아웃
-            </button>
-          </div>
-        </div>
-      </header>
-      <section className="max-w-6xl mx-auto px-6 py-20">
-        {/* Title + Sync Button */}
+      {/* ================= CONTENT ================= */}
+      <section className="max-w-6xl mx-auto px-6 pt-24 pb-20">
+        {/* Title + Sync */}
         <div className="mb-14 flex items-center justify-between">
           <div>
             <h1 className="text-4xl font-extrabold mb-3">
@@ -229,11 +171,16 @@ export default function StoresPage() {
           <button
             onClick={syncReviews}
             disabled={overlay !== "none"}
-            className="relative group flex items-center gap-2 px-7 py-3.5 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold shadow-lg shadow-blue-200/40 hover:shadow-xl hover:-translate-y-0.5 transition disabled:opacity-60"
+            className="flex items-center gap-2 px-7 py-3.5 rounded-2xl
+                       bg-gradient-to-r from-blue-600 to-indigo-600
+                       text-white font-semibold shadow-lg
+                       hover:shadow-xl hover:-translate-y-0.5 transition
+                       disabled:opacity-60"
           >
             <RefreshCcw
-              className={`w-4 h-4 ${overlay === "sync" ? "animate-spin" : ""
-                }`}
+              className={`w-4 h-4 ${
+                overlay === "sync" ? "animate-spin" : ""
+              }`}
             />
             최신 리뷰 동기화
           </button>
@@ -247,7 +194,8 @@ export default function StoresPage() {
             return (
               <div
                 key={store.id}
-                className="bg-white rounded-3xl p-8 border border-gray-100 shadow-sm hover:shadow-2xl transition hover:-translate-y-1"
+                className="bg-white rounded-3xl p-8 border border-gray-100
+                           shadow-sm hover:shadow-2xl transition hover:-translate-y-1"
               >
                 <div className="flex items-center justify-between mb-6">
                   <div className="flex items-center gap-4">
@@ -284,13 +232,14 @@ export default function StoresPage() {
                   onClick={() => {
                     setOverlay("store");
                     setTimeout(() => {
-                      router.push(
-                        `/stores/${encodeURIComponent(store.id)}`
-                      );
+                      router.push(`/stores/${store.id}`);
                     }, 600);
                   }}
                   disabled={overlay !== "none"}
-                  className="w-full flex items-center justify-center gap-2 px-6 py-4 rounded-2xl bg-blue-600 text-white font-semibold shadow-lg hover:bg-blue-700 transition disabled:opacity-60"
+                  className="w-full flex items-center justify-center gap-2
+                             px-6 py-4 rounded-2xl bg-blue-600 text-white
+                             font-semibold shadow-lg hover:bg-blue-700 transition
+                             disabled:opacity-60"
                 >
                   이 매장 리뷰 분석하기
                   <ArrowRight className="w-5 h-5" />
