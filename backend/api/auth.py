@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Request, Depends, HTTPException
-from fastapi.responses import RedirectResponse, JSONResponse
+from fastapi.responses import RedirectResponse, JSONResponse, Response
 from google_auth_oauthlib.flow import Flow
 from sqlalchemy.orm import Session
 import secrets
@@ -187,8 +187,9 @@ def auth_status(request: Request):
 # 4️⃣ Logout (로그인만 해제, 연동 유지)
 # =========================================================
 @router.post("/logout")
-def logout(request: Request):
+def logout(request: Request, response: Response):
     request.session.clear()
+    response.delete_cookie("session")
     return {"logged_out": True}
 
 

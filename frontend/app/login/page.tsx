@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Chrome, Loader2 } from "lucide-react";
 
-/* ✅ 컴포넌트 밖에서 상수로 고정 */
+/* ✅ API BASE */
 const API_BASE =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -13,6 +13,16 @@ export default function GoogleLoginPage() {
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
+    // ✅ 로그아웃 직후 1회 자동 리다이렉트 차단
+    const justLoggedOut =
+      sessionStorage.getItem("just_logged_out") === "1";
+
+    if (justLoggedOut) {
+      sessionStorage.removeItem("just_logged_out");
+      return; // ⛔ auth/status 체크 자체를 안 함
+    }
+
+    // ✅ 평상시: 이미 로그인된 사용자만 홈으로 이동
     const checkAlreadyLoggedIn = async () => {
       try {
         const res = await fetch(`${API_BASE}/auth/status`, {

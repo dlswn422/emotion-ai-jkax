@@ -105,20 +105,12 @@ export default function DashboardPage() {
 
   const [checking, setChecking] = useState(true);
   const [loading, setLoading] = useState(true);
-
-  // ✅ 페이지 진입 로딩 (강제 1프레임)
   const [pageEntering, setPageEntering] = useState(true);
-
   const [data, setData] = useState<AnalysisResult | null>(null);
 
-  /* ---------- 페이지 진입 시 무조건 로딩 ---------- */
+  /* ---------- 페이지 진입 로딩 ---------- */
   useEffect(() => {
-    setPageEntering(true);
-
-    const id = setTimeout(() => {
-      setPageEntering(false);
-    }, 350); // UX용 (300~400ms 추천)
-
+    const id = setTimeout(() => setPageEntering(false), 350);
     return () => clearTimeout(id);
   }, []);
 
@@ -173,6 +165,20 @@ export default function DashboardPage() {
     setLoading(false);
   }, []);
 
+  /* ================= 로그아웃 ================= */
+  const handleLogout = async () => {
+    try {
+      await fetch(`${API_BASE}/auth/logout`, {
+        method: "POST",
+        credentials: "include",
+      });
+    } finally {
+      // ✅ 로그아웃 직후 자동 로그인 방지 플래그
+      sessionStorage.setItem("just_logged_out", "1");
+      router.replace("/login");
+    }
+  };
+
   if (checking) {
     return (
       <main className="min-h-screen flex items-center justify-center bg-slate-100">
@@ -207,12 +213,11 @@ export default function DashboardPage() {
   return (
     <main className="min-h-screen bg-slate-100">
       <PrintStyle />
+
       {/* ================= HEADER ================= */}
       <header className="sticky top-0 z-40 bg-white border-b no-print">
-        <div className="max-w-6xl mx-auto px-6 h-16
-                  grid grid-cols-3 items-center">
-
-          {/* ⬅️ LEFT */}
+        <div className="max-w-6xl mx-auto px-6 h-16 grid grid-cols-3 items-center">
+          {/* LEFT */}
           <div className="flex items-center">
             <button
               onClick={() => router.push("/")}
@@ -223,16 +228,13 @@ export default function DashboardPage() {
             </button>
           </div>
 
-          {/* ⬜ CENTER (균형용, 비워둠) */}
           <div />
 
-          {/* ➡️ RIGHT */}
-          <div className="flex items-center justify-end gap-3 flex-nowrap">
+          {/* RIGHT */}
+          <div className="flex items-center justify-end gap-3">
             <button
               onClick={() => window.print()}
-              className="flex items-center gap-2 px-4 py-2 rounded-md
-                   bg-slate-900 text-white text-sm font-semibold
-                   hover:bg-slate-800 whitespace-nowrap"
+              className="flex items-center gap-2 px-4 py-2 rounded-md bg-slate-900 text-white text-sm font-semibold hover:bg-slate-800"
             >
               <Download className="w-4 h-4" />
               PDF 다운로드
@@ -240,17 +242,16 @@ export default function DashboardPage() {
 
             <button
               onClick={() => router.push("/upload")}
-              className="flex items-center gap-2 text-sm font-semibold
-                   text-gray-600 hover:text-blue-600 whitespace-nowrap"
+              className="flex items-center gap-2 text-sm font-semibold text-gray-600 hover:text-blue-600"
             >
               <ArrowLeft className="w-4 h-4" />
               다시 분석
             </button>
 
+            {/* ✅ 수정된 로그아웃 */}
             <button
-              onClick={() => router.push("/login")}
-              className="flex items-center gap-2 text-sm font-semibold
-                   text-gray-600 hover:text-red-500 whitespace-nowrap"
+              onClick={handleLogout}
+              className="flex items-center gap-2 text-sm font-semibold text-gray-600 hover:text-red-500"
             >
               <LogOut className="w-4 h-4" />
               로그아웃
@@ -258,27 +259,18 @@ export default function DashboardPage() {
           </div>
         </div>
       </header>
-      {/* ================= ✅ 공통 로딩 오버레이 ================= */}
+
+      {/* ================= 공통 로딩 오버레이 ================= */}
       {(pageEntering || loading) && (
-        <div
-          className="fixed inset-0 z-50
-               bg-white
-               flex flex-col items-center justify-center"
-        >
-          {/* ✨ 아이콘 */}
+        <div className="fixed inset-0 z-50 bg-white flex flex-col items-center justify-center">
           <Sparkles className="w-9 h-9 text-blue-600 mb-4 animate-pulse" />
-
-          {/* ⏳ 원형 로더 */}
-          <div className="mb-4">
-            <Loader2 className="w-7 h-7 text-gray-400 animate-spin" />
-          </div>
-
-          {/* 📝 문구 */}
+          <Loader2 className="w-7 h-7 text-gray-400 animate-spin mb-4" />
           <p className="text-sm font-semibold text-gray-600">
             AI가 고객 경험 데이터를 분석 중입니다…
           </p>
         </div>
       )}
+
       {/* ================= PDF 출력 영역 ================= */}
       <section
         id="print-area"

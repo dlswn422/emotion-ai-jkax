@@ -11,10 +11,9 @@ import {
   Eye,
   Home,
   PlayCircle,
-  ArrowLeft,
   Loader2,
   LogOut,
-  Sparkles
+  Sparkles,
 } from "lucide-react";
 
 /* ================= API BASE ================= */
@@ -71,20 +70,20 @@ export default function UploadPage() {
   /* ================= 로그아웃 ================= */
   const handleLogout = async () => {
     setOverlay("logout");
+
     try {
       await fetch(`${API_BASE}/auth/logout`, {
         method: "POST",
         credentials: "include",
       });
     } finally {
-      setTimeout(() => router.replace("/login"), 600);
-    }
-  };
+      // ✅ 로그아웃 직후 자동 로그인 방지용 플래그
+      sessionStorage.setItem("just_logged_out", "1");
 
-  /* ================= 메인 이동 ================= */
-  const handleGoHome = () => {
-    setOverlay("home");
-    setTimeout(() => router.push("/"), 600);
+      setTimeout(() => {
+        router.replace("/login");
+      }, 600);
+    }
   };
 
   /* ================= 파일 업로드 ================= */
@@ -161,6 +160,7 @@ export default function UploadPage() {
     }
   };
 
+  /* ================= 초기 로딩 ================= */
   if (checking) {
     return (
       <main className="min-h-screen flex items-center justify-center">
@@ -183,12 +183,10 @@ export default function UploadPage() {
   /* ================= UI ================= */
   return (
     <main className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 relative">
-      {/* ================= 🔧 FIXED HEADER ================= */}
-      <header className="sticky top-0 z-40 bg-white border-b no-print">
-        <div className="max-w-6xl mx-auto px-6 h-16
-                  grid grid-cols-3 items-center">
-
-          {/* ⬅️ LEFT */}
+      {/* ================= HEADER ================= */}
+      <header className="sticky top-0 z-40 bg-white border-b">
+        <div className="max-w-6xl mx-auto px-6 h-16 grid grid-cols-3 items-center">
+          {/* LEFT */}
           <div className="flex items-center">
             <button
               onClick={() => router.push("/")}
@@ -199,15 +197,13 @@ export default function UploadPage() {
             </button>
           </div>
 
-          {/* ⬜ CENTER (균형용, 비워둠) */}
           <div />
 
-          {/* ➡️ RIGHT */}
-          <div className="flex items-center justify-end gap-3 flex-nowrap">
+          {/* RIGHT */}
+          <div className="flex items-center justify-end">
             <button
-              onClick={() => router.push("/login")}
-              className="flex items-center gap-2 text-sm font-semibold
-                   text-gray-600 hover:text-red-500 whitespace-nowrap"
+              onClick={handleLogout}
+              className="flex items-center gap-2 text-sm font-semibold text-gray-600 hover:text-red-500"
             >
               <LogOut className="w-4 h-4" />
               로그아웃
@@ -215,16 +211,12 @@ export default function UploadPage() {
           </div>
         </div>
       </header>
-      {/* ================= 🔧 LOADING OVERLAY (HEADER 제외) ================= */}
+
+      {/* ================= LOADING OVERLAY ================= */}
       {overlay !== "none" && (
-        <div
-          className="fixed inset-x-0 top-[72px] bottom-0 z-40
-               bg-white
-               flex flex-col items-center justify-center"
-        >
+        <div className="fixed inset-x-0 top-[72px] bottom-0 z-40 bg-white flex flex-col items-center justify-center">
           {overlay === "analyze" ? (
             <>
-              {/* ✨ AI 분석 로딩 (디자인 통일) */}
               <Sparkles className="w-9 h-9 text-blue-600 mb-4 animate-pulse" />
               <Loader2 className="w-7 h-7 text-gray-400 animate-spin mb-4" />
               <p className="text-sm font-semibold text-gray-600">
@@ -233,7 +225,6 @@ export default function UploadPage() {
             </>
           ) : (
             <>
-              {/* 🔄 일반 로딩 */}
               <Loader2 className="w-9 h-9 text-blue-600 animate-spin mb-4" />
               <p className="font-semibold text-gray-700">
                 {overlayMessage}
