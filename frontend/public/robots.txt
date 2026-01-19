@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /dashboard
+Disallow: /cx-dashboard
+Disallow: /stores
+Disallow: /upload
