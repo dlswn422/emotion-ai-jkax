@@ -21,61 +21,48 @@ export default function AppHeader({ variant }: AppHeaderProps) {
         credentials: "include",
       });
     } finally {
-      // 🔒 로그아웃 직후 자동 재로그인 방지
       sessionStorage.setItem("just_logged_out", "1");
       router.replace("/login");
     }
   };
 
   return (
-    <header className="sticky top-0 z-40 bg-white/80 backdrop-blur border-b print-hidden">
-      <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
+    <header className="sticky top-0 z-40 bg-white border-b">
+      {/* 🔑 헤더 높이를 기준으로 모든 걸 맞춘다 */}
+      <div className="max-w-7xl mx-auto px-6 h-14 flex items-center justify-between">
 
-        {/* ================= LEFT ================= */}
-        <div className="flex items-center gap-6">
-          {/* 🔷 브랜드 (로고 클릭 → 메인) */}
-          <button
-            onClick={() => router.push("/")}
-            className="flex items-center gap-3"
-          >
-            <div className="relative h-9 w-9 rounded-xl bg-blue-50 overflow-hidden">
-              <Image
-                src="/icon.png"
-                alt="CX Nexus Logo"
-                fill
-                className="object-contain"
-                priority
-              />
-            </div>
+        {/* LEFT */}
+        <button
+          onClick={() => router.push("/")}
+          className="flex items-center h-full"
+        >
+          {/* 🔑 로고는 height 기준 */}
+          <div className="relative h-10 w-[339px]">
+            <Image
+              src="/img-header.png"
+              alt="CX Nexus"
+              fill
+              priority
+              className="object-contain"
+            />
+          </div>
+        </button>
 
-            <span
-              className="text-lg font-semibold tracking-tight"
-              style={{ color: "#0F172A" }}
-            >
-              CX Nexus
-            </span>
-          </button>
-        </div>
-
-        {/* ================= RIGHT ================= */}
-        <div className="flex items-center gap-5">
-          {/* 🔙 뒤로가기 (app 화면에서만, 로그아웃 왼쪽) */}
+        {/* RIGHT */}
+        <div className="flex items-center gap-4">
           {variant === "app" && (
             <button
               onClick={() => router.back()}
-              className="flex items-center gap-1 text-sm font-semibold
-                         text-slate-600 hover:text-slate-900 transition"
+              className="flex items-center gap-1 text-sm font-medium text-slate-600 hover:text-slate-900"
             >
               <ArrowLeft className="w-4 h-4" />
               뒤로가기
             </button>
           )}
 
-          {/* 🚪 로그아웃 */}
           <button
             onClick={handleLogout}
-            className="flex items-center gap-2 text-sm font-semibold
-                       text-slate-600 hover:text-red-500 transition"
+            className="flex items-center gap-1 text-sm font-medium text-slate-600 hover:text-red-500"
           >
             <LogOut className="w-4 h-4" />
             로그아웃

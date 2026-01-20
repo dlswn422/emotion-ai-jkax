@@ -17,9 +17,9 @@ export const metadata: Metadata = {
   title: "CX Nexus",
   description: "Google 리뷰 기반 고객 경험(CX) 분석 플랫폼",
   icons: {
-    icon: "/icon.png",
-    shortcut: "/icon.png",
-    apple: "/icon.png",
+    icon: "/favicon_logo.png",          // ✅ 기본 파비콘
+    shortcut: "/favicon_logo.png",      // ✅ 브라우저 단축 아이콘
+    apple: "/favicon_logo.png",         // ✅ Apple Touch Icon
   },
 };
 
