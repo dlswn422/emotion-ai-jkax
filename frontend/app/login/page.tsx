@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2, Sparkles } from "lucide-react";
+import Image from "next/image";
+import { Loader2 } from "lucide-react";
 
 /* ✅ API BASE */
 const API_BASE =
@@ -53,17 +54,23 @@ export default function GoogleLoginPage() {
 
           {/* 브랜드 / 서비스 설명 */}
           <div className="mb-7 text-center">
-            <div className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-blue-50">
-              <Sparkles className="h-5 w-5 text-blue-600" />
+            {/* 로고 */}
+            <div className="mx-auto mb-4 relative h-14 w-14 rounded-2xl bg-blue-50 overflow-hidden">
+              <Image
+                src="/icon.png"
+                alt="CX Nexus Logo"
+                fill
+                className="object-contain scale-110"
+                priority
+              />
             </div>
-
             <h1 className="text-2xl font-bold tracking-tight text-gray-900">
-              Review Insight
+              CX Nexus
             </h1>
 
             <p className="mt-2 text-sm text-gray-600 leading-relaxed">
               Google 비즈니스 프로필 리뷰 데이터를 분석해<br />
-              매장 운영에 필요한 인사이트를 제공합니다
+              매장 운영에 필요한 고객 경험 인사이트를 제공합니다
             </p>
           </div>
 
@@ -90,10 +97,9 @@ export default function GoogleLoginPage() {
               px-6 py-4
               text-sm font-semibold
               transition
-              ${
-                isLoading
-                  ? "bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed"
-                  : "bg-white text-gray-800 border-gray-300 hover:bg-gray-50 hover:shadow-sm"
+              ${isLoading
+                ? "bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed"
+                : "bg-white text-gray-800 border-gray-300 hover:bg-gray-50 hover:shadow-sm"
               }
             `}
           >
@@ -104,6 +110,7 @@ export default function GoogleLoginPage() {
               </>
             ) : (
               <>
+                {/* Google 아이콘 */}
                 <svg
                   width="20"
                   height="20"
