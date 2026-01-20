@@ -19,7 +19,9 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "http://localhost:3000",
-        "https://emotion-ai-jkax-wqsd.vercel.app",
+        "https://cxnexus.ai",                     # ✅ 새 도메인 (필수)
+        "https://www.cxnexus.ai",                 # ✅ 있으면 안전
+        "https://emotion-ai-jkax-wqsd.vercel.app" # ✅ 유지 (preview/심사용)
     ],
     allow_credentials=True,   # 🔥 세션 쿠키 필수
     allow_methods=["*"],
