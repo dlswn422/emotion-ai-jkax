@@ -54,19 +54,17 @@ export default function GoogleLoginPage() {
 
           {/* 브랜드 / 서비스 설명 */}
           <div className="mb-7 text-center">
-            {/* 로고 */}
-            <div className="mx-auto mb-4 relative h-14 w-14 rounded-2xl bg-blue-50 overflow-hidden">
+
+            {/* ✅ 로고 (헤더용 로고 재사용) */}
+            <div className="mx-auto mb-5 relative h-10 w-[180px]">
               <Image
-                src="/icon.png"
+                src="/img-header.png"   // 🔥 헤더와 동일한 로고
                 alt="CX Nexus Logo"
                 fill
-                className="object-contain scale-110"
+                className="object-contain"
                 priority
               />
             </div>
-            <h1 className="text-2xl font-bold tracking-tight text-gray-900">
-              CX Nexus
-            </h1>
 
             <p className="mt-2 text-sm text-gray-600 leading-relaxed">
               Google 비즈니스 프로필 리뷰 데이터를 분석해<br />
@@ -97,9 +95,10 @@ export default function GoogleLoginPage() {
               px-6 py-4
               text-sm font-semibold
               transition
-              ${isLoading
-                ? "bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed"
-                : "bg-white text-gray-800 border-gray-300 hover:bg-gray-50 hover:shadow-sm"
+              ${
+                isLoading
+                  ? "bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed"
+                  : "bg-white text-gray-800 border-gray-300 hover:bg-gray-50 hover:shadow-sm"
               }
             `}
           >
