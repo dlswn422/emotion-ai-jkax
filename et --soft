@@ -39,7 +39,7 @@ Date:   Wed Jan 14 10:15:05 2026 +0900
 [1m--- /dev/null[m
 [1m+++ b/README.md[m
 [36m@@ -0,0 +1,26 @@[m
-[32m+[m[32m# 📊 Emotion AI – Review Insight Platform[m
+[32m+[m[32m# 📊 CX Nexus – Review Insight Platform[m
 [32m+[m
 [32m+[m[32m고객 리뷰 및 설문 데이터를 업로드하면[m[41m  [m
 [32m+[m[32mAI가 감성 분석, 핵심 키워드, 종합 요약을 제공하는 웹 서비스입니다.[m

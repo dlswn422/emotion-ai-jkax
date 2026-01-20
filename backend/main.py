@@ -8,7 +8,7 @@ from starlette.middleware.sessions import SessionMiddleware
 
 from backend.api import analysis, auth, stores, google_business, dashboard, customers
 
-app = FastAPI(title="Emotion AI Backend")
+app = FastAPI(title="CX Nexus Backend")
 
 ENV = os.getenv("ENV", "local")
 

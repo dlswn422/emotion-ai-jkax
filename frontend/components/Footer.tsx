@@ -10,7 +10,7 @@ export default function Footer() {
         borderTop: "1px solid #eee",
       }}
     >
-      <div>Emotion AI</div>
+      <div>CX Nexus</div>
       <div style={{ marginTop: 8 }}>
         <a href="/privacy">개인정보처리방침</a> ·{" "}
         <a href="/terms">이용약관</a>
