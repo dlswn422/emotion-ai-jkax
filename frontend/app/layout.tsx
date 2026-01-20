@@ -14,8 +14,13 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Emotion AI",
-  description: "사장님을 위한 매장 리뷰 분석 시스템",
+  title: "CX Nexus",
+  description: "Google 리뷰 기반 고객 경험(CX) 분석 플랫폼",
+  icons: {
+    icon: "/icon.png",
+    shortcut: "/icon.png",
+    apple: "/icon.png",
+  },
 };
 
 export default function RootLayout({
