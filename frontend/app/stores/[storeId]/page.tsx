@@ -23,24 +23,24 @@ import AppHeader from "../../../components/common/AppHeader";
 const MOCK_STORES: Record<string, any> = {
   store_1: {
     name: "Yewon Korean Restaurant 예원 한식당",
-    address: "Jl. Purnawarman No.4A",
+    address: "Jl. Purnawarman No.4A, RT.6/RW.2, Selong, Kec. Kby. Baru, Kota Jakarta Selatan, Daerah Khusus Ibukota Jakarta 12110 인도네시아",
     category: "한식당",
     status: "OPEN",
     avg_rating: 4.6,
-    review_count: 414,
+    review_count: 418,
     description:
       "Korean restaurant YEWON ❤️ We will serve Traditional K-Food & Dynamic K-Culture",
     last_synced_at: "2026-01-16T12:40:00Z",
   },
   store_2: {
-    name: "인주네 중식집",
-    address: "서울 구로구",
-    category: "중식",
+    name: "HALLA RESTAURANT HALAL",
+    address: "Jl. Cipaku I No.14 1, RT.1/RW.4, Petogogan, Kec. Kby. Baru, Kota Jakarta Selatan, Daerah Khusus Ibukota Jakarta 12170 인도네시아",
+    category: "한식당",
     status: "OPEN",
-    avg_rating: 0,
-    review_count: 0,
+    avg_rating: 4.7,
+    review_count: 121,
     description:
-      "정갈한 중식 요리와 합리적인 가격으로 지역 주민들에게 사랑받는 중식당입니다.",
+      "합리적인 가격으로 지역 주민들에게 사랑받는 한식당입니다.",
     last_synced_at: null,
   },
 };

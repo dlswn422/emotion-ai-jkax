@@ -9,6 +9,7 @@ import {
   ArrowRight,
   Loader2,
   RefreshCcw,
+  Eye,
 } from "lucide-react";
 
 import AppHeader from "@/components/common/AppHeader";
@@ -18,14 +19,16 @@ const MOCK_STORES = [
   {
     id: "store_1",
     name: "Yewon Korean Restaurant 예원 한식당",
-    address: "Jl. Purnawarman No.4A",
+    address:
+      "Jl. Purnawarman No.4A, RT.6/RW.2, Selong, Kec. Kby. Baru, Kota Jakarta Selatan, Daerah Khusus Ibukota Jakarta 12110 인도네시아",
     rating: 4.6,
-    reviews: 414,
+    reviews: 418,
   },
   {
     id: "store_2",
-    name: "인주네 중식집",
-    address: "서울 구로구",
+    name: "HALLA RESTAURANT HALAL",
+    address:
+      "Jl. Cipaku I No.14 1, RT.1/RW.4, Petogogan, Kec. Kby. Baru, Kota Jakarta Selatan, Daerah Khusus Ibukota Jakarta 12170 인도네시아",
     rating: null,
     reviews: 0,
   },
@@ -43,6 +46,9 @@ export default function StoresPage() {
   const [checking, setChecking] = useState(true);
   const [overlay, setOverlay] = useState<OverlayType>("none");
   const [syncError, setSyncError] = useState<string | null>(null);
+  const [expandedAddress, setExpandedAddress] = useState<
+    Record<string, boolean>
+  >({});
 
   /* ================= 로그인 가드 ================= */
   useEffect(() => {
@@ -83,9 +89,7 @@ export default function StoresPage() {
         credentials: "include",
       });
 
-      if (!res.ok) {
-        throw new Error("sync_failed");
-      }
+      if (!res.ok) throw new Error("sync_failed");
     } catch {
       setSyncError(
         "리뷰 동기화에 실패했습니다.\n잠시 후 다시 시도해주세요."
@@ -98,13 +102,8 @@ export default function StoresPage() {
   /* ================= 초기 로딩 ================= */
   if (checking) {
     return (
-      <main className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center">
-        <div className="flex flex-col items-center">
-          <Loader2 className="w-9 h-9 text-blue-600 animate-spin mb-4" />
-          <p className="text-sm font-semibold text-gray-600">
-            매장 목록 불러오는 중…
-          </p>
-        </div>
+      <main className="min-h-screen flex items-center justify-center bg-slate-50">
+        <Loader2 className="w-9 h-9 text-blue-600 animate-spin" />
       </main>
     );
   }
@@ -119,13 +118,18 @@ export default function StoresPage() {
           sync: "최신 리뷰를 동기화하는 중…",
         }[overlay];
 
-  /* ================= UI ================= */
   return (
     <main className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 relative">
-      {/* ✅ 공통 헤더 */}
       <AppHeader variant="app" />
 
-      {/* ================= 로딩 오버레이 ================= */}
+      {/* ⚠️ MOCK 배너 */}
+      <div className="bg-yellow-50 border-b border-yellow-200 text-yellow-900">
+        <div className="max-w-6xl mx-auto px-6 py-3 text-sm font-semibold">
+          ⚠️ Google API 승인 전 단계입니다. 현재 화면은 <b>목데이터</b>입니다.
+        </div>
+      </div>
+
+      {/* ================= Overlay ================= */}
       {overlay !== "none" && (
         <div className="fixed inset-x-0 top-[64px] bottom-0 z-40 bg-white/70 backdrop-blur flex flex-col items-center justify-center">
           <Loader2 className="w-10 h-10 text-blue-600 animate-spin mb-4" />
@@ -133,20 +137,18 @@ export default function StoresPage() {
         </div>
       )}
 
-      {/* ================= 실패 모달 ================= */}
+      {/* ================= Error Modal ================= */}
       {syncError && (
         <div className="fixed inset-0 z-50 bg-black/30 flex items-center justify-center">
           <div className="bg-white rounded-3xl p-8 w-[90%] max-w-md shadow-2xl">
-            <h3 className="text-xl font-bold mb-3 text-gray-900">
-              동기화 실패
-            </h3>
+            <h3 className="text-xl font-bold mb-3">동기화 실패</h3>
             <p className="text-gray-600 mb-6 whitespace-pre-line">
               {syncError}
             </p>
             <div className="flex justify-end">
               <button
                 onClick={() => setSyncError(null)}
-                className="px-5 py-2 rounded-xl bg-blue-600 text-white font-semibold hover:bg-blue-700"
+                className="px-5 py-2 rounded-xl bg-blue-600 text-white font-semibold"
               >
                 확인
               </button>
@@ -156,15 +158,14 @@ export default function StoresPage() {
       )}
 
       {/* ================= CONTENT ================= */}
-      <section className="max-w-6xl mx-auto px-6 pt-24 pb-20">
-        {/* Title + Sync */}
+      <section className="max-w-6xl mx-auto px-6 pt-16 pb-20">
         <div className="mb-14 flex items-center justify-between">
           <div>
             <h1 className="text-4xl font-extrabold mb-3">
               내 매장 리뷰 분석
             </h1>
             <p className="text-gray-600 text-lg">
-              Google 리뷰를 기반으로 매장별 고객 인사이트를 확인하세요
+              Google 리뷰 기반 고객 인사이트
             </p>
           </div>
 
@@ -173,9 +174,7 @@ export default function StoresPage() {
             disabled={overlay !== "none"}
             className="flex items-center gap-2 px-7 py-3.5 rounded-2xl
                        bg-gradient-to-r from-blue-600 to-indigo-600
-                       text-white font-semibold shadow-lg
-                       hover:shadow-xl hover:-translate-y-0.5 transition
-                       disabled:opacity-60"
+                       text-white font-semibold shadow-lg"
           >
             <RefreshCcw
               className={`w-4 h-4 ${
@@ -186,64 +185,109 @@ export default function StoresPage() {
           </button>
         </div>
 
-        {/* Store Cards */}
+        {/* ================= Store Cards ================= */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
           {MOCK_STORES.map((store) => {
-            const rating = store.rating ?? 0.0;
+            const hasRating = store.rating && store.rating > 0;
 
             return (
               <div
                 key={store.id}
-                className="bg-white rounded-3xl p-8 border border-gray-100
-                           shadow-sm hover:shadow-2xl transition hover:-translate-y-1"
+                className="group relative bg-white rounded-3xl p-8
+                           shadow-md hover:shadow-2xl
+                           transition transform hover:-translate-y-1
+                           flex flex-col overflow-hidden"
               >
-                <div className="flex items-center justify-between mb-6">
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-2xl bg-blue-50 flex items-center justify-center">
+                {/* Hover Preview */}
+                <div
+                  className="absolute inset-0 bg-blue-600/90 text-white
+                             opacity-0 group-hover:opacity-100
+                             transition flex items-center justify-center
+                             z-10 pointer-events-none"
+                >
+                  <div className="flex items-center gap-2 font-semibold">
+                    <Eye className="w-5 h-5" />
+                    미리보기 · 클릭해서 분석
+                  </div>
+                </div>
+
+                <div className="relative z-20">
+                  <div className="flex gap-4 mb-4">
+                    <div className="w-12 h-12 rounded-2xl bg-blue-50 flex items-center justify-center shrink-0">
                       <Store className="w-6 h-6 text-blue-600" />
                     </div>
 
-                    <div>
-                      <h2 className="text-xl font-bold">{store.name}</h2>
-                      <div className="flex items-center gap-1 text-sm text-gray-500 mt-1">
-                        <MapPin className="w-4 h-4" />
+                    <div className="flex-1 min-w-0">
+                      <h2 className="text-lg font-bold leading-tight break-words">
+                        {store.name}
+                      </h2>
+
+                      <p
+                        className={`mt-1 text-sm text-gray-500 ${
+                          expandedAddress[store.id]
+                            ? ""
+                            : "line-clamp-2"
+                        } md:line-clamp-none`}
+                      >
+                        <MapPin className="inline w-4 h-4 mr-1" />
                         {store.address}
-                      </div>
+                      </p>
+
+                      {/* Mobile address toggle */}
+                      <button
+                        onClick={() =>
+                          setExpandedAddress((prev) => ({
+                            ...prev,
+                            [store.id]: !prev[store.id],
+                          }))
+                        }
+                        className="md:hidden text-xs text-blue-600 mt-1 font-semibold"
+                      >
+                        {expandedAddress[store.id]
+                          ? "주소 접기"
+                          : "주소 더보기"}
+                      </button>
                     </div>
+
+                    <span className="h-fit px-3 py-1 rounded-full bg-green-50 text-green-700 text-xs font-semibold">
+                      운영중
+                    </span>
                   </div>
 
-                  <span className="px-4 py-1 rounded-full bg-green-50 text-green-700 text-sm font-semibold">
-                    운영중
-                  </span>
+                  {/* Rating */}
+                  <div className="flex items-center gap-6 mb-6">
+                    <div className="flex items-center gap-2 font-semibold">
+                      <Star className="w-5 h-5 text-yellow-400" />
+                      {hasRating ? store.rating.toFixed(1) : "—"}
+                    </div>
+
+                    <span className="text-sm text-gray-500">
+                      리뷰 {store.reviews.toLocaleString()}개
+                    </span>
+
+                    {!hasRating && (
+                      <span className="text-xs text-yellow-600 font-semibold">
+                        리뷰 수집 중
+                      </span>
+                    )}
+                  </div>
+
+                  <button
+                    onClick={() => {
+                      setOverlay("store");
+                      setTimeout(
+                        () => router.push(`/stores/${store.id}`),
+                        600
+                      );
+                    }}
+                    className="mt-auto w-full py-4 rounded-2xl
+                               bg-blue-600 text-white font-semibold
+                               hover:bg-blue-700 transition"
+                  >
+                    이 매장 리뷰 분석하기
+                    <ArrowRight className="inline ml-2 w-5 h-5" />
+                  </button>
                 </div>
-
-                <div className="flex items-center gap-6 mb-8">
-                  <div className="flex items-center gap-2 text-lg font-semibold">
-                    <Star className="w-5 h-5 text-yellow-400" />
-                    {rating.toFixed(1)}
-                  </div>
-
-                  <div className="text-sm text-gray-500">
-                    리뷰 {store.reviews.toLocaleString()}개
-                  </div>
-                </div>
-
-                <button
-                  onClick={() => {
-                    setOverlay("store");
-                    setTimeout(() => {
-                      router.push(`/stores/${store.id}`);
-                    }, 600);
-                  }}
-                  disabled={overlay !== "none"}
-                  className="w-full flex items-center justify-center gap-2
-                             px-6 py-4 rounded-2xl bg-blue-600 text-white
-                             font-semibold shadow-lg hover:bg-blue-700 transition
-                             disabled:opacity-60"
-                >
-                  이 매장 리뷰 분석하기
-                  <ArrowRight className="w-5 h-5" />
-                </button>
               </div>
             );
           })}
