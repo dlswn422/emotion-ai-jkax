@@ -4,7 +4,9 @@ import os
 from googleapiclient.discovery import build
 from google.oauth2.credentials import Credentials
 from google.auth.transport.requests import Request
+from google.auth.exceptions import RefreshError
 from sqlalchemy.orm import Session
+from fastapi import HTTPException
 
 from backend.db.models import OAuthAccount
 
@@ -14,6 +16,7 @@ from backend.db.models import OAuthAccount
 # -------------------------------------------------
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
 GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET")
+
 
 def load_credentials(
     *,
@@ -34,11 +37,14 @@ def load_credentials(
         .one_or_none()
     )
 
-    if not oauth:
-        raise RuntimeError("Google OAuth 인증이 필요합니다.")
+    if not oauth or not oauth.refresh_token:
+        raise HTTPException(
+            status_code=401,
+            detail="Google 계정이 연결되어 있지 않습니다. 다시 로그인해주세요."
+        )
 
     creds = Credentials(
-        token=None,
+        token=None,  # access_token은 refresh로 항상 새로 받음
         refresh_token=oauth.refresh_token,
         token_uri="https://oauth2.googleapis.com/token",
         client_id=GOOGLE_CLIENT_ID,
@@ -46,8 +52,15 @@ def load_credentials(
         scopes=oauth.scope.split(" ") if oauth.scope else None,
     )
 
-    if not creds.valid:
-        creds.refresh(Request())
+    try:
+        if not creds.valid:
+            creds.refresh(Request())
+    except RefreshError:
+        # 🔥 핵심 수정 포인트
+        raise HTTPException(
+            status_code=401,
+            detail="Google 인증이 만료되었습니다. 다시 Google 계정을 연결해주세요."
+        )
 
     return creds
 
@@ -92,7 +105,7 @@ def fetch_all_google_reviews(
         credentials=creds,
     )
 
-    # 3️⃣ Review 서비스 (최신)
+    # 3️⃣ Review 서비스
     review_service = build(
         "mybusinessreviews",
         "v1",
