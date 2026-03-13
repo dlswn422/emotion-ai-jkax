@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from googleapiclient.discovery import build
@@ -9,6 +9,7 @@ from backend.db.session import get_db
 from backend.db.models import GoogleReview, User
 from backend.collectors.business_profile_client import load_credentials
 from backend.api.auth import get_current_user
+from backend.service.customer_service import get_store_customers_by_period
 
 router = APIRouter(prefix="/stores", tags=["stores"])
 
@@ -285,3 +286,18 @@ def sync_reviews(
         "message": "리뷰 동기화 완료",
         **result,
     }
+
+@router.get("/{store_id}/customers")
+def get_store_customers(
+    store_id: str,
+    from_date: str | None = Query(None, alias="from"),
+    to_date: str | None = Query(None, alias="to"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    return get_store_customers_by_period(
+        db=db,
+        store_id=store_id,
+        from_date=from_date,
+        to_date=to_date,
+    )

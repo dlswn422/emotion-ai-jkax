@@ -1,5 +1,11 @@
+from pathlib import Path
 from dotenv import load_dotenv
-load_dotenv()
+
+# =========================
+# .env 로드 (backend/.env)
+# =========================
+env_path = Path(__file__).resolve().parent / ".env"
+load_dotenv(env_path)
 
 import os
 from fastapi import FastAPI
@@ -8,22 +14,25 @@ from starlette.middleware.sessions import SessionMiddleware
 
 from backend.api import analysis, auth, stores, google_business, dashboard, customers
 
+# =========================
+# FastAPI App
+# =========================
 app = FastAPI(title="CX Nexus Backend")
 
 ENV = os.getenv("ENV", "local")
 
 # =========================
-# CORS 설정 (반드시 먼저)
+# CORS 설정
 # =========================
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "http://localhost:3000",
-        "https://cxnexus.ai",                     # ✅ 새 도메인 (필수)
-        "https://www.cxnexus.ai",                 # ✅ 있으면 안전
-        "https://emotion-ai-jkax-wqsd.vercel.app" # ✅ 유지 (preview/심사용)
+        "https://cxnexus.ai",
+        "https://www.cxnexus.ai",
+        "https://emotion-ai-jkax-wqsd.vercel.app"
     ],
-    allow_credentials=True,   # 🔥 세션 쿠키 필수
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -33,8 +42,8 @@ app.add_middleware(
 # =========================
 app.add_middleware(
     SessionMiddleware,
-    secret_key=os.getenv("SESSION_SECRET"),   # 🔥 하나로 통일
-    max_age=60 * 60 * 24,                     # 1 day
+    secret_key=os.getenv("SESSION_SECRET"),
+    max_age=60 * 60 * 24,
     same_site="lax" if ENV == "local" else "none",
     https_only=False if ENV == "local" else True,
 )
