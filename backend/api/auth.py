@@ -49,12 +49,17 @@ def google_login(request: Request):
         redirect_uri=REDIRECT_URI,
     )
 
-    # flow에 verifier 설정
+    # PKCE verifier 설정
     flow.code_verifier = code_verifier
 
     auth_url, _ = flow.authorization_url(
         state=state
     )
+
+    print("\n===== GOOGLE LOGIN =====")
+    print("Auth URL:", auth_url)
+    print("State:", state)
+    print("========================\n")
 
     return RedirectResponse(auth_url)
 
@@ -82,7 +87,7 @@ def google_callback(
             status_code=400,
         )
 
-    # 👉 state는 1회용
+    # state 1회용 제거
     request.session.pop("login_oauth_state", None)
 
     # ===============================
@@ -96,10 +101,22 @@ def google_callback(
 
     # PKCE verifier 복구
     saved_code_verifier = request.session.get("login_oauth_code_verifier")
+
+    print("saved_code_verifier:", saved_code_verifier)
+
+    if not saved_code_verifier:
+        return JSONResponse(
+            {"error": "Missing PKCE code verifier"},
+            status_code=400,
+        )
+
     flow.code_verifier = saved_code_verifier
 
     flow.fetch_token(code=code)
     credentials = flow.credentials
+
+    # verifier 1회용 제거
+    request.session.pop("login_oauth_code_verifier", None)
 
     print("\n===== TOKEN DEBUG (LOGIN) =====")
     print("Access Token:", credentials.token)
