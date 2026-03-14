@@ -23,24 +23,73 @@ import AppHeader from "../../../components/common/AppHeader";
 const MOCK_STORES: Record<string, any> = {
   store_1: {
     name: "Yewon Korean Restaurant 예원 한식당",
-    address: "Jl. Purnawarman No.4A, RT.6/RW.2, Selong, Kec. Kby. Baru, Kota Jakarta Selatan, Daerah Khusus Ibukota Jakarta 12110 인도네시아",
+    address: "Jl. Purnawarman No.4A, Jakarta Selatan",
     category: "한식당",
     status: "OPEN",
     avg_rating: 4.6,
-    review_count: 418,
+    review_count: 425,
     description:
-      "Korean restaurant YEWON ❤️ We will serve Traditional K-Food & Dynamic K-Culture",
+      "전통 한식과 K-컬처를 함께 즐길 수 있는 한식 레스토랑입니다.",
     last_synced_at: "2026-01-16T12:40:00Z",
   },
+
   store_2: {
     name: "HALLA RESTAURANT HALAL",
-    address: "Jl. Cipaku I No.14 1, RT.1/RW.4, Petogogan, Kec. Kby. Baru, Kota Jakarta Selatan, Daerah Khusus Ibukota Jakarta 12170 인도네시아",
+    address: "Jl. Cipaku I No.14, Jakarta Selatan",
     category: "한식당",
     status: "OPEN",
     avg_rating: 4.7,
-    review_count: 121,
+    review_count: 132,
     description:
-      "합리적인 가격으로 지역 주민들에게 사랑받는 한식당입니다.",
+      "할랄 인증 한식 메뉴를 제공하는 인기 레스토랑입니다.",
+    last_synced_at: "2026-01-12T09:10:00Z",
+  },
+
+  store_3: {
+    name: "Leechadol 이차돌 세노파티",
+    address: "Jl. Senayan No.29, Kebayoran Baru, Jakarta Selatan",
+    category: "한식 BBQ",
+    status: "OPEN",
+    avg_rating: 4.9,
+    review_count: 1478,
+    description:
+      "합리적인 가격으로 즐기는 한국식 차돌박이 BBQ 전문점입니다.",
+    last_synced_at: "2026-01-15T10:20:00Z",
+  },
+
+  store_4: {
+    name: "청담가든",
+    address: "Jl. Senopati No.43C, Senayan, Jakarta Selatan",
+    category: "한식당",
+    status: "OPEN",
+    avg_rating: 4.6,
+    review_count: 2244,
+    description:
+      "정통 한국 가정식과 고급 한식 메뉴를 제공하는 레스토랑입니다.",
+    last_synced_at: "2026-01-14T14:50:00Z",
+  },
+
+  store_5: {
+    name: "토박",
+    address: "Jl. Wolter Monginsidi No.30, Jakarta Selatan",
+    category: "한식당",
+    status: "OPEN",
+    avg_rating: 4.5,
+    review_count: 1411,
+    description:
+      "현지인들에게 사랑받는 한국 전통 음식 전문점입니다.",
+    last_synced_at: "2026-01-11T16:30:00Z",
+  },
+
+  store_6: {
+    name: "무궁화 세노빠띠 본점",
+    address: "Jl. Kemang Raya No.7, Kemang, Jakarta Selatan",
+    category: "한식당",
+    status: "OPEN",
+    avg_rating: null,
+    review_count: 0,
+    description:
+      "대규모 한식 메뉴와 다양한 한국 요리를 제공하는 인기 매장입니다.",
     last_synced_at: null,
   },
 };

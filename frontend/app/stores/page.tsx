@@ -19,19 +19,45 @@ const MOCK_STORES = [
   {
     id: "store_1",
     name: "Yewon Korean Restaurant 예원 한식당",
-    address:
-      "Jl. Purnawarman No.4A, RT.6/RW.2, Selong, Kec. Kby. Baru, Kota Jakarta Selatan, Daerah Khusus Ibukota Jakarta 12110 인도네시아",
+    address: "Jl. Purnawarman No.4A, Jakarta Selatan",
     rating: 4.6,
-    reviews: 418,
+    reviews: 425,
   },
   {
     id: "store_2",
     name: "HALLA RESTAURANT HALAL",
-    address:
-      "Jl. Cipaku I No.14 1, RT.1/RW.4, Petogogan, Kec. Kby. Baru, Kota Jakarta Selatan, Daerah Khusus Ibukota Jakarta 12170 인도네시아",
+    address: "Jl. Cipaku I No.14, Jakarta Selatan",
+    rating: 4.7,
+    reviews: 132,
+  },
+  {
+    id: "store_3",
+    name: "Leechadol 이차돌 세노파티",
+    address: "Jl. Senayan No.29, Kebayoran Baru, Jakarta Selatan",
+    rating: 4.9,
+    reviews: 1478,
+  },
+  {
+    id: "store_4",
+    name: "청담가든",
+    address: "Jl. Senopati No.43C, Senayan, Jakarta Selatan",
+    rating: 4.6,
+    reviews: 2244,
+  },
+  {
+    id: "store_5",
+    name: "토박",
+    address: "Jl. Wolter Monginsidi No.30, Kebayoran Baru, Jakarta Selatan",
+    rating: 4.5,
+    reviews: 1411,
+  },
+  {
+    id: "store_6",
+    name: "무궁화 세노빠띠 본점",
+    address: "Jl. Kemang Raya No.7, Kemang, Jakarta Selatan",
     rating: null,
     reviews: 0,
-  },
+  }
 ];
 
 /* ================= API ================= */

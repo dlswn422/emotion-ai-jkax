@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import func, case
 from datetime import datetime
@@ -11,10 +11,25 @@ router = APIRouter()
 
 
 @router.get("/stores/{store_id}/customers")
-def list_customers(store_id: str, db: Session = Depends(get_db)):
+def list_customers(
+    store_id: str,
+    page: int = Query(1, ge=1),
+    limit: int = Query(20, le=100),
+    db: Session = Depends(get_db),
+):
     """
     특정 매장의 리뷰를 기준으로 고객(리뷰 작성자) 목록 + 이탈 위험도 조회
+    (페이지네이션 지원)
     """
+
+    offset = (page - 1) * limit
+
+    # 전체 고객 수 계산
+    total_customers = (
+        db.query(func.count(func.distinct(GoogleReview.author_name)))
+        .filter(GoogleReview.store_id == store_id)
+        .scalar()
+    )
 
     rows = (
         db.query(
@@ -34,6 +49,9 @@ def list_customers(store_id: str, db: Session = Depends(get_db)):
         )
         .filter(GoogleReview.store_id == store_id)
         .group_by(GoogleReview.author_name)
+        .order_by(func.max(GoogleReview.created_at_google).desc())
+        .limit(limit)
+        .offset(offset)
         .all()
     )
 
@@ -67,18 +85,19 @@ def list_customers(store_id: str, db: Session = Depends(get_db)):
             }
         )
 
-    total = len(customers)
     high_risk = sum(1 for c in customers if c["churn_level"] == "HIGH")
 
     avg_satisfaction = (
-        round(sum(c["avg_rating"] for c in customers) / total, 1)
-        if total > 0
+        round(sum(c["avg_rating"] for c in customers) / len(customers), 1)
+        if customers
         else 0
     )
 
     return {
-        "total_customers": total,
+        "total_customers": total_customers,
         "high_risk": high_risk,
         "average_satisfaction": avg_satisfaction,
+        "page": page,
+        "limit": limit,
         "customers": customers,
     }
