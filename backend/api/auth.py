@@ -39,20 +39,22 @@ def google_login(request: Request):
     state = secrets.token_urlsafe(16)
     request.session["login_oauth_state"] = state
 
+    # PKCE code_verifier 생성
+    code_verifier = secrets.token_urlsafe(32)
+    request.session["login_oauth_code_verifier"] = code_verifier
+
     flow = Flow.from_client_secrets_file(
         CLIENT_SECRET_FILE,
         scopes=LOGIN_SCOPES,
         redirect_uri=REDIRECT_URI,
     )
 
-    # ❗ 로그인에서는 offline / consent / include_granted_scopes ❌
+    # flow에 verifier 설정
+    flow.code_verifier = code_verifier
+
     auth_url, _ = flow.authorization_url(
         state=state
     )
-
-    print("\n===== GOOGLE LOGIN =====")
-    print("Auth URL:", auth_url)
-    print("========================\n")
 
     return RedirectResponse(auth_url)
 
@@ -91,6 +93,10 @@ def google_callback(
         scopes=LOGIN_SCOPES,
         redirect_uri=REDIRECT_URI,
     )
+
+    # PKCE verifier 복구
+    saved_code_verifier = request.session.get("login_oauth_code_verifier")
+    flow.code_verifier = saved_code_verifier
 
     flow.fetch_token(code=code)
     credentials = flow.credentials
