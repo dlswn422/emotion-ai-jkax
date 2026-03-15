@@ -45,7 +45,7 @@ class OAuthAccount(Base):
 
 
 class GoogleReview(Base):
-    __tablename__ = "google_reviews"
+    __tablename__ = "google_reviews_chang"
 
     id = Column(BigInteger, primary_key=True, autoincrement=True)
 

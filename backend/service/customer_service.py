@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from calendar import monthrange
 from collections import defaultdict
 from datetime import datetime, timedelta, timezone
 from typing import Any
@@ -76,14 +77,16 @@ def get_store_customers_by_period(
     고객 분석 API 응답 생성
     - LLM 없음
     - DB 리뷰 집계 기반
-    - 현재 기간 vs 직전 동일 길이 기간 비교
+    - 현재월 vs 전달 비교
+    - 이탈위험은 평점 기준만 사용
+      * 1~2점: HIGH
+      * 3점: MEDIUM
+      * 4~5점: LOW
     """
 
-    current_start, current_end_exclusive = _parse_date_range(from_date, to_date)
-    period_days = max((current_end_exclusive - current_start).days, 1)
-
-    previous_end_exclusive = current_start
-    previous_start = previous_end_exclusive - timedelta(days=period_days)
+    current_start, current_end_exclusive, previous_start, previous_end_exclusive = _parse_month_range(
+        from_date, to_date
+    )
 
     current_reviews = _fetch_reviews(
         db=db,
@@ -126,6 +129,20 @@ def get_store_customers_by_period(
     segments = _build_segments(current_customers)
     cohort = _build_cohort(all_customer_map, current_start, current_end_exclusive)
     customers = _build_customer_list(current_customers)
+
+    print("\n=== CUSTOMER SERVICE RESULT ===")
+    print("store_id =", store_id)
+    print("current month =", current_start, "~", current_end_exclusive)
+    print("previous month =", previous_start, "~", previous_end_exclusive)
+    print("current review count =", len(current_reviews))
+    print("previous review count =", len(previous_reviews))
+    print("current customer count =", len(current_customers))
+    print("previous customer count =", len(previous_customers))
+    print("summary =", summary)
+    print("risk_distribution =", risk_distribution)
+    print("visit_frequency_distribution =", visit_frequency_distribution)
+    print("customers sample =", customers[:3])
+    print("================================\n")
 
     return {
         "summary": summary,
@@ -171,33 +188,38 @@ def _fetch_reviews_all(
 # ----------------------------
 # parsing helpers
 # ----------------------------
-def _parse_date_range(
+def _parse_month_range(
     from_date: str | None,
     to_date: str | None,
-) -> tuple[datetime, datetime]:
-    """
-    반환값:
-      start_dt (inclusive)
-      end_dt_exclusive
-    """
+) -> tuple[datetime, datetime, datetime, datetime]:
     today = datetime.now()
 
-    if from_date:
-        start_dt = datetime.strptime(from_date, "%Y-%m-%d")
-    else:
-        start_dt = today - timedelta(days=90)
-
     if to_date:
-        end_dt = datetime.strptime(to_date, "%Y-%m-%d")
+        base_dt = datetime.strptime(to_date, "%Y-%m-%d")
+    elif from_date:
+        base_dt = datetime.strptime(from_date, "%Y-%m-%d")
     else:
-        end_dt = today
+        base_dt = today
 
-    end_dt_exclusive = end_dt + timedelta(days=1)
+    current_year = base_dt.year
+    current_month = base_dt.month
 
-    if end_dt_exclusive <= start_dt:
-        end_dt_exclusive = start_dt + timedelta(days=1)
+    current_start = datetime(current_year, current_month, 1)
+    current_last_day = monthrange(current_year, current_month)[1]
+    current_end_exclusive = datetime(current_year, current_month, current_last_day) + timedelta(days=1)
 
-    return start_dt, end_dt_exclusive
+    if current_month == 1:
+        previous_year = current_year - 1
+        previous_month = 12
+    else:
+        previous_year = current_year
+        previous_month = current_month - 1
+
+    previous_start = datetime(previous_year, previous_month, 1)
+    previous_last_day = monthrange(previous_year, previous_month)[1]
+    previous_end_exclusive = datetime(previous_year, previous_month, previous_last_day) + timedelta(days=1)
+
+    return current_start, current_end_exclusive, previous_start, previous_end_exclusive
 
 
 # ----------------------------
@@ -286,11 +308,7 @@ def _build_customer_metrics(
         visit_count_current = len(reviews_sorted)
         visit_count_all = len(all_reviews_sorted)
 
-        days_since_last = (
-            max((now_dt - last_dt).days, 0)
-            if last_dt
-            else 999
-        )
+        days_since_last = max((now_dt - last_dt).days, 0) if last_dt else 999
 
         is_repeat_customer = visit_count_all >= 2
         is_first_visit_customer = visit_count_all == 1
@@ -350,28 +368,20 @@ def _calculate_churn_score(
     visit_count_all: int,
     days_since_last: int,
 ) -> int:
-    score = 0
+    """
+    단순화된 현재 정책:
+    - 1~2점: HIGH
+    - 3점: MEDIUM
+    - 4~5점: LOW
 
+    호출부 호환을 위해 인자는 유지하지만,
+    실제 계산은 avg_rating만 사용.
+    """
     if avg_rating <= 2.0:
-        score += 45
-    elif avg_rating <= 3.0:
-        score += 30
-    elif avg_rating <= 4.0:
-        score += 15
-
-    if visit_count_all <= 1:
-        score += 20
-    elif visit_count_all == 2:
-        score += 10
-
-    if days_since_last >= 90:
-        score += 35
-    elif days_since_last >= 45:
-        score += 20
-    elif days_since_last >= 20:
-        score += 10
-
-    return max(0, min(score, 100))
+        return 90
+    if avg_rating <= 3.0:
+        return 60
+    return 20
 
 
 def _classify_risk(churn_score: int) -> str:
@@ -542,13 +552,14 @@ def _build_segments(
 ) -> dict:
     total = len(customers) or 1
 
-    loyal = [
-        c for c in customers
-        if c["total_review_count_all_time"] >= 3 and c["churn_level"] == "LOW"
-    ]
-    new = [c for c in customers if c["is_first_visit_customer"]]
     at_risk = [c for c in customers if c["churn_level"] == "HIGH"]
-    reactivation = [c for c in customers if c["churn_level"] == "MEDIUM"]
+    new = [c for c in customers if c["churn_level"] != "HIGH"]
+
+    # 현재 정책상 충성 고객은 쓰지 않음
+    loyal: list[dict[str, Any]] = []
+
+    # 현재 화면 기준으로 재활성화 필요도 별도 분리하지 않음
+    reactivation: list[dict[str, Any]] = []
 
     def avg_rating(rows: list[dict[str, Any]]) -> float:
         if not rows:
@@ -570,7 +581,7 @@ def _build_segments(
 
     insights: list[str] = []
     if new_count > 0:
-        insights.append(f"신규 고객 비중이 {share(new)}%로 가장 큰 유입 그룹입니다.")
+        insights.append(f"신규 고객이 {new_count}명입니다.")
     if at_risk_count > 0:
         insights.append(f"이탈 위험 고객이 {at_risk_count}명으로 빠른 대응이 필요합니다.")
 
@@ -600,7 +611,6 @@ def _build_segments(
         },
         "insights": insights,
     }
-
 
 # ----------------------------
 # cohort

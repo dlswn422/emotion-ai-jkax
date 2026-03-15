@@ -182,24 +182,21 @@ export const ReportPage = defineComponent({
       });
     }
 
-    function normalizeSegments(json = {}) {
-      const seg = json.segments || [];
-      if (seg.length) {
-        return seg.map((item) => ({
-          label: item.label,
-          val: item.val,
-          delta: item.delta || '',
-          trend: item.trend || 'up',
-        }));
-      }
+        function normalizeSegments(json = {}) {
+          const seg = json.segments || [];
+          if (seg.length) {
+            return seg.map((item) => ({
+              label: item.label,
+              val: item.val,
+              delta: item.delta || '',
+              trend: item.trend || 'up',
+            }));
+          }
 
-      return [
-        { label: '평균 객단가', val: '₩42,000', delta: '+6%', trend: 'up' },
-        { label: '재방문 의향', val: '78%', delta: '+4%', trend: 'up' },
-        { label: '신규 고객', val: '24%', delta: '+2%', trend: 'up' },
-        { label: '이탈 위험', val: '14%', delta: '-1%', trend: 'down' },
-      ];
-    }
+          return [
+            { label: '평균 객단가', val: '₩42,000', delta: '', trend: 'up' },
+          ];
+        }
 
     function buildNps(cxJson = {}) {
       const score = Number(cxJson.kpi?.nps ?? cxJson.nps?.score ?? cxJson.nps ?? 0);
@@ -296,8 +293,52 @@ export const ReportPage = defineComponent({
       return tags.length ? tags : ['리뷰 고객'];
     }
 
+function formatDeltaText(value, suffix = '%') {
+  const n = Number(value ?? 0);
+  const abs = Math.abs(n);
+  const formatted = abs.toFixed(1);
+
+  if (n >= 0) return `+${formatted}${suffix} 전월 대비`;
+  return `-${formatted}${suffix} 전월 대비`;
+}
+
+function formatDeltaValueText(value, digits = 1, suffix = '') {
+  const n = Number(value ?? 0);
+  const abs = Math.abs(n);
+  const formatted = abs.toFixed(digits);
+
+  if (n > 0) return `+${formatted}${suffix} 전월 대비`;
+  if (n < 0) return `-${formatted}${suffix} 전월 대비`;
+ 
+}
+
+function deltaTrendClass(value, invert = false) {
+  const n = Number(value ?? 0);
+
+  if (n === 0) return 'ca-trend-up';
+
+  if (!invert) {
+    return n > 0 ? 'ca-trend-up' : 'ca-trend-down';
+  }
+
+  return n < 0 ? 'ca-trend-up' : 'ca-trend-down';
+}
+
+function deltaArrowPath(value, invert = false) {
+  const n = Number(value ?? 0);
+
+  if (n === 0) return 'M5 15l7-7 7 7';
+
+  if (!invert) {
+    return n > 0 ? 'M5 15l7-7 7 7' : 'M19 9l-7 7-7-7';
+  }
+
+  return n < 0 ? 'M5 15l7-7 7 7' : 'M19 9l-7 7-7-7';
+}
+
 function adaptCustomers(customerJson) {
-   console.log("customerJson", customerJson);
+  console.log("=== adaptCustomers input ===", customerJson);
+   
 
   const summary = customerJson.summary || {};
   const riskDistribution = customerJson.risk_distribution || {};
@@ -584,13 +625,16 @@ function adaptCustomers(customerJson) {
           getRatingTrend(storeId, 'month', from, to),
           getCustomers(storeId, from, to),
         ]);
-        console.log("Executive Summary", cxJson)
-        console.log("getRatingTrend_day", trendDaily)
-        console.log("getRatingTrend_month", trendMonthly)
-        console.log("getCustomers", customerJson)
-        
+        console.log("Executive Summary", cxJson);
+        console.log("getRatingTrend_day", trendDaily);
+        console.log("getRatingTrend_month", trendMonthly);
+        console.log("getCustomers RAW", customerJson);
+
+   
 
         report.value = adaptCxReport(cxJson, trendDaily, trendMonthly, store, from, to);
+        const adaptedCustomers = adaptCustomers(customerJson);
+
         customers.value = adaptCustomers(customerJson);
 
     
@@ -633,30 +677,34 @@ function adaptCustomers(customerJson) {
       return i === 0 ? 'rank-gold' : i === 1 ? 'rank-silver' : i === 2 ? 'rank-bronze' : 'rank-other';
     }
 
-    return {
-      store,
-      report,
-      loading,
-      error,
-      activeTab,
-      chartMode,
-      NAV_ITEMS,
-      maxDistCount,
-      starsStr,
-      fmtDate,
-      rankClass,
-      printReport,
-      router,
-      customers,
-      custSearch,
-      custRiskFilter,
-      custSortBy,
-      custSubTab,
-      visitFrequencyRows,
-      filteredCustomers,
-      expandedCustomer,
-      toggleCustomer
-    };
+return {
+  store,
+  report,
+  loading,
+  error,
+  activeTab,
+  chartMode,
+  NAV_ITEMS,
+  maxDistCount,
+  starsStr,
+  fmtDate,
+  rankClass,
+  printReport,
+  router,
+  customers,
+  custSearch,
+  custRiskFilter,
+  custSortBy,
+  custSubTab,
+  visitFrequencyRows,
+  filteredCustomers,
+  expandedCustomer,
+  toggleCustomer,
+  formatDeltaText,
+  formatDeltaValueText,
+  deltaTrendClass,
+  deltaArrowPath
+};
   },
 template: `
   <div>
@@ -1111,40 +1159,46 @@ template: `
             <div v-show="custSubTab==='overview'">
               <div class="ca-kpi-row">
                 <div class="ca-kpi-card">
-                  <div class="ca-kpi-icon" style="background:linear-gradient(135deg,#6366f1,#8b5cf6)">
-                    <svg width="16" height="16" fill="none" stroke="#fff" stroke-width="2" viewBox="0 0 24 24"><path d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-                  </div>
-                  <div>
-                    <div class="ca-kpi-label">총 고객 수</div>
-                    <div class="ca-kpi-value" style="color:#6366f1">
-                      {{ customers.summary.totalCustomers.current }}
-                      <span class="ca-kpi-unit">명</span>
-                    </div>
-                    <div class="ca-kpi-trend" :class="customers.summary.totalCustomers.delta_pct >= 0 ? 'ca-trend-up' : 'ca-trend-down'">
-                      <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-                        <path :d="customers.summary.totalCustomers.delta_pct >= 0 ? 'M5 15l7-7 7 7' : 'M19 9l-7 7-7-7'"/>
-                      </svg>
-                      {{ customers.summary.totalCustomers.delta_pct >= 0 ? '+' : '' }}{{ customers.summary.totalCustomers.delta_pct }}% 전월 대비
-                    </div>
-                  </div>
+              <div class="ca-kpi-icon" style="background:linear-gradient(135deg,#6366f1,#8b5cf6)">
+                <svg width="16" height="16" fill="none" stroke="#fff" stroke-width="2" viewBox="0 0 24 24">
+                  <path d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+                </svg>
+              </div>
+              <div>
+                <div class="ca-kpi-label">총 고객 수</div>
+                <div class="ca-kpi-value" style="color:#6366f1">
+                  {{ customers.summary.totalCustomers.current }}<span class="ca-kpi-unit">명</span>
                 </div>
+                <div
+                  class="ca-kpi-trend"
+                  :class="deltaTrendClass(customers.summary.totalCustomers.delta_pct)"
+                >
+                  <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                    <path :d="deltaArrowPath(customers.summary.totalCustomers.delta_pct)" />
+                  </svg>
+                  {{ formatDeltaText(customers.summary.totalCustomers.delta_pct) }}
+                </div>
+              </div>
+            </div>
 
                 <div class="ca-kpi-card">
                   <div class="ca-kpi-icon" style="background:linear-gradient(135deg,#f43f5e,#fb7185)">
                     <svg width="16" height="16" fill="none" stroke="#fff" stroke-width="2" viewBox="0 0 24 24"><path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
                   </div>
                   <div>
-                    <div class="ca-kpi-label">이탈 위험 고객</div>
-                    <div class="ca-kpi-value" style="color:#f43f5e">
-                      {{ customers.summary.atRiskCustomers.current }}
-                      <span class="ca-kpi-unit">명</span>
-                    </div>
-                    <div class="ca-kpi-trend" :class="customers.summary.atRiskCustomers.delta_pct <= 0 ? 'ca-trend-up' : 'ca-trend-down'">
-                      <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-                        <path :d="customers.summary.atRiskCustomers.delta_pct <= 0 ? 'M5 15l7-7 7 7' : 'M19 9l-7 7-7-7'"/>
-                      </svg>
-                      {{ customers.summary.atRiskCustomers.delta_pct > 0 ? '+' : '' }}{{ customers.summary.atRiskCustomers.delta_pct }}% 전월 대비
-                    </div>
+                  <div class="ca-kpi-label">이탈 위험 고객</div>
+                  <div class="ca-kpi-value" style="color:#f43f5e">
+                    {{ customers.summary.atRiskCustomers.current }}<span class="ca-kpi-unit">명</span>
+                  </div>
+                  <div
+                    class="ca-kpi-trend"
+                    :class="deltaTrendClass(customers.summary.atRiskCustomers.delta_pct, true)"
+                  >
+                    <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                      <path :d="deltaArrowPath(customers.summary.atRiskCustomers.delta_pct, true)" />
+                    </svg>
+                    {{ formatDeltaText(customers.summary.atRiskCustomers.delta_pct) }}
+                  </div>
                   </div>
                 </div>
 
@@ -1153,17 +1207,19 @@ template: `
                     <svg width="16" height="16" fill="none" stroke="#fff" stroke-width="2" viewBox="0 0 24 24"><path d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"/></svg>
                   </div>
                   <div>
-                    <div class="ca-kpi-label">평균 만족도</div>
-                    <div class="ca-kpi-value" style="color:#10b981">
-                      {{ Number(customers.summary.avgSatisfaction.current || 0).toFixed(1) }}
-                      <span class="ca-kpi-unit">/5.0</span>
-                    </div>
-                    <div class="ca-kpi-trend" :class="customers.summary.avgSatisfaction.delta_value >= 0 ? 'ca-trend-up' : 'ca-trend-down'">
-                      <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-                        <path :d="customers.summary.avgSatisfaction.delta_value >= 0 ? 'M5 15l7-7 7 7' : 'M19 9l-7 7-7-7'"/>
-                      </svg>
-                      {{ customers.summary.avgSatisfaction.delta_value >= 0 ? '+' : '' }}{{ customers.summary.avgSatisfaction.delta_value }} 전월 대비
-                    </div>
+                  <div class="ca-kpi-label">평균 만족도</div>
+                  <div class="ca-kpi-value" style="color:#10b981">
+                    {{ customers.summary.avgSatisfaction.current.toFixed(1) }}<span class="ca-kpi-unit">/5.0</span>
+                  </div>
+                    <div
+                  class="ca-kpi-trend"
+                  :class="customers.summary.avgSatisfaction.delta_value >= 0 ? 'ca-trend-up' : 'ca-trend-down'"
+                >
+                  <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                    <path :d="customers.summary.avgSatisfaction.delta_value >= 0 ? 'M5 15l7-7 7 7' : 'M19 9l-7 7-7-7'" />
+                  </svg>
+                  {{ formatDeltaValueText(customers.summary.avgSatisfaction.delta_value, 1) }}
+                </div>
                   </div>
                 </div>
 
@@ -1172,16 +1228,19 @@ template: `
                     <svg width="16" height="16" fill="none" stroke="#fff" stroke-width="2" viewBox="0 0 24 24"><path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
                   </div>
                   <div>
-                    <div class="ca-kpi-label">재방문율</div>
-                    <div class="ca-kpi-value" style="color:#f59e0b">
-                      {{ customers.summary.repeatVisitRate.current }}%
-                    </div>
-                    <div class="ca-kpi-trend" :class="customers.summary.repeatVisitRate.delta_pct >= 0 ? 'ca-trend-up' : 'ca-trend-down'">
-                      <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-                        <path :d="customers.summary.repeatVisitRate.delta_pct >= 0 ? 'M5 15l7-7 7 7' : 'M19 9l-7 7-7-7'"/>
-                      </svg>
-                      {{ customers.summary.repeatVisitRate.delta_pct >= 0 ? '+' : '' }}{{ customers.summary.repeatVisitRate.delta_pct }}% 전월 대비
-                    </div>
+                  <div class="ca-kpi-label">재방문율</div>
+                  <div class="ca-kpi-value" style="color:#f59e0b">
+                    {{ customers.summary.repeatVisitRate.current }}%
+                  </div>
+                                <div
+                  class="ca-kpi-trend"
+                  :class="deltaTrendClass(customers.summary.repeatVisitRate.delta_pct)"
+                >
+                  <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                    <path :d="deltaArrowPath(customers.summary.repeatVisitRate.delta_pct)" />
+                  </svg>
+                  {{ formatDeltaText(customers.summary.repeatVisitRate.delta_pct) }}
+                </div>
                   </div>
                 </div>
               </div>
@@ -1236,8 +1295,8 @@ template: `
                       <div class="ca-churn-icon">
                         <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
                       </div>
-                      이탈 위험 고객 <strong>{{ customers.riskDistribution.high?.count || 0 }}명</strong>의 평균 이탈 확률은
-                      <strong>{{ customers.riskDistribution.high?.avg_churn_pct || 0 }}%</strong>입니다. 즉각적인 리텐션 전략이 필요합니다.
+                      이번 달 이탈 위험 고객은 <strong>{{ customers.riskDistribution.high?.count || 0 }}명</strong>명이고,
+                      평균 이탈 확률은 <strong>{{ customers.riskDistribution.high?.avg_churn_pct || 0 }}%</strong>입니다.
                     </div>
                   </div>
                 </div>
@@ -1266,12 +1325,12 @@ template: `
                         <span class="ca-avg-spend-label">평균 객단가</span>
                         <span class="ca-avg-spend-val">₩42,000</span>
                       </div>
-                      <div class="ca-avg-spend-item">
-                        <span class="ca-avg-spend-label">재방문 의향</span>
-                        <span class="ca-avg-spend-val" style="color:#10b981">
-                          {{ customers.visitFrequencyDistribution.repeat_intent_rate || 0 }}%
-                        </span>
-                      </div>
+                    <div class="ca-avg-spend-item">
+                      <span class="ca-avg-spend-label">재방문 의향</span>
+                      <span class="ca-avg-spend-val" style="color:#10b981">
+                        {{ customers.visitFrequencyDistribution.repeat_intent_rate || 0 }}%
+                      </span>
+                    </div>
                     </div>
                   </div>
                 </div>
