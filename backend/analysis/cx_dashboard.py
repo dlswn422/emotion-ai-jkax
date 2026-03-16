@@ -315,6 +315,18 @@ Detractor (0~6)
 - primary_focus와 직접 연결된 액션은 우선 HIGH 또는 MEDIUM 우선 고려
 - 보고서 전체의 핵심 축과 멀면 안 된다
 
+
+==============================
+10 키워드 워드클라우드
+==============================
+1. 리뷰 텍스트에서 반복 등장하는 대표 키워드를 추출하라.
+2. 반드시 positive_keywords, negative_keywords, all_keywords 3개 배열을 반환하라.
+3. 각 배열은 최대 12개까지 반환하라.
+4. 각 항목은 text, size 키를 가진 객체 형식으로 반환하라.
+5. positive_keywords는 긍정 맥락 키워드만, negative_keywords는 부정 맥락 키워드만 넣어라.
+6. all_keywords는 긍정/부정을 포함한 전체 핵심 키워드를 빈도와 중요도 기준으로 정리하라.
+7. 리뷰에 직접 없는 단어를 임의로 만들지 마라.
+
 ==============================
 최종 검증 규칙
 ==============================
@@ -338,12 +350,6 @@ JSON을 반환하기 전에 반드시 스스로 아래를 검증하라.
 반드시 아래 JSON 스키마만 반환하라.
 
 {{
-  "report_logic": {{
-    "primary_focus_type": "IMPROVEMENT",
-    "primary_focus_label": "웨이팅·응대 개선",
-    "repeated_strengths": ["음식 품질", "매장 분위기"],
-    "repeated_pains": ["웨이팅 시간", "서비스 응대"]
-  }},
   "executive_summary": {{
     "summary": "2~3문장 요약",
     "opportunity": "15~25자 한 줄 기회 문구"
@@ -388,7 +394,25 @@ JSON을 반환하기 전에 반드시 스스로 아래를 검증하라.
       "description": "구체적 실행 방안",
       "expected_effect": "기대 효과",
       "timeline": "2주 이내",
-      "linked_to": "웨이팅 시간"
+      "linked_to": "개선 요인 또는 기회"
+    }}
+  ],
+  "positive_keywords": [
+    {{
+      "text": "대표 긍정 키워드",
+      "size": 34
+    }}
+  ],
+  "negative_keywords": [
+    {{
+      "text": "대표 부정 키워드",
+      "size": 34
+    }}
+  ],
+  "all_keywords": [
+    {{
+      "text": "대표 전체 키워드",
+      "size": 34
     }}
   ]
 }}

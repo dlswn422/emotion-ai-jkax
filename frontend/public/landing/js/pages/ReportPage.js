@@ -24,6 +24,7 @@ export const ReportPage = defineComponent({
   setup() {
     const route = useRoute();
     const router = useRouter();
+    const keywordTab = ref('all');
     const storeId = route.params.id;
     const store = STORES.find(s => s.id === storeId) || STORES[0];
 
@@ -37,7 +38,7 @@ export const ReportPage = defineComponent({
         summary: {
           totalCustomers: { current: 0, previous: 0, delta_pct: 0 },
           atRiskCustomers: { current: 0, previous: 0, delta_pct: 0 },
-          avgSatisfaction: { current: 0, previous: 0, delta_value: 0 },
+          avgSatisfaction: { current: 0, previous: 0, delta_pct: 0 },
           repeatVisitRate: { current: 0, previous: 0, delta_pct: 0 },
         },
         riskDistribution: {},
@@ -54,7 +55,19 @@ export const ReportPage = defineComponent({
     const NAV_ITEMS = [
       { id:'summary', label:'Executive Summary', icon:'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z' },
       { id:'rating', label:'Overall Rating', icon:'M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z' },
-      { id:'segment', label:'Segment Analysis', icon:'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z' },
+     { 
+        id:'segment',
+        label:'Segment Analysis',
+        hidden: true,
+        icon:'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z'
+      },
+
+      {
+          id:'keyword',
+          label:'키워드 워드클라우드',
+          icon:'M7 18a4.6 4.6 0 01.88-9.117A5.5 5.5 0 0118.5 10a3.5 3.5 0 010 7H7z'
+        },
+
       { id:'nps', label:'NPS Score', icon:'M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z' },
       { id:'trend', label:'평점 추이', icon:'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z' },
       { id:'drivers', label:'Key Drivers', icon:'M13 7h8m0 0v8m0-8l-8 8-4-4-6 6' },
@@ -102,12 +115,33 @@ export const ReportPage = defineComponent({
     }
 
     function normalizeKeywords(json = {}) {
-      const pos = (json.positive_keywords || json.keywords?.positive || []).slice(0, 6);
-      const neg = (json.negative_keywords || json.keywords?.negative || []).slice(0, 6);
+      const pos = (json.positive_keywords || []).slice(0, 12);
+      const neg = (json.negative_keywords || []).slice(0, 12);
+      const all = (json.all_keywords || []).slice(0, 12);
+
+      function toWordItems(list = [], type = 'all') {
+        return list.map((item, i) => {
+          const text = typeof item === 'string' ? item : (item.text || '');
+          const rawSize = typeof item === 'object' ? Number(item.size || 0) : 0;
+
+          let size = 18;
+          if (rawSize >= 34) size = 28;
+          else if (rawSize >= 28) size = 24;
+          else if (rawSize >= 22) size = 20;
+          else size = 18;
+
+          return {
+            text,
+            size,
+            tone: type === 'positive' ? 'pos' : type === 'negative' ? 'neg' : 'all',
+          };
+        }).filter(v => v.text);
+      }
 
       return {
-        positive: pos.map((t, i) => ({ t, s: i < 2 ? 'lg' : i < 4 ? 'md' : 'sm' })),
-        negative: neg.map((t, i) => ({ t, s: i < 2 ? 'lg' : i < 4 ? 'md' : 'sm' })),
+        positive: toWordItems(pos, 'positive'),
+        negative: toWordItems(neg, 'negative'),
+        all: toWordItems(all, 'all'),
       };
     }
 
@@ -316,7 +350,7 @@ function adaptCustomers(customerJson) {
       avgSatisfaction: {
         current: Number(summary.avg_satisfaction?.current ?? 0),
         previous: Number(summary.avg_satisfaction?.previous ?? 0),
-        delta_value: Number(summary.avg_satisfaction?.delta_value ?? 0),
+        delta_pct: Number(summary.avg_satisfaction?.delta_pct ?? 0),
       },
       repeatVisitRate: {
         current: Number(summary.repeat_visit_rate?.current ?? 0),
@@ -616,7 +650,8 @@ return {
   rankClass,
   printReport,
   router,
-  customers
+  customers,
+  keywordTab
 };
   },
 template: `
@@ -632,7 +667,9 @@ template: `
             <div class="sidenav-period" v-if="report">{{fmtDate(report.period.start)}} ~ {{fmtDate(report.period.end)}}</div>
           </div>
           <div class="sidenav-section-label">보고서 섹션</div>
-          <template v-for="item in NAV_ITEMS" :key="item.id">
+
+          <template v-for="item in NAV_ITEMS.filter(item => !item.hidden)" :key="item.id">
+
             <div v-if="item.divider" class="sidenav-divider"></div>
             <button
               :class="['sidenav-item', activeTab===item.id?'active':'', item.divider?'sidenav-item-highlight':'']"
@@ -824,15 +861,71 @@ template: `
                 </div>
               </div>
               <div class="divider"></div>
-              <div class="keyword-section">
-                <div style="font-size:13px;font-weight:700;color:var(--text-2);margin-bottom:8px">주요 키워드</div>
-                <div class="keyword-cloud">
-                  <span v-for="kw in report.keywords.positive" :key="kw.t" :class="['kw','kw-p','kw-'+kw.s]">{{kw.t}}</span>
-                  <span v-for="kw in report.keywords.negative" :key="kw.t" :class="['kw','kw-n','kw-'+kw.s]">{{kw.t}}</span>
+
+            </div>
+          </div>
+
+
+
+          <!-- ──  키워드 워드클라우드 ── -->
+                    <div v-show="activeTab==='keyword'" class="r-card">
+            <div class="r-card-hd">
+              <div class="r-card-title">
+                <div class="r-title-icon ic-violet">
+                  <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path d="M7 18a4.6 4.6 0 01.88-9.117A5.5 5.5 0 0118.5 10a3.5 3.5 0 010 7H7z"/>
+                  </svg>
                 </div>
+                키워드 워드클라우드
+              </div>
+
+              <div class="wc-tabs">
+                <button
+                  :class="['wc-tab-btn', keywordTab==='positive' ? 'active' : '']"
+                  @click="keywordTab='positive'"
+                >
+                  긍정
+                </button>
+
+                <button
+                  :class="['wc-tab-btn', keywordTab==='negative' ? 'active' : '']"
+                  @click="keywordTab='negative'"
+                >
+                  부정
+                </button>
+
+                <button
+                  :class="['wc-tab-btn', keywordTab==='all' ? 'active' : '']"
+                  @click="keywordTab='all'"
+                >
+                  전체
+                </button>
+              </div>
+            </div>
+
+            <div class="r-card-body">
+              <div class="wc-cloud">
+                <span
+                  v-for="word in (report.keywords?.[keywordTab] || [])"
+                  :key="keywordTab + '-' + word.text"
+                  :class="[
+                    'wc-word',
+                    word.tone === 'pos' ? 'wc-word-pos' : word.tone === 'neg' ? 'wc-word-neg' : 'wc-word-all'
+                  ]"
+                  :style="{ fontSize: word.size + 'px' }"
+                >
+                  {{ word.text }}
+                </span>
+              </div>
+
+              <div v-if="!(report.keywords?.[keywordTab] || []).length" class="wc-empty">
+                키워드 데이터가 없습니다.
               </div>
             </div>
           </div>
+
+
+
 
           <!-- ── SEGMENT ANALYSIS ── -->
           <div v-show="activeTab==='segment'" class="r-card">

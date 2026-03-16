@@ -180,10 +180,15 @@ export const CustomerPage = defineComponent({
               <div>
                 <div class="ca-kpi-label">평균 만족도</div>
                 <div class="ca-kpi-value" style="color:#10b981">{{ Number(customers.summary.avgSatisfaction.current || 0).toFixed(1) }}<span class="ca-kpi-unit">/5.0</span></div>
-                <div class="ca-kpi-trend" :class="Number(customers.summary.avgSatisfaction.delta_value || 0) >= 0 ? 'ca-trend-up' : 'ca-trend-down'">
-                  <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path :d="Number(customers.summary.avgSatisfaction.delta_value || 0) >= 0 ? 'M5 15l7-7 7 7' : 'M19 9l-7 7-7-7'" /></svg>
-                  {{ formatDeltaValueText(customers.summary.avgSatisfaction.delta_value, 1) }}
-                </div>
+                              <div
+                class="ca-kpi-trend"
+                :class="deltaTrendClass(customers.summary.avgSatisfaction.delta_pct)"
+              >
+                <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                  <path :d="deltaArrowPath(customers.summary.avgSatisfaction.delta_pct)" />
+                </svg>
+                {{ formatDeltaText(customers.summary.avgSatisfaction.delta_pct) }}
+              </div>
               </div>
             </div>
 

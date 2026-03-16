@@ -7,7 +7,7 @@ Expected backend contract
   "summary": {
     "total_customers": { "current": 44, "previous": 42, "delta_pct": 4.2 },
     "at_risk_customers": { "current": 16, "previous": 15, "delta_pct": 6.7 },
-    "avg_satisfaction": { "current": 3.2, "previous": 2.9, "delta_value": 0.3 },
+    "avg_satisfaction": { "current": 3.2, "previous": 2.9, "delta_pct": 10.3 },
     "repeat_visit_rate": { "current": 62, "previous": 59, "delta_pct": 3.0 }
   },
   "risk_distribution": {
