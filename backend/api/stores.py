@@ -8,7 +8,7 @@ from backend.service.google_review_service import sync_all_reviews_for_user
 from backend.db.session import get_db
 from backend.db.models import GoogleReview, User
 from backend.collectors.business_profile_client import load_credentials
-from backend.api.auth import get_current_user
+# from backend.api.auth import get_current_user
 from backend.service.customer_service import get_store_customers_by_period
 
 router = APIRouter(prefix="/stores", tags=["stores"])
@@ -41,7 +41,7 @@ def decode_store_key(store_key: str) -> str:
 @router.get("")
 def list_stores(
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    # current_user: User = Depends(get_current_user),
 ):
     """
     로그인한 Google 계정에 연결된 모든 매장 목록 조회
@@ -161,7 +161,7 @@ def list_stores(
 def get_store_detail(
     store_key: str,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    # current_user: User = Depends(get_current_user),
 ):
     print("\n===== [STORES] STORE DETAIL =====")
     print("SESSION USER_ID:", current_user.id)
@@ -263,7 +263,7 @@ def get_store_detail(
 @router.post("/sync-reviews")
 def sync_reviews(
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    # current_user: User = Depends(get_current_user),
 ):
     print("\n===== [STORES] SYNC REVIEWS =====")
     print("SESSION USER_ID:", current_user.id)

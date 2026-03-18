@@ -2,7 +2,7 @@
 
 import "./upload.css";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import AppHeader from "../../components/common/AppHeader";
 
@@ -20,30 +20,7 @@ export default function UploadPage() {
   const [message, setMessage] = useState("");
   const [isDragging, setIsDragging] = useState(false);
 
-  useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        const res = await fetch(`${API_BASE}/auth/status`, {
-          credentials: "include",
-        });
 
-        if (!res.ok) {
-          router.replace("/login");
-          return;
-        }
-
-        const data = await res.json();
-
-        if (!data?.logged_in) {
-          router.replace("/login");
-        }
-      } catch {
-        router.replace("/login");
-      }
-    };
-
-    checkAuth();
-  }, [router]);
 
   const fileLabel = useMemo(() => {
     if (!selectedFile) return "선택된 파일 없음";

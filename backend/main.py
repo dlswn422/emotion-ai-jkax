@@ -52,7 +52,7 @@ app.add_middleware(
 # Routers
 # =========================
 app.include_router(stores.router)
-app.include_router(auth.router)
+# app.include_router(auth.router)
 app.include_router(analysis.router)
 app.include_router(dashboard.router)
 app.include_router(google_business.router)
