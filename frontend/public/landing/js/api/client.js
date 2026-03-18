@@ -1,4 +1,7 @@
-export const API_BASE = "http://localhost:8000";
+export const API_BASE =
+  window.location.hostname === "localhost"
+    ? "http://localhost:8000"
+    : "https://emotion-ai-backend-bfdc.onrender.com";
 
 export async function apiFetch(path, options = {}) {
   const res = await fetch(`${API_BASE}${path}`, {
@@ -19,7 +22,6 @@ export async function apiFetch(path, options = {}) {
     throw new Error(message);
   }
 
-  // 204 대응
   if (res.status === 204) return null;
 
   const contentType = res.headers.get("content-type") || "";
