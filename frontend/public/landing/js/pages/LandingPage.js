@@ -22,17 +22,7 @@ setup() {
   const showConnectModal = Vue.ref(false);
   const overlay = Vue.ref('none');
 
-   Vue.onMounted(async () => {
-    try {
-      const auth = await getAuthStatus();
 
-      if (!auth.logged_in) {
-        window.location.href = "/login";
-      }
-    } catch (e) {
-      window.location.href = "/login";
-    }
-  });
   
   async function handleGoogleReviewClick() {
     try {
