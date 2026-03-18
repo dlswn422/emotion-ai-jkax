@@ -47,15 +47,11 @@ def list_stores(
     로그인한 Google 계정에 연결된 모든 매장 목록 조회
     """
 
-    # =========================
-    # 🔍 DEBUG LOG
-    # =========================
     print("\n===== [STORES] LIST STORES CALLED =====")
     print("SESSION USER_ID:", current_user.id)
     print("SESSION USER EMAIL:", current_user.email)
     print("======================================\n")
 
-    # 🔑 user_id 기반 Credentials 로드
     creds = load_credentials(
         user_id=current_user.id,
         db=db,
@@ -63,7 +59,6 @@ def list_stores(
 
     print("✔ Credentials loaded successfully\n")
 
-    # 1️⃣ Business Account 조회
     account_service = build(
         "mybusinessaccountmanagement",
         "v1",
@@ -86,7 +81,6 @@ def list_stores(
             detail="연결된 Google Business 계정이 없습니다.",
         )
 
-    # 2️⃣ Location 서비스
     location_service = build(
         "mybusinessbusinessinformation",
         "v1",
@@ -95,7 +89,6 @@ def list_stores(
 
     results: list[dict] = []
 
-    # 3️⃣ 모든 Business Account 순회
     for account in accounts:
         account_name = account["name"]  # accounts/{accountId}
         print("→ ACCOUNT:", account_name)
@@ -115,7 +108,6 @@ def list_stores(
             address = loc.get("storefrontAddress", {})
             categories = loc.get("categories", {})
 
-            # 4️⃣ 우리 DB 기준 리뷰 집계
             agg = (
                 db.query(
                     func.avg(GoogleReview.rating).label("avg_rating"),
@@ -287,13 +279,13 @@ def sync_reviews(
         **result,
     }
 
+
 @router.get("/{store_id}/customers")
 def get_store_customers(
     store_id: str,
     from_date: str | None = Query(None, alias="from"),
     to_date: str | None = Query(None, alias="to"),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
 ):
     return get_store_customers_by_period(
         db=db,
