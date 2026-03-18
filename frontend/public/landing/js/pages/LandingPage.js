@@ -4,7 +4,6 @@ const { useRouter } = VueRouter;
 import { NavBar } from '../components/NavBar.js';
 import { buildSparklinePath } from '../utils/charts.js';
 import {
-  getAuthStatus,
   getGoogleBusinessStatus,
   goGoogleBusinessConnect
 } from '../api/auth.js';
@@ -26,13 +25,6 @@ setup() {
   
   async function handleGoogleReviewClick() {
     try {
-      const auth = await getAuthStatus();
-
-      if (!auth.logged_in) {
-        window.location.href = '/login';
-        return;
-      }
-
       const google = await getGoogleBusinessStatus();
 
       if (!google.connected) {
@@ -46,35 +38,23 @@ setup() {
       }, 600);
     } catch (e) {
       console.error(e);
-      window.location.href = '/login';
     }
   }
 
-    async function handleUploadClick() {
-      try {
-        const auth = await getAuthStatus();
+      function handleUploadClick() {
+      overlay.value = "upload";
+      setTimeout(() => {
+        window.location.href = "/upload";
+      }, 400);
+    }
 
-        if (!auth.logged_in) {
-          window.location.href = "/login";
-          return;
-        }
-
-        overlay.value = "upload";
-        setTimeout(() => {
-          window.location.href = "/upload";
-        }, 400);
-      } catch (e) {
-        window.location.href = "/login";
+      function closeConnectModal() {
+        showConnectModal.value = false;
       }
-    }
 
-  function closeConnectModal() {
-    showConnectModal.value = false;
-  }
-
-  function handleConnectGoogle() {
-    goGoogleBusinessConnect();
-  }
+      function handleConnectGoogle() {
+        goGoogleBusinessConnect();
+      }
 
   return {
     router,
