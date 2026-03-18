@@ -20,7 +20,7 @@ FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")
 CLIENT_SECRET_FILE = os.getenv("CLIENT_SECRET_FILE")
 
 # ===============================
-# 🔐 LOGIN ONLY SCOPES
+# 🔐 LOGIN ONLY SCOPES (절대 변경 금지)
 # ===============================
 LOGIN_SCOPES = [
     "openid",
@@ -39,21 +39,26 @@ def google_login(request: Request):
     state = secrets.token_urlsafe(16)
     request.session["login_oauth_state"] = state
 
+    # PKCE code_verifier 생성
+    code_verifier = secrets.token_urlsafe(32)
+    request.session["login_oauth_code_verifier"] = code_verifier
+
     flow = Flow.from_client_secrets_file(
         CLIENT_SECRET_FILE,
         scopes=LOGIN_SCOPES,
         redirect_uri=REDIRECT_URI,
     )
 
-    auth_url, _ = flow.authorization_url(state=state)
+    # PKCE verifier 설정
+    flow.code_verifier = code_verifier
 
-    # PKCE verifier 저장
-    request.session["login_oauth_code_verifier"] = flow.code_verifier
+    auth_url, _ = flow.authorization_url(
+        state=state
+    )
 
     print("\n===== GOOGLE LOGIN =====")
     print("Auth URL:", auth_url)
     print("State:", state)
-    print("Code Verifier:", flow.code_verifier)
     print("========================\n")
 
     return RedirectResponse(auth_url)
@@ -74,10 +79,7 @@ def google_callback(
     print("state:", state)
 
     saved_state = request.session.get("login_oauth_state")
-    saved_code_verifier = request.session.get("login_oauth_code_verifier")
-
     print("saved_state:", saved_state)
-    print("saved_code_verifier:", saved_code_verifier)
 
     if not saved_state or state != saved_state:
         return JSONResponse(
@@ -85,15 +87,8 @@ def google_callback(
             status_code=400,
         )
 
-    if not saved_code_verifier:
-        return JSONResponse(
-            {"error": "Missing OAuth code verifier"},
-            status_code=400,
-        )
-
-    # state / verifier 는 1회용
+    # state 1회용 제거
     request.session.pop("login_oauth_state", None)
-    request.session.pop("login_oauth_code_verifier", None)
 
     # ===============================
     # Token Exchange
@@ -104,15 +99,28 @@ def google_callback(
         redirect_uri=REDIRECT_URI,
     )
 
-    # PKCE verifier 복원
+    # PKCE verifier 복구
+    saved_code_verifier = request.session.get("login_oauth_code_verifier")
+
+    print("saved_code_verifier:", saved_code_verifier)
+
+    if not saved_code_verifier:
+        return JSONResponse(
+            {"error": "Missing PKCE code verifier"},
+            status_code=400,
+        )
+
     flow.code_verifier = saved_code_verifier
 
     flow.fetch_token(code=code)
     credentials = flow.credentials
 
+    # verifier 1회용 제거
+    request.session.pop("login_oauth_code_verifier", None)
+
     print("\n===== TOKEN DEBUG (LOGIN) =====")
     print("Access Token:", credentials.token)
-    print("Refresh Token:", credentials.refresh_token)
+    print("Refresh Token:", credentials.refresh_token)  # 항상 None 여야 정상
     print("Scopes:", credentials.scopes)
     print("===============================\n")
 
@@ -127,7 +135,9 @@ def google_callback(
     # ===============================
     profile_res = requests.get(
         "https://www.googleapis.com/oauth2/v2/userinfo",
-        headers={"Authorization": f"Bearer {credentials.token}"},
+        headers={
+            "Authorization": f"Bearer {credentials.token}"
+        },
         timeout=5,
     )
 
@@ -197,7 +207,7 @@ def auth_status(request: Request):
 
 
 # =========================================================
-# 4️⃣ Logout
+# 4️⃣ Logout (로그인만 해제, 연동 유지)
 # =========================================================
 @router.post("/logout")
 def logout(request: Request, response: Response):
@@ -210,6 +220,10 @@ def get_current_user(
     request: Request,
     db: Session = Depends(get_db),
 ) -> User:
+    """
+    세션 기반 로그인 사용자 조회
+    """
+
     user_id = request.session.get("user_id")
 
     if not user_id:

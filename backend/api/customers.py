@@ -14,7 +14,7 @@ router = APIRouter()
 def list_customers(
     store_id: str,
     page: int = Query(1, ge=1),
-    limit: int = Query(20, ge=1, le=100),
+    limit: int = Query(20, le=100),
     db: Session = Depends(get_db),
 ):
     """
@@ -56,6 +56,7 @@ def list_customers(
     )
 
     customers = []
+    churn_scores = []
 
     for r in rows:
         score = calculate_churn_score(
@@ -63,6 +64,8 @@ def list_customers(
             negative_ratio=float(r.negative_ratio),
             last_review_at=r.last_review_at,
         )
+
+        churn_scores.append(score)
 
         customers.append(
             {

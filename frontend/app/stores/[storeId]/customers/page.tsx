@@ -9,28 +9,28 @@ import {
   Smile,
   Meh,
   Frown,
-  LogOut,
   Loader2,
-  Home,
 } from "lucide-react";
 
 import AppHeader from "../../../../components/common/AppHeader";
 
-/* ================= API ================= */
 const API_BASE =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
-type OverlayType = "none" | "back" | "logout";
+const LIMIT = 20;
 
 export default function CustomersPage() {
   const { storeId } = useParams();
   const router = useRouter();
 
-  const [data, setData] = useState<any>(null);
   const [checking, setChecking] = useState(true);
-  const [overlay, setOverlay] = useState<OverlayType>("none");
+  const [data, setData] = useState<any>(null);
+
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
 
   /* ================= 로그인 가드 ================= */
+
   useEffect(() => {
     let cancelled = false;
 
@@ -39,6 +39,7 @@ export default function CustomersPage() {
         const res = await fetch(`${API_BASE}/auth/status`, {
           credentials: "include",
         });
+
         const auth = await res.json();
 
         if (!cancelled && !auth.logged_in) {
@@ -53,21 +54,24 @@ export default function CustomersPage() {
     };
 
     checkLogin();
+
     return () => {
       cancelled = true;
     };
   }, [router]);
 
   /* ================= 고객 데이터 로드 ================= */
+
   useEffect(() => {
     if (checking) return;
 
     const loadCustomers = async () => {
       try {
         const res = await fetch(
-          `${API_BASE}/stores/${storeId}/customers`,
+          `${API_BASE}/stores/${storeId}/customers?page=${page}&limit=${LIMIT}`,
           { credentials: "include" }
         );
+
         const json = await res.json();
 
         setData({
@@ -86,29 +90,33 @@ export default function CustomersPage() {
             risk_level: c.churn_level,
           })),
         });
+
+        setTotalPages(Math.ceil(json.total_customers / LIMIT));
       } catch (e) {
         console.error(e);
       }
     };
 
     loadCustomers();
-  }, [checking, storeId]);
+  }, [checking, page, storeId]);
 
-  /* ================= 로그아웃 ================= */
-  const handleLogout = async () => {
-    setOverlay("logout");
-    try {
-      await fetch(`${API_BASE}/auth/logout`, {
-        method: "POST",
-        credentials: "include",
-      });
-    } finally {
-      sessionStorage.setItem("just_logged_out", "1");
-      router.replace("/login");
+  /* ================= 페이지 표시 계산 ================= */
+
+  const getVisiblePages = () => {
+    const pages = [];
+
+    const start = Math.max(1, page - 2);
+    const end = Math.min(totalPages, page + 2);
+
+    for (let i = start; i <= end; i++) {
+      pages.push(i);
     }
+
+    return pages;
   };
 
   /* ================= 초기 로딩 ================= */
+
   if (checking || !data) {
     return (
       <main className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -117,82 +125,85 @@ export default function CustomersPage() {
     );
   }
 
-  const overlayMessage =
-    overlay === "logout" ? "로그아웃 중…" : "";
-
   return (
     <main className="relative min-h-screen bg-gray-50">
-      {/* ================= 이동 로딩 오버레이 ================= */}
-      {overlay !== "none" && (
-        <div className="absolute inset-0 z-50 bg-white/70 backdrop-blur flex flex-col items-center justify-center">
-          <Loader2 className="w-9 h-9 animate-spin text-blue-600 mb-4" />
-          <p className="text-sm font-semibold text-gray-600">
-            {overlayMessage}
-          </p>
-        </div>
-      )}
-
-      {/* ✅ 공통 헤더 */}
       <AppHeader variant="app" />
 
-      {/* ================= Content ================= */}
       <section className="max-w-6xl mx-auto px-6 py-20 space-y-20">
+
         {/* Title */}
+
         <div>
           <h1 className="text-4xl font-extrabold tracking-tight">
             고객 분석
           </h1>
+
           <p className="text-gray-500 mt-3 text-base">
             리뷰 작성 고객의 성향과 이탈 위험도를 종합 분석합니다
           </p>
         </div>
 
         {/* KPI */}
+
         <section className="grid grid-cols-1 md:grid-cols-3 gap-10">
+
           <Kpi
             icon={<Users className="w-6 h-6 text-blue-600" />}
             label="전체 고객"
             value={`${data.summary.total_customers}명`}
           />
+
           <Kpi
             icon={<AlertTriangle className="w-6 h-6 text-red-500" />}
             label="이탈 위험 고객"
             value={`${data.summary.risky_customers}명`}
           />
+
           <Kpi
             icon={<TrendingDown className="w-6 h-6 text-purple-500" />}
             label="평균 만족도"
             value={data.summary.avg_sentiment_score}
           />
+
         </section>
 
         {/* ================= Customers List ================= */}
+
         <section className="bg-white rounded-3xl shadow-lg overflow-hidden">
+
           <div className="px-10 py-8 border-b">
+
             <h2 className="text-2xl font-extrabold">
               고객 목록
             </h2>
+
             <p className="text-sm text-gray-500 mt-2">
               고객별 리뷰 활동 및 이탈 위험 지표
             </p>
+
           </div>
 
           <div className="divide-y">
+
             {data.customers.map((c: any, idx: number) => (
+
               <div
                 key={idx}
                 className="px-10 py-6 grid grid-cols-1 md:grid-cols-7 gap-6 items-center hover:bg-gray-50 transition"
               >
+
                 <div className="md:col-span-2">
                   <p className="font-semibold text-gray-900 text-base">
                     {c.author_name}
                   </p>
+
                   <p className="text-sm text-gray-500 mt-1">
                     리뷰 {c.total_reviews}회
                   </p>
                 </div>
 
                 <InfoBlock label="평점" value={c.avg_rating} />
+
                 <InfoBlock label="최근 활동" value={c.last_review_at} />
 
                 <div>
@@ -209,9 +220,54 @@ export default function CustomersPage() {
                 <div className="flex justify-start md:justify-end">
                   <Risk level={c.risk_level} />
                 </div>
+
               </div>
+
             ))}
+
           </div>
+
+          {/* ================= Pagination ================= */}
+
+          <div className="flex justify-center items-center gap-2 py-6">
+
+            {/* Prev */}
+
+            <button
+              disabled={page === 1}
+              onClick={() => setPage(page - 1)}
+              className="px-3 py-2 rounded-lg bg-gray-100 text-gray-600 disabled:opacity-40"
+            >
+              Prev
+            </button>
+
+            {getVisiblePages().map((p) => (
+              <button
+                key={p}
+                onClick={() => setPage(p)}
+                className={`px-4 py-2 rounded-lg text-sm font-semibold transition
+                ${
+                  page === p
+                    ? "bg-blue-600 text-white"
+                    : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                }`}
+              >
+                {p}
+              </button>
+            ))}
+
+            {/* Next */}
+
+            <button
+              disabled={page === totalPages}
+              onClick={() => setPage(page + 1)}
+              className="px-3 py-2 rounded-lg bg-gray-100 text-gray-600 disabled:opacity-40"
+            >
+              Next
+            </button>
+
+          </div>
+
         </section>
       </section>
     </main>
@@ -221,38 +277,39 @@ export default function CustomersPage() {
 /* ================= Components ================= */
 
 function Kpi({ icon, label, value }: any) {
+
   return (
     <div className="bg-white rounded-3xl p-10 shadow-md hover:shadow-xl transition">
+
       <div className="flex items-center gap-4 mb-6">
+
         <div className="w-14 h-14 rounded-2xl bg-gray-100 flex items-center justify-center">
           {icon}
         </div>
-        <p className="text-gray-500 font-semibold">{label}</p>
+
+        <p className="text-gray-500 font-semibold">
+          {label}
+        </p>
+
       </div>
+
       <p className="text-4xl font-extrabold tracking-tight text-gray-900">
         {value}
       </p>
+
     </div>
   );
 }
 
-function InfoBlock({
-  label,
-  value,
-  bold = false,
-}: {
-  label: string;
-  value: string | number;
-  bold?: boolean;
-}) {
+function InfoBlock({ label, value, bold = false }: any) {
+
   return (
     <div>
-      <p className="text-sm text-gray-500 mb-1">{label}</p>
-      <p
-        className={`${
-          bold ? "font-extrabold" : "font-semibold"
-        } text-gray-900`}
-      >
+      <p className="text-sm text-gray-500 mb-1">
+        {label}
+      </p>
+
+      <p className={`${bold ? "font-extrabold" : "font-semibold"} text-gray-900`}>
         {value}
       </p>
     </div>
@@ -260,6 +317,7 @@ function InfoBlock({
 }
 
 function Risk({ level }: any) {
+
   const map: any = {
     HIGH: "bg-red-100 text-red-600",
     MEDIUM: "bg-orange-100 text-orange-600",
@@ -267,15 +325,14 @@ function Risk({ level }: any) {
   };
 
   return (
-    <span
-      className={`px-3 py-1.5 rounded-full text-xs font-bold ${map[level]}`}
-    >
+    <span className={`px-3 py-1.5 rounded-full text-xs font-bold ${map[level]}`}>
       {level}
     </span>
   );
 }
 
 function Sentiment({ sentiment }: any) {
+
   const map: any = {
     positive: {
       icon: <Smile className="w-4 h-4" />,
@@ -292,9 +349,7 @@ function Sentiment({ sentiment }: any) {
   };
 
   return (
-    <div
-      className={`flex items-center gap-1.5 font-semibold ${map[sentiment].color}`}
-    >
+    <div className={`flex items-center gap-1.5 font-semibold ${map[sentiment].color}`}>
       {map[sentiment].icon}
       {sentiment}
     </div>
