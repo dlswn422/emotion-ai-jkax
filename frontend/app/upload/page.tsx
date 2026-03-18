@@ -1,301 +1,247 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import "./upload.css";
+
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import Papa from "papaparse";
-import * as XLSX from "xlsx";
-import axios from "axios";
-
-import {
-  UploadCloud,
-  Eye,
-  PlayCircle,
-  Loader2,
-  Sparkles,
-} from "lucide-react";
-
 import AppHeader from "../../components/common/AppHeader";
 
-/* ================= API BASE ================= */
 const API_BASE =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
-type OverlayType =
-  | "none"
-  | "home"
-  | "logout"
-  | "analyze"
-  | "file"
-  | "preview";
+type UploadState = "idle" | "uploading" | "done" | "error";
 
 export default function UploadPage() {
   const router = useRouter();
+  const inputRef = useRef<HTMLInputElement | null>(null);
 
-  /* ================= 상태 ================= */
-  const [checking, setChecking] = useState(true);
-  const [file, setFile] = useState<File | null>(null);
-  const [previewData, setPreviewData] = useState<any[]>([]);
-  const [totalRows, setTotalRows] = useState<number>(0);
-  const [showPreview, setShowPreview] = useState(false);
-  const [overlay, setOverlay] = useState<OverlayType>("none");
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [status, setStatus] = useState<UploadState>("idle");
+  const [message, setMessage] = useState("");
+  const [isDragging, setIsDragging] = useState(false);
 
-  /* ================= 로그인 가드 ================= */
   useEffect(() => {
-    let cancelled = false;
-
-    const checkLogin = async () => {
+    const checkAuth = async () => {
       try {
         const res = await fetch(`${API_BASE}/auth/status`, {
           credentials: "include",
         });
-        const data = await res.json();
 
-        if (!cancelled && !data.logged_in) {
+        if (!res.ok) {
           router.replace("/login");
           return;
         }
+
+        const data = await res.json();
+
+        if (!data?.logged_in) {
+          router.replace("/login");
+        }
       } catch {
-        if (!cancelled) router.replace("/login");
-      } finally {
-        if (!cancelled) setChecking(false);
+        router.replace("/login");
       }
     };
 
-    checkLogin();
-    return () => {
-      cancelled = true;
-    };
+    checkAuth();
   }, [router]);
 
-  /* ================= 파일 업로드 ================= */
-  const handleFile = async (f: File) => {
-    setOverlay("file");
+  const fileLabel = useMemo(() => {
+    if (!selectedFile) return "선택된 파일 없음";
+    return `${selectedFile.name} (${Math.ceil(selectedFile.size / 1024)} KB)`;
+  }, [selectedFile]);
 
-    setFile(f);
-    setShowPreview(false);
-    setPreviewData([]);
-    setTotalRows(0);
-
-    try {
-      if (f.name.endsWith(".csv")) {
-        Papa.parse(f, {
-          header: true,
-          skipEmptyLines: true,
-          complete: (result) => {
-            setPreviewData(result.data.slice(0, 5));
-            setTotalRows(result.data.length);
-            setOverlay("none");
-          },
-        });
-      } else {
-        const buffer = await f.arrayBuffer();
-        const wb = XLSX.read(buffer, { type: "array" });
-        const sheet = wb.Sheets[wb.SheetNames[0]];
-        const json = XLSX.utils.sheet_to_json(sheet);
-        setPreviewData(json.slice(0, 5));
-        setTotalRows(json.length);
-        setOverlay("none");
-      }
-    } catch {
-      alert("파일을 읽는 중 오류가 발생했습니다.");
-      setOverlay("none");
-    }
-  };
-
-  /* ================= 미리보기 ================= */
-  const handlePreviewToggle = () => {
-    if (previewData.length === 0) return;
-
-    setOverlay("preview");
-    setTimeout(() => {
-      setShowPreview((prev) => !prev);
-      setOverlay("none");
-    }, 400);
-  };
-
-  /* ================= AI 분석 ================= */
-  const handleAnalyze = async () => {
-    if (!file || totalRows === 0) return;
-
-    setOverlay("analyze");
-
-    const formData = new FormData();
-    formData.append("file", file);
-
-    try {
-      const res = await axios.post(
-        `${API_BASE}/analysis/file`,
-        formData,
-        { withCredentials: true }
-      );
-
-      sessionStorage.setItem(
-        "analysisResult",
-        JSON.stringify(res.data)
-      );
-
-      router.push("/dashboard");
-    } catch {
-      alert("AI 분석 중 오류가 발생했습니다.");
-      setOverlay("none");
-    }
-  };
-
-  /* ================= 초기 로딩 ================= */
-  if (checking) {
+  const isValidFile = (file: File) => {
+    const lower = file.name.toLowerCase();
     return (
-      <main className="min-h-screen flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
-      </main>
+      lower.endsWith(".csv") ||
+      lower.endsWith(".xlsx") ||
+      lower.endsWith(".xls")
     );
-  }
+  };
 
-  const overlayMessage =
-    overlay === "none"
-      ? ""
-      : {
-          home: "메인 화면으로 이동 중…",
-          logout: "로그아웃 중…",
-          analyze: "AI가 리뷰를 분석하고 있습니다…",
-          file: "파일을 불러오는 중…",
-          preview: "미리보기 준비 중…",
-        }[overlay];
+  const applyFile = (file: File | null) => {
+    if (!file) return;
 
-  /* ================= UI ================= */
+    if (!isValidFile(file)) {
+      setSelectedFile(null);
+      setStatus("error");
+      setMessage("CSV, XLSX, XLS 파일만 업로드할 수 있습니다.");
+      return;
+    }
+
+    setSelectedFile(file);
+    setStatus("idle");
+    setMessage("");
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] ?? null;
+    applyFile(file);
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+
+    const file = e.dataTransfer.files?.[0] ?? null;
+    applyFile(file);
+  };
+
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  };
+
+  const handleUpload = async () => {
+    if (!selectedFile) {
+      setStatus("error");
+      setMessage("먼저 업로드할 파일을 선택해 주세요.");
+      return;
+    }
+
+    try {
+      setStatus("uploading");
+      setMessage("파일을 분석 중입니다. 잠시만 기다려 주세요.");
+
+      const formData = new FormData();
+      formData.append("file", selectedFile);
+
+      const res = await fetch(`${API_BASE}/analysis/file`, {
+        method: "POST",
+        body: formData,
+        credentials: "include",
+      });
+
+      const data = await res.json().catch(() => null);
+
+      if (!res.ok) {
+        throw new Error(
+          data?.detail ||
+            data?.message ||
+            "업로드 중 오류가 발생했습니다."
+        );
+      }
+
+      sessionStorage.setItem("analysisResult", JSON.stringify(data));
+
+      setStatus("done");
+      setMessage("업로드 및 분석이 완료되었습니다. 대시보드로 이동합니다.");
+
+      setTimeout(() => {
+        router.push("/dashboard");
+      }, 700);
+    } catch (error) {
+      const text =
+        error instanceof Error
+          ? error.message
+          : "업로드 중 오류가 발생했습니다.";
+
+      setStatus("error");
+      setMessage(text);
+    }
+  };
+
   return (
-    <main className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 relative">
-      {/* ✅ 공통 헤더 */}
+    <div className="upload-page">
       <AppHeader variant="app" />
 
-      {/* ================= LOADING OVERLAY ================= */}
-      {overlay !== "none" && (
-        <div className="fixed inset-x-0 top-[64px] bottom-0 z-40 bg-white/70 backdrop-blur
-                        flex flex-col items-center justify-center">
-          {overlay === "analyze" ? (
-            <>
-              <Sparkles className="w-9 h-9 text-blue-600 mb-4 animate-pulse" />
-              <Loader2 className="w-7 h-7 text-gray-400 animate-spin mb-4" />
-              <p className="text-sm font-semibold text-gray-600">
-                AI가 고객 경험 데이터를 분석 중입니다…
-              </p>
-            </>
-          ) : (
-            <>
-              <Loader2 className="w-9 h-9 text-blue-600 animate-spin mb-4" />
-              <p className="font-semibold text-gray-700">
-                {overlayMessage}
-              </p>
-            </>
-          )}
-        </div>
-      )}
+      <main className="upload-main">
+        <section className="upload-hero">
+          <div className="upload-badge">파일 업로드 분석</div>
 
-      {/* ================= CONTENT ================= */}
-      <section className="max-w-5xl mx-auto px-6 pt-32 pb-20">
-        {/* Title */}
-        <div className="text-center mb-14">
-          <h1 className="text-4xl font-extrabold mb-4">
-            리뷰 데이터 업로드
-          </h1>
-          <p className="text-gray-600">
+          <h1 className="upload-title">리뷰 데이터 업로드</h1>
+
+          <p className="upload-desc">
             설문(CSV/XLSX) 데이터를 업로드하면
             <br />
             AI가 자동으로 고객 인사이트를 도출합니다.
           </p>
-        </div>
+        </section>
 
-        {/* Upload Box */}
-        <label className="block bg-white rounded-3xl border-2 border-dashed border-blue-200
-                          p-16 text-center cursor-pointer transition
-                          hover:border-blue-400 hover:shadow-md">
-          <UploadCloud className="mx-auto w-14 h-14 text-blue-600 mb-5" />
-          <p className="text-lg font-semibold mb-2">
-            파일을 드래그하거나 클릭하여 업로드
-          </p>
-          <p className="text-sm text-gray-500">
-            CSV / XLSX 파일 지원 · 리뷰 컬럼 포함
-          </p>
+        <section className="upload-card">
+          <div
+            className={`upload-dropzone ${isDragging ? "dragging" : ""}`}
+            onClick={() => inputRef.current?.click()}
+            onDrop={handleDrop}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                inputRef.current?.click();
+              }
+            }}
+          >
+            <div className="upload-icon">⇪</div>
 
-          <input
-            type="file"
-            accept=".csv,.xlsx"
-            className="hidden"
-            onChange={(e) =>
-              e.target.files && handleFile(e.target.files[0])
-            }
-          />
-        </label>
-
-        {/* File Summary */}
-        {file && (
-          <div className="mt-12 bg-white rounded-3xl p-10 shadow-md">
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
-              <div>
-                <p className="text-xl font-bold">{file.name}</p>
-                <p className="text-sm text-gray-500 mt-1">
-                  총{" "}
-                  <span className="font-bold text-blue-600">
-                    {totalRows.toLocaleString()}
-                  </span>
-                  건의 리뷰
-                </p>
-              </div>
-
-              <div className="flex gap-4">
-                <button
-                  onClick={handlePreviewToggle}
-                  className="px-5 py-3 rounded-xl border font-semibold hover:bg-gray-50"
-                >
-                  <Eye className="inline w-4 h-4 mr-1" />
-                  미리보기
-                </button>
-
-                <button
-                  onClick={handleAnalyze}
-                  disabled={overlay !== "none" || totalRows === 0}
-                  className="px-6 py-3 rounded-xl bg-blue-600 text-white
-                             font-semibold hover:bg-blue-700 shadow-lg
-                             disabled:opacity-50"
-                >
-                  <PlayCircle className="inline w-5 h-5 mr-1" />
-                  AI 분석 실행
-                </button>
-              </div>
+            <div className="upload-drop-title">
+              파일을 드래그하거나 클릭하여 업로드
             </div>
 
-            {/* Preview Table */}
-            {showPreview && previewData.length > 0 && (
-              <div className="mt-10 overflow-auto rounded-2xl border">
-                <table className="min-w-full text-sm">
-                  <thead className="bg-gray-100 sticky top-0">
-                    <tr>
-                      {Object.keys(previewData[0]).map((key) => (
-                        <th
-                          key={key}
-                          className="px-4 py-3 text-left font-semibold"
-                        >
-                          {key}
-                        </th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {previewData.map((row, i) => (
-                      <tr key={i} className="border-t hover:bg-gray-50">
-                        {Object.values(row).map((v, j) => (
-                          <td key={j} className="px-4 py-3">
-                            {String(v)}
-                          </td>
-                        ))}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
+            <div className="upload-drop-sub">
+              CSV / XLSX / XLS 파일 지원 · 리뷰 컬럼 포함
+            </div>
+
+            <input
+              ref={inputRef}
+              type="file"
+              accept=".csv,.xlsx,.xls"
+              className="upload-hidden-input"
+              onChange={handleFileChange}
+            />
+
+            <button
+              type="button"
+              className="upload-select-btn"
+              onClick={(e) => {
+                e.stopPropagation();
+                inputRef.current?.click();
+              }}
+            >
+              파일 선택
+            </button>
           </div>
-        )}
-      </section>
-    </main>
+
+          <div className="upload-file-box">
+            <div className="upload-file-label">선택된 파일</div>
+            <div className="upload-file-name">{fileLabel}</div>
+          </div>
+
+          {message ? (
+            <div
+              className={`upload-message ${
+                status === "error"
+                  ? "error"
+                  : status === "done"
+                  ? "done"
+                  : "info"
+              }`}
+            >
+              {message}
+            </div>
+          ) : null}
+
+          <div className="upload-actions">
+            <button
+              type="button"
+              className="upload-primary-btn"
+              onClick={handleUpload}
+              disabled={status === "uploading"}
+            >
+              {status === "uploading" ? "분석 중..." : "업로드 후 분석 시작"}
+            </button>
+          </div>
+        </section>
+      </main>
+    </div>
   );
 }

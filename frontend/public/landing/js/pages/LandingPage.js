@@ -60,9 +60,23 @@ setup() {
     }
   }
 
-  function handleSurveyClick() {
-    window.location.href = '/login';
-  }
+    async function handleUploadClick() {
+      try {
+        const auth = await getAuthStatus();
+
+        if (!auth.logged_in) {
+          window.location.href = "/login";
+          return;
+        }
+
+        overlay.value = "upload";
+        setTimeout(() => {
+          window.location.href = "/upload";
+        }, 400);
+      } catch (e) {
+        window.location.href = "/login";
+      }
+    }
 
   function closeConnectModal() {
     showConnectModal.value = false;
@@ -79,7 +93,7 @@ setup() {
     showConnectModal,
     overlay,
     handleGoogleReviewClick,
-    handleSurveyClick,
+    handleUploadClick,
     closeConnectModal,
     handleConnectGoogle,
   };
@@ -91,8 +105,14 @@ setup() {
       <div class="page-overlay-card">
         <div class="page-overlay-spinner"></div>
         <p class="page-overlay-text">
-          {{ overlay === 'stores' ? '매장 목록으로 이동 중…' : '이동 중…' }}
-        </p>
+        {{
+          overlay === 'stores'
+            ? '매장 목록으로 이동 중…'
+            : overlay === 'upload'
+            ? '업로드 화면으로 이동 중…'
+            : '이동 중…'
+        }}
+      </p>
       </div>
     </div>
 
@@ -133,11 +153,11 @@ setup() {
           <h1 class="hero-h1">리뷰 데이터를<br><em>실행 가능한<br>인사이트</em>로</h1>
           <p class="hero-desc">Google 리뷰 및 설문 데이터를 AI가 즉시 분석하여 매장 운영에 바로 적용할 수 있는 전략과 액션 플랜을 제공합니다.</p>
           <div class="hero-cta-row">
-            <button class="btn btn-brand btn-lg" @click="handleSurveyClick">
+            <button class="btn btn-brand btn-lg" @click="handleUploadClick">
               <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
                 <path d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/>
               </svg>
-              무료로 시작하기
+              파일 업로드
             </button>
            <button class="btn btn-ghost btn-lg" @click="handleGoogleReviewClick">
               <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">

@@ -46,25 +46,39 @@ export default function GoogleLoginPage() {
   };
 
   return (
-    <main className="min-h-screen flex items-center justify-center bg-slate-50 px-4">
-      <div className="w-full max-w-md">
-
-        {/* ================= 로그인 카드 ================= */}
-        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-9">
+          <main
+            style={{
+              minHeight: "100vh",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              background: "#f8fafc",
+              padding: "16px",
+            }}
+          >
+            <div style={{ width: "100%", maxWidth: "420px" }}>
+              <div
+                style={{
+                  background: "#ffffff",
+                  borderRadius: "20px",
+                  boxShadow: "0 10px 30px rgba(0,0,0,0.08)",
+                  border: "1px solid #f1f5f9",
+                  padding: "36px",
+                }}
+              >
 
           {/* 브랜드 / 서비스 설명 */}
           <div className="mb-7 text-center">
 
-            {/* ✅ 로고 (헤더용 로고 재사용) */}
-            <div className="mx-auto mb-5 relative h-10 w-[180px]">
-              <Image
-                src="/img-header.png"   // 🔥 헤더와 동일한 로고
-                alt="CX Nexus Logo"
-                fill
-                className="object-contain"
-                priority
-              />
-            </div>
+          <div style={{ margin: "0 auto 20px", textAlign: "center" }}>
+            <Image
+              src="/img-header.png"
+              alt="CX Nexus Logo"
+              width={180}
+              height={40}
+              priority
+            />
+          </div>
 
             <p className="mt-2 text-sm text-gray-600 leading-relaxed">
               Google 비즈니스 프로필 리뷰 데이터를 분석해<br />
@@ -89,18 +103,21 @@ export default function GoogleLoginPage() {
           <button
             onClick={handleGoogleLogin}
             disabled={isLoading}
-            className={`
-              w-full flex items-center justify-center gap-3
-              rounded-xl border
-              px-6 py-4
-              text-sm font-semibold
-              transition
-              ${
-                isLoading
-                  ? "bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed"
-                  : "bg-white text-gray-800 border-gray-300 hover:bg-gray-50 hover:shadow-sm"
-              }
-            `}
+            style={{
+              width: "100%",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: "12px",
+              borderRadius: "12px",
+              border: "1px solid #d1d5db",
+              padding: "16px 24px",
+              fontSize: "14px",
+              fontWeight: 600,
+              background: isLoading ? "#f3f4f6" : "#ffffff",
+              color: isLoading ? "#9ca3af" : "#1f2937",
+              cursor: isLoading ? "not-allowed" : "pointer",
+            }}
           >
             {isLoading ? (
               <>

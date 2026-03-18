@@ -1,7 +1,8 @@
 "use client";
 
+import "./AppHeader.css";
+
 import { useRouter } from "next/navigation";
-import Image from "next/image";
 import { ArrowLeft, LogOut } from "lucide-react";
 
 const API_BASE =
@@ -27,44 +28,38 @@ export default function AppHeader({ variant }: AppHeaderProps) {
   };
 
   return (
-    <header className="sticky top-0 z-40 bg-white border-b">
-      {/* 🔑 헤더 높이를 기준으로 모든 걸 맞춘다 */}
-      <div className="max-w-7xl mx-auto px-6 h-14 flex items-center justify-between">
-
-        {/* LEFT */}
+    <header className="cx-nav">
+      <div className="nav-inner">
         <button
+          type="button"
+          className="nav-logo app-nav-logo-btn"
           onClick={() => router.push("/")}
-          className="flex items-center h-full"
         >
-          {/* 🔑 로고는 height 기준 */}
-          <div className="relative h-10 w-[339px]">
-            <Image
-              src="/img-header.png"
-              alt="CX Nexus"
-              fill
-              priority
-              className="object-contain"
-            />
+          <div className="nav-logo-mark">CX</div>
+          <div>
+            <div className="nav-logo-text">CXNexus</div>
+            <div className="nav-logo-sub">by JKAX</div>
           </div>
         </button>
 
-        {/* RIGHT */}
-        <div className="flex items-center gap-4">
+        <div className="nav-actions">
           {variant === "app" && (
             <button
+              type="button"
+              className="nav-pill nav-pill-outline"
               onClick={() => router.back()}
-              className="flex items-center gap-1 text-sm font-medium text-slate-600 hover:text-slate-900"
             >
-              <ArrowLeft className="w-4 h-4" />
+              <ArrowLeft size={14} />
               뒤로가기
             </button>
           )}
 
           <button
+            type="button"
+            className="nav-pill nav-pill-ghost"
             onClick={handleLogout}
-            className="flex items-center gap-1 text-sm font-medium text-slate-600 hover:text-red-500"
           >
-            <LogOut className="w-4 h-4" />
+            <LogOut size={14} />
             로그아웃
           </button>
         </div>
