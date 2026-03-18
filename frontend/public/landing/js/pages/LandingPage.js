@@ -23,23 +23,12 @@ setup() {
 
 
   
-  async function handleGoogleReviewClick() {
-    try {
-      const google = await getGoogleBusinessStatus();
-
-      if (!google.connected) {
-        showConnectModal.value = true;
-        return;
-      }
-
-      overlay.value = 'stores';
-      setTimeout(() => {
-        router.push('/stores');
-      }, 600);
-    } catch (e) {
-      console.error(e);
-    }
-  }
+        function handleGoogleReviewClick() {
+          overlay.value = 'stores';
+          setTimeout(() => {
+            router.push('/stores');
+          }, 600);
+        }
 
       function handleUploadClick() {
       overlay.value = "upload";
