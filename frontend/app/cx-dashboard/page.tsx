@@ -102,48 +102,11 @@ function CxDashboardInner() {
     const [analysis, setAnalysis] = useState<any | null>(null);
 
     const [downloading, setDownloading] = useState(false);
-    const [loggingOut, setLoggingOut] = useState(false);
-
-    /* ================= 로그인 가드 ================= */
-    useEffect(() => {
-        let cancelled = false;
-
-        const checkLogin = async () => {
-            try {
-                const res = await fetch(`${API_BASE}/auth/status`, {
-                    credentials: "include",
-                });
-                const auth = await res.json();
-
-                if (!auth.logged_in) {
-                    router.replace("/login");
-                }
-            } catch {
-                router.replace("/login");
-            } finally {
-                if (!cancelled) setChecking(false);
-            }
-        };
-
-        checkLogin();
-        return () => {
-            cancelled = true;
-        };
-    }, [router]);
-
-    /* ================= 로그아웃 ================= */
-    const handleLogout = async () => {
-        setLoggingOut(true);
-        try {
-            await fetch(`${API_BASE}/auth/logout`, {
-                method: "POST",
-                credentials: "include",
-            });
-        } finally {
-            sessionStorage.setItem("just_logged_out", "1");
-            router.replace("/login");
-        }
-    };
+   
+/* ================= 초기 로딩 해제 ================= */
+useEffect(() => {
+    setChecking(false);
+}, []);
 
     /* ================= CX 분석 ================= */
     useEffect(() => {
@@ -205,17 +168,17 @@ function CxDashboardInner() {
             <AppHeader variant="app" />
 
             {/* ================= OVERLAY ================= */}
-            {(downloading || loggingOut) && (
-                <div className="fixed inset-0 z-50 bg-white/70 backdrop-blur flex flex-col items-center justify-center">
-                    <Loader2 className="w-8 h-8 animate-spin text-gray-600 mb-3" />
-                    <p className="text-sm font-semibold text-gray-600">
-                        {downloading ? "PDF 생성 중…" : "로그아웃 중…"}
-                    </p>
-                </div>
+          {downloading && (
+            <div className="fixed inset-0 z-50 bg-white/70 backdrop-blur flex flex-col items-center justify-center">
+                <Loader2 className="w-8 h-8 animate-spin text-gray-600 mb-3" />
+                <p className="text-sm font-semibold text-gray-600">
+                PDF 생성 중…
+                </p>
+            </div>
             )}
 
             {/* ================= AI LOADING ================= */}
-            {loading && !downloading && !loggingOut && (
+            {loading && !downloading && (
                 <div className="fixed inset-x-0 top-16 bottom-0 z-30 bg-white/70 backdrop-blur flex flex-col items-center justify-center">
                     <Sparkles className="w-8 h-8 text-blue-600 mb-3 animate-pulse" />
                     <Loader2 className="w-6 h-6 animate-spin text-gray-500 mb-3" />

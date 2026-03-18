@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams} from "next/navigation";
 import {
   Users,
   AlertTriangle,
@@ -21,84 +21,52 @@ const LIMIT = 20;
 
 export default function CustomersPage() {
   const { storeId } = useParams();
-  const router = useRouter();
 
-  const [checking, setChecking] = useState(true);
+  
   const [data, setData] = useState<any>(null);
 
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
 
-  /* ================= 로그인 가드 ================= */
-
-  useEffect(() => {
-    let cancelled = false;
-
-    const checkLogin = async () => {
-      try {
-        const res = await fetch(`${API_BASE}/auth/status`, {
-          credentials: "include",
-        });
-
-        const auth = await res.json();
-
-        if (!cancelled && !auth.logged_in) {
-          router.replace("/login");
-          return;
-        }
-      } catch {
-        if (!cancelled) router.replace("/login");
-      } finally {
-        if (!cancelled) setChecking(false);
-      }
-    };
-
-    checkLogin();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [router]);
+ 
 
   /* ================= 고객 데이터 로드 ================= */
 
   useEffect(() => {
-    if (checking) return;
+  const loadCustomers = async () => {
+    try {
+      const res = await fetch(
+        `${API_BASE}/stores/${storeId}/customers?page=${page}&limit=${LIMIT}`,
+        { credentials: "include" }
+      );
 
-    const loadCustomers = async () => {
-      try {
-        const res = await fetch(
-          `${API_BASE}/stores/${storeId}/customers?page=${page}&limit=${LIMIT}`,
-          { credentials: "include" }
-        );
+      const json = await res.json();
 
-        const json = await res.json();
+      setData({
+        summary: {
+          total_customers: json.total_customers,
+          risky_customers: json.high_risk,
+          avg_sentiment_score: json.average_satisfaction,
+        },
+        customers: json.customers.map((c: any) => ({
+          author_name: c.author_name,
+          total_reviews: c.review_count,
+          avg_rating: c.avg_rating,
+          last_review_at: c.last_activity,
+          sentiment: c.sentiment,
+          churn_probability: c.churn_score / 100,
+          risk_level: c.churn_level,
+        })),
+      });
 
-        setData({
-          summary: {
-            total_customers: json.total_customers,
-            risky_customers: json.high_risk,
-            avg_sentiment_score: json.average_satisfaction,
-          },
-          customers: json.customers.map((c: any) => ({
-            author_name: c.author_name,
-            total_reviews: c.review_count,
-            avg_rating: c.avg_rating,
-            last_review_at: c.last_activity,
-            sentiment: c.sentiment,
-            churn_probability: c.churn_score / 100,
-            risk_level: c.churn_level,
-          })),
-        });
+      setTotalPages(Math.ceil(json.total_customers / LIMIT));
+    } catch (e) {
+      console.error(e);
+    }
+  };
 
-        setTotalPages(Math.ceil(json.total_customers / LIMIT));
-      } catch (e) {
-        console.error(e);
-      }
-    };
-
-    loadCustomers();
-  }, [checking, page, storeId]);
+  loadCustomers();
+}, [page, storeId]);
 
   /* ================= 페이지 표시 계산 ================= */
 
@@ -117,7 +85,7 @@ export default function CustomersPage() {
 
   /* ================= 초기 로딩 ================= */
 
-  if (checking || !data) {
+  if (!data) {
     return (
       <main className="min-h-screen flex items-center justify-center bg-gray-50">
         <Loader2 className="w-8 h-8 animate-spin text-gray-400" />

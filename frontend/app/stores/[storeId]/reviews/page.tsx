@@ -4,17 +4,12 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import {
   ArrowLeft,
-  LogOut,
   Loader2,
   Star,
   MessageSquare,
   Send,
   AlertTriangle,
 } from "lucide-react";
-
-/* ================= API ================= */
-const API_BASE =
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 /* ================= MOCK ================= */
 const MOCK_REVIEWS = [
@@ -37,72 +32,27 @@ const MOCK_REVIEWS = [
   },
 ];
 
-type OverlayType = "none" | "back" | "logout";
+type OverlayType = "none" | "back";
 
 export default function ReviewManagementPage() {
   const { storeId } = useParams();
   const router = useRouter();
 
-  const [checking, setChecking] = useState(true);
   const [overlay, setOverlay] = useState<OverlayType>("none");
   const [reviews, setReviews] = useState<any[]>([]);
 
-  /* ================= 로그인 가드 ================= */
-  useEffect(() => {
-    const checkLogin = async () => {
-      try {
-        const res = await fetch(`${API_BASE}/auth/status`, {
-          credentials: "include",
-        });
-        const auth = await res.json();
-        if (!auth.logged_in) {
-          router.replace("/login");
-        }
-      } catch {
-        router.replace("/login");
-      } finally {
-        setChecking(false);
-      }
-    };
-
-    checkLogin();
-  }, [router]);
-
+  
   /* ================= 리뷰 로드 (MOCK) ================= */
-  useEffect(() => {
-    if (!checking) {
+    useEffect(() => {
       setReviews(MOCK_REVIEWS);
-    }
-  }, [checking]);
+    }, []);
 
-  /* ================= 로그아웃 ================= */
-  const handleLogout = async () => {
-    setOverlay("logout");
-    try {
-      await fetch(`${API_BASE}/auth/logout`, {
-        method: "POST",
-        credentials: "include",
-      });
-    } finally {
-      setTimeout(() => router.replace("/login"), 600);
-    }
-  };
+
 
   /* ================= 초기 로딩 ================= */
-  if (checking) {
-    return (
-      <main className="min-h-screen flex items-center justify-center bg-gray-50">
-        <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
-      </main>
-    );
-  }
 
-  const overlayMessage =
-    overlay === "back"
-      ? "매장 상세 화면으로 이동 중…"
-      : overlay === "logout"
-      ? "로그아웃 중…"
-      : "";
+const overlayMessage =
+  overlay === "back" ? "매장 상세 화면으로 이동 중…" : "";
 
   return (
     <main className="relative min-h-screen bg-gray-50">
@@ -130,13 +80,6 @@ export default function ReviewManagementPage() {
             매장 상세
           </button>
 
-          <button
-            onClick={handleLogout}
-            className="flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-red-500"
-          >
-            <LogOut className="w-4 h-4" />
-            로그아웃
-          </button>
         </div>
       </header>
 

@@ -8,13 +8,11 @@ import {
   MessageSquare,
   Sparkles,
   Calendar,
-  LogOut,
   Loader2,
   AlertTriangle,
   CheckCircle,
   Info,
   Users,
-  Home,
 } from "lucide-react";
 
 import AppHeader from "../../../components/common/AppHeader";
@@ -94,9 +92,7 @@ const MOCK_STORES: Record<string, any> = {
   },
 };
 
-/* ================= API ================= */
-const API_BASE =
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
 
 /* ================= Date Utils ================= */
 function formatDate(date: Date) {
@@ -143,7 +139,6 @@ export default function StoreDetailPage() {
     return decodeURIComponent(params.storeId as string);
   }, [params.storeId]);
 
-  const [checking, setChecking] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [store, setStore] = useState<any | null>(null);
 
@@ -154,41 +149,30 @@ export default function StoreDetailPage() {
   const [analyzing, setAnalyzing] = useState(false);
   const [navigatingCustomers, setNavigatingCustomers] = useState(false);
 
-  /* ================= 로그인 + MOCK 로드 ================= */
-  useEffect(() => {
-    let cancelled = false;
+/* ================= MOCK 로드 ================= */
+useEffect(() => {
+  let cancelled = false;
 
-    const load = async () => {
-      try {
-        const authRes = await fetch(`${API_BASE}/auth/status`, {
-          credentials: "include",
-        });
-        const auth = await authRes.json();
+  const load = async () => {
+    try {
+      const mock = MOCK_STORES[decodedStoreId];
+      if (!mock) throw new Error("not_found");
 
-        if (!auth.logged_in) {
-          router.replace("/login");
-          return;
-        }
-
-        const mock = MOCK_STORES[decodedStoreId];
-        if (!mock) throw new Error("not_found");
-
-        if (!cancelled) setStore(mock);
-      } catch {
-        if (!cancelled)
-          setError(
-            "매장 정보를 불러오는 데 실패했습니다.\n잠시 후 다시 시도해주세요."
-          );
-      } finally {
-        if (!cancelled) setChecking(false);
+      if (!cancelled) setStore(mock);
+    } catch {
+      if (!cancelled) {
+        setError(
+          "매장 정보를 불러오는 데 실패했습니다.\n잠시 후 다시 시도해주세요."
+        );
       }
-    };
+    }
+  };
 
-    load();
-    return () => {
-      cancelled = true;
-    };
-  }, [decodedStoreId, router]);
+  load();
+  return () => {
+    cancelled = true;
+  };
+}, [decodedStoreId]);
 
   /* ✅ 모달 열릴 때 기본값: 최근 6개월 */
   useEffect(() => {
@@ -198,18 +182,6 @@ export default function StoreDetailPage() {
     setToDate(to);
   }, [showAnalyzeModal]);
 
-  /* ================= 로그아웃 ================= */
-  const handleLogout = async () => {
-    try {
-      await fetch(`${API_BASE}/auth/logout`, {
-        method: "POST",
-        credentials: "include",
-      });
-    } finally {
-      sessionStorage.setItem("just_logged_out", "1");
-      router.replace("/login");
-    }
-  };
 
   const handleAnalyze = () => {
     if (!fromDate || !toDate || analyzing) return;
@@ -252,19 +224,19 @@ export default function StoreDetailPage() {
         </div>
       )}
 
-      {checking && (
-        <div className="flex-1 flex items-center justify-center">
-          <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
-        </div>
-      )}
-
-      {!checking && error && (
+      {error && (
         <div className="flex-1 flex items-center justify-center text-red-500">
           <AlertTriangle className="w-10 h-10" />
         </div>
       )}
 
-      {!checking && !error && store && (() => {
+      {!error && !store && (
+        <div className="flex-1 flex items-center justify-center">
+          <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+        </div>
+      )}
+
+      {!error && store && (() => {
         const hasReviews = store.review_count > 0;
 
         return (

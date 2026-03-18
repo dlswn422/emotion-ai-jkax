@@ -69,40 +69,13 @@ type OverlayType = "none" | "home" | "logout" | "store" | "sync";
 export default function StoresPage() {
   const router = useRouter();
 
-  const [checking, setChecking] = useState(true);
   const [overlay, setOverlay] = useState<OverlayType>("none");
   const [syncError, setSyncError] = useState<string | null>(null);
   const [expandedAddress, setExpandedAddress] = useState<
     Record<string, boolean>
   >({});
 
-  /* ================= 로그인 가드 ================= */
-  useEffect(() => {
-    let cancelled = false;
 
-    const checkLogin = async () => {
-      try {
-        const res = await fetch(`${API_BASE}/auth/status`, {
-          credentials: "include",
-        });
-        const data = await res.json();
-
-        if (!cancelled && !data.logged_in) {
-          router.replace("/login");
-          return;
-        }
-      } catch {
-        if (!cancelled) router.replace("/login");
-      } finally {
-        if (!cancelled) setChecking(false);
-      }
-    };
-
-    checkLogin();
-    return () => {
-      cancelled = true;
-    };
-  }, [router]);
 
   /* ================= 🔄 최신 리뷰 동기화 ================= */
   const syncReviews = async () => {
@@ -125,14 +98,7 @@ export default function StoresPage() {
     }
   };
 
-  /* ================= 초기 로딩 ================= */
-  if (checking) {
-    return (
-      <main className="min-h-screen flex items-center justify-center bg-slate-50">
-        <Loader2 className="w-9 h-9 text-blue-600 animate-spin" />
-      </main>
-    );
-  }
+
 
   const overlayMessage =
     overlay === "none"

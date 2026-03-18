@@ -15,9 +15,3 @@ export function goGoogleBusinessConnect() {
 // export function goGoogleLogin() {
 //   window.location.href = `${API_BASE}/auth/google/login`;
 // }
-
-export async function logout() {
-  return apiFetch("/auth/logout", {
-    method: "POST",
-  });
-}

@@ -1,7 +1,7 @@
 const { defineComponent } = Vue;
 const { useRouter } = VueRouter;
 
-import { logout } from '../api/auth.js';
+
 
 export const NavBar = defineComponent({
   name: 'NavBar',

@@ -3,7 +3,6 @@
 import "./dashboard.css";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import {
   BarChart,
   Bar,
@@ -98,9 +97,6 @@ function PrintStyle() {
 }
 
 export default function DashboardPage() {
-  const router = useRouter();
-
-  const [checking, setChecking] = useState(true);
   const [loading, setLoading] = useState(true);
   const [pageEntering, setPageEntering] = useState(true);
   const [data, setData] = useState<AnalysisResult | null>(null);
@@ -109,23 +105,6 @@ export default function DashboardPage() {
     const id = setTimeout(() => setPageEntering(false), 350);
     return () => clearTimeout(id);
   }, []);
-
-  useEffect(() => {
-    const checkLogin = async () => {
-      try {
-        const res = await fetch(`${API_BASE}/auth/status`, {
-          credentials: "include",
-        });
-        const auth = await res.json();
-        if (!auth.logged_in) router.replace("/login");
-      } catch {
-        router.replace("/login");
-      } finally {
-        setChecking(false);
-      }
-    };
-    checkLogin();
-  }, [router]);
 
   useEffect(() => {
     const saved = sessionStorage.getItem("analysisResult");
@@ -161,13 +140,7 @@ export default function DashboardPage() {
     setLoading(false);
   }, []);
 
-  if (checking) {
-    return (
-      <main className="dash-page dash-page--center">
-        <Loader2 className="dash-spinner" />
-      </main>
-    );
-  }
+
 
   if (!data) {
     return (
