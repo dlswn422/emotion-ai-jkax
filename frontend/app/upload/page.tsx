@@ -77,55 +77,96 @@ export default function UploadPage() {
     setIsDragging(false);
   };
 
-  const handleUpload = async () => {
-    if (!selectedFile) {
-      setStatus("error");
-      setMessage("먼저 업로드할 파일을 선택해 주세요.");
-      return;
-    }
-
-    try {
-      setStatus("uploading");
-      setMessage("파일을 분석 중입니다. 잠시만 기다려 주세요.");
-
-      const formData = new FormData();
-      formData.append("file", selectedFile);
-
-      const res = await fetch(`${API_BASE}/analysis/file`, {
-        method: "POST",
-        body: formData,
-        credentials: "include",
-      });
-
-      const data = await res.json().catch(() => null);
-
-      if (!res.ok) {
-        throw new Error(
-          data?.detail ||
-            data?.message ||
-            "업로드 중 오류가 발생했습니다."
-        );
+    const handleUpload = async () => {
+      if (!selectedFile) {
+        setStatus("error");
+        setMessage("먼저 업로드할 파일을 선택해 주세요.");
+        return;
       }
 
-      sessionStorage.setItem("analysisResult", JSON.stringify(data));
+      const controller = new AbortController();
+      const timeoutMs = 120000; // 120초
+      const timeoutId = window.setTimeout(() => {
+        console.warn("[upload] timeout reached, aborting request", {
+          timeoutMs,
+          at: new Date().toISOString(),
+        });
+        controller.abort();
+      }, timeoutMs);
 
-      setStatus("done");
-      setMessage("업로드 및 분석이 완료되었습니다. 대시보드로 이동합니다.");
+      try {
+        setStatus("uploading");
+        setMessage("파일을 분석 중입니다. 잠시만 기다려 주세요.");
 
-      setTimeout(() => {
-        router.push("/dashboard");
-      }, 700);
-    } catch (error) {
-      const text =
-        error instanceof Error
-          ? error.message
-          : "업로드 중 오류가 발생했습니다.";
+        const formData = new FormData();
+        formData.append("file", selectedFile);
 
-      setStatus("error");
-      setMessage(text);
-    }
-  };
+        console.log("[upload] start", {
+          fileName: selectedFile.name,
+          fileSize: selectedFile.size,
+          api: `${API_BASE}/analysis/file`,
+          startedAt: new Date().toISOString(),
+        });
 
+        const startedAt = Date.now();
+
+        const res = await fetch(`${API_BASE}/analysis/file`, {
+          method: "POST",
+          body: formData,
+          credentials: "include",
+          signal: controller.signal,
+        });
+
+        console.log("[upload] response arrived", {
+          ok: res.ok,
+          status: res.status,
+          elapsedMs: Date.now() - startedAt,
+          contentType: res.headers.get("content-type"),
+        });
+
+        const data = await res.json().catch(() => null);
+
+        console.log("[upload] response body", data);
+
+        if (!res.ok) {
+          throw new Error(
+            data?.detail ||
+              data?.message ||
+              `업로드 중 오류가 발생했습니다. (status: ${res.status})`
+          );
+        }
+
+        sessionStorage.setItem("analysisResult", JSON.stringify(data));
+
+        console.log("[upload] success, navigating to dashboard", {
+          elapsedMs: Date.now() - startedAt,
+        });
+
+        setStatus("done");
+        setMessage("업로드 및 분석이 완료되었습니다. 대시보드로 이동합니다.");
+
+        setTimeout(() => {
+          router.push("/dashboard");
+        }, 700);
+      } catch (error) {
+        console.error("[upload] failed", error);
+
+        const text =
+          error instanceof DOMException && error.name === "AbortError"
+            ? "분석 응답이 지연되고 있습니다. 잠시 후 다시 시도해 주세요."
+            : error instanceof Error
+            ? error.message
+            : "업로드 중 오류가 발생했습니다.";
+
+        setStatus("error");
+        setMessage(text);
+      } finally {
+        clearTimeout(timeoutId);
+        console.log("[upload] finished", {
+          at: new Date().toISOString(),
+        });
+      }
+    };
   return (
     <div className="upload-page">
       <AppHeader variant="app" />
