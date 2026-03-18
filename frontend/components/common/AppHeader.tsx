@@ -33,7 +33,7 @@ export default function AppHeader({ variant }: AppHeaderProps) {
         <button
           type="button"
           className="nav-logo app-nav-logo-btn"
-          onClick={() => router.push("/")}
+         onClick={() => router.push("/")} 
         >
           <div className="nav-logo-mark">CX</div>
           <div>
@@ -47,7 +47,9 @@ export default function AppHeader({ variant }: AppHeaderProps) {
             <button
               type="button"
               className="nav-pill nav-pill-outline"
-              onClick={() => router.back()}
+              onClick={() => {
+              window.location.href = "/landing/index.html#/";
+            }}
             >
               <ArrowLeft size={14} />
               뒤로가기
