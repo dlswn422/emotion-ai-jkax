@@ -49,6 +49,7 @@ export const ReportPage = defineComponent({
       });
 
     let lineChart = null;
+    let summaryLineChart = null;
     let donutChart = null;
 
 
@@ -114,36 +115,73 @@ export const ReportPage = defineComponent({
       ];
     }
 
-    function normalizeKeywords(json = {}) {
-      const pos = (json.positive_keywords || []).slice(0, 12);
-      const neg = (json.negative_keywords || []).slice(0, 12);
-      const all = (json.all_keywords || []).slice(0, 12);
+function normalizeKeywords(json = {}) {
+  const pos = json.positive_keywords || json.positive || [];
+  const neg = json.negative_keywords || json.negative || [];
+  const all = json.all_keywords || json.all || [];
 
-      function toWordItems(list = [], type = 'all') {
-        return list.map((item, i) => {
-          const text = typeof item === 'string' ? item : (item.text || '');
-          const rawSize = typeof item === 'object' ? Number(item.size || 0) : 0;
+  function toWordItems(list = [], type = 'all') {
+    return list
+      .map((item) => {
+        const text = typeof item === 'string' ? item : (item.text || '');
+        const rawSize = typeof item === 'object' ? Number(item.size || 0) : 0;
 
-          let size = 18;
-          if (rawSize >= 34) size = 28;
-          else if (rawSize >= 28) size = 24;
-          else if (rawSize >= 22) size = 20;
-          else size = 18;
+        let size = 18;
+        if (rawSize >= 34) size = 28;
+        else if (rawSize >= 28) size = 24;
+        else if (rawSize >= 22) size = 20;
+        else size = 18;
 
-          return {
-            text,
-            size,
-            tone: type === 'positive' ? 'pos' : type === 'negative' ? 'neg' : 'all',
-          };
-        }).filter(v => v.text);
-      }
+        return {
+          text,
+          size,
+          tone: type === 'positive' ? 'pos' : type === 'negative' ? 'neg' : 'all',
+        };
+      })
+      .filter(v => v.text);
+  }
 
-      return {
-        positive: toWordItems(pos, 'positive'),
-        negative: toWordItems(neg, 'negative'),
-        all: toWordItems(all, 'all'),
-      };
+  const positiveItems = toWordItems(pos, 'positive');
+  const negativeItems = toWordItems(neg, 'negative');
+
+  const positiveMap = new Map(positiveItems.map(item => [item.text, item]));
+  const negativeMap = new Map(negativeItems.map(item => [item.text, item]));
+
+  const mergedAll = [];
+
+  all.forEach((item) => {
+    const text = typeof item === 'string' ? item : (item.text || '');
+    if (!text) return;
+
+    if (positiveMap.has(text)) {
+      mergedAll.push(positiveMap.get(text));
+      return;
     }
+
+    if (negativeMap.has(text)) {
+      mergedAll.push(negativeMap.get(text));
+      return;
+    }
+  });
+
+  positiveItems.forEach((item) => {
+    if (!mergedAll.some(v => v.text === item.text)) {
+      mergedAll.push(item);
+    }
+  });
+
+  negativeItems.forEach((item) => {
+    if (!mergedAll.some(v => v.text === item.text)) {
+      mergedAll.push(item);
+    }
+  });
+
+  return {
+    positive: positiveItems,
+    negative: negativeItems,
+    all: mergedAll,
+  };
+}
 
       function normalizeDrivers(list = []) {
       return (list || []).slice(0, 5).map((item, idx) => ({
@@ -448,76 +486,86 @@ function adaptCustomers(customerJson) {
       return Math.max(...dist.map(d => d.count), 1);
     });
 
-    async function buildLineChart() {
-      await nextTick();
-      const canvas = document.getElementById('ratingTrendChart');
-      if (!canvas || !report.value) return;
+async function buildLineChart(canvasId = 'ratingTrendChart', target = 'trend') {
+  await nextTick();
+  const canvas = document.getElementById(canvasId);
+  if (!canvas || !report.value) return;
 
-      destroyChart(lineChart);
+  if (target === 'trend') {
+    destroyChart(lineChart);
+  } else {
+    destroyChart(summaryLineChart);
+  }
 
-      const raw =
-        chartMode.value === 'daily'
-          ? (report.value.dailyRatings || [])
-          : (report.value.monthlyRatings || []);
+  const raw =
+    chartMode.value === 'daily'
+      ? (report.value.dailyRatings || [])
+      : (report.value.monthlyRatings || []);
 
-      const labels = raw.map(d => d.d);
-      const vals = raw.map(d => d.r);
+  const labels = raw.map(d => d.d);
+  const vals = raw.map(d => d.r);
 
-      if (!vals.length) return;
+  if (!vals.length) return;
 
-      const minIdx = vals.indexOf(Math.min(...vals));
+  const minIdx = vals.indexOf(Math.min(...vals));
 
-      lineChart = new Chart(canvas, {
-        type: 'line',
-        data: {
-          labels,
-          datasets: [{
-            label: '평균 평점',
-            data: vals,
-            borderColor: '#6366f1',
-            backgroundColor: 'rgba(99,102,241,.06)',
-            borderWidth: 2.5,
-            fill: true,
-            tension: 0.45,
-            pointRadius: vals.map((_, i) => i === minIdx ? 7 : 4),
-            pointBackgroundColor: vals.map((_, i) => i === minIdx ? '#f43f5e' : '#6366f1'),
-            pointBorderColor: '#fff',
-            pointBorderWidth: 2.5
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            legend: { display: false },
-            tooltip: {
-              backgroundColor: '#0f172a',
-              titleFont: { size: 12, family: 'Inter', weight: '600' },
-              bodyFont: { size: 13, family: 'Inter' },
-              padding: 12,
-              cornerRadius: 8,
-              callbacks: {
-                label: ctx => ` 평점: ${Number(ctx.parsed.y).toFixed(1)}`
-              }
-            }
-          },
-          scales: {
-            x: {
-              grid: { display: false },
-              border: { display: false },
-              ticks: { font: { size: 11, family: 'Inter' }, color: '#94a3b8' }
-            },
-            y: {
-              min: 1,
-              max: 5,
-              grid: { color: '#f1f5f9' },
-              border: { display: false },
-              ticks: { stepSize: 1, font: { size: 11, family: 'Inter' }, color: '#94a3b8' }
-            }
+  const chart = new Chart(canvas, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        label: '평균 평점',
+        data: vals,
+        borderColor: '#6366f1',
+        backgroundColor: 'rgba(99,102,241,.06)',
+        borderWidth: 2.5,
+        fill: true,
+        tension: 0.45,
+        pointRadius: vals.map((_, i) => i === minIdx ? 7 : 4),
+        pointBackgroundColor: vals.map((_, i) => i === minIdx ? '#f43f5e' : '#6366f1'),
+        pointBorderColor: '#fff',
+        pointBorderWidth: 2.5
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#0f172a',
+          titleFont: { size: 12, family: 'Inter', weight: '600' },
+          bodyFont: { size: 13, family: 'Inter' },
+          padding: 12,
+          cornerRadius: 8,
+          callbacks: {
+            label: ctx => ` 평점: ${Number(ctx.parsed.y).toFixed(1)}`
           }
         }
-      });
+      },
+      scales: {
+        x: {
+          grid: { display: false },
+          border: { display: false },
+          ticks: { font: { size: 11, family: 'Inter' }, color: '#94a3b8' }
+        },
+        y: {
+          min: 1,
+          max: 5,
+          grid: { color: '#f1f5f9' },
+          border: { display: false },
+          ticks: { stepSize: 1, font: { size: 11, family: 'Inter' }, color: '#94a3b8' }
+        }
+      }
     }
+  });
+
+  if (target === 'trend') {
+    lineChart = chart;
+  } else {
+    summaryLineChart = chart;
+  }
+}
 
     async function buildDonutChart() {
       await nextTick();
@@ -569,62 +617,63 @@ function adaptCustomers(customerJson) {
       };
     }
 
-    async function loadReport() {
-      loading.value = true;
-      error.value = '';
-      try {
-        const defaults = getDefaultDateRange();
-        const from = route.query.from || route.query.start || defaults.from;
-        const to = route.query.to || route.query.end || defaults.to;
-       console.log('route.query', route.query);
-       console.log('used period', from, to);
+async function loadReport() {
+  loading.value = true;
+  error.value = '';
 
-        const [cxJson, trendDaily, trendMonthly, customerJson] = await Promise.all([
-          analyzeCx(storeId, from, to),
-          getRatingTrend(storeId, 'day', from, to),
-          getRatingTrend(storeId, 'month', from, to),
-          getCustomers(storeId, from, to),
-        ]);
-        console.log("Executive Summary", cxJson);
-        console.log("getRatingTrend_day", trendDaily);
-        console.log("getRatingTrend_month", trendMonthly);
-        console.log("getCustomers RAW", customerJson);
+  try {
+    const defaults = getDefaultDateRange();
+    const from = route.query.from || route.query.start || defaults.from;
+    const to = route.query.to || route.query.end || defaults.to;
 
-   
-        report.value = adaptCxReport(cxJson, trendDaily, trendMonthly, store, from, to);
-        customers.value = adaptCustomers(customerJson);
+    const [cxJson, trendDaily, trendMonthly, customerJson] = await Promise.all([
+      analyzeCx(storeId, from, to),
+      getRatingTrend(storeId, 'day', from, to),
+      getRatingTrend(storeId, 'month', from, to),
+      getCustomers(storeId, from, to),
+    ]);
 
-       
+    report.value = adaptCxReport(cxJson, trendDaily, trendMonthly, store, from, to);
+    customers.value = adaptCustomers(customerJson);
 
-    
+    loading.value = false;
+    await nextTick();
 
-        await nextTick();
-
-        if (activeTab.value === 'rating') await buildDonutChart();
-        if (activeTab.value === 'trend') await buildLineChart();
-      } catch (e) {
-        console.error(e);
-        error.value = e.message || '보고서 데이터를 불러오지 못했습니다.';
-      } finally {
-        loading.value = false;
-      }
+    if (activeTab.value === 'rating') await buildDonutChart();
+    if (activeTab.value === 'summary') {
+      await buildLineChart('summaryRatingTrendChart', 'summary');
     }
+    if (activeTab.value === 'trend') {
+      await buildLineChart('ratingTrendChart', 'trend');
+    }
+  } catch (e) {
+    console.error(e);
+    error.value = e.message || '보고서 데이터를 불러오지 못했습니다.';
+    loading.value = false;
+  }
+}
 
     watch(activeTab, async (tab) => {
       if (!report.value) return;
-      if (tab === 'trend') await buildLineChart();
+      if (tab === 'trend') await buildLineChart('ratingTrendChart', 'trend');
       if (tab === 'rating') await buildDonutChart();
     });
 
     watch(chartMode, async () => {
       if (!report.value) return;
-      await buildLineChart();
+
+      await buildLineChart('summaryRatingTrendChart', 'summary');
+
+      if (activeTab.value === 'trend') {
+        await buildLineChart('ratingTrendChart', 'trend');
+      }
     });
 
     onMounted(loadReport);
 
     onUnmounted(() => {
       destroyChart(lineChart);
+      destroyChart(summaryLineChart);
       destroyChart(donutChart);
     });
 
@@ -775,7 +824,39 @@ template: `
               <div class="kpi-sub">리뷰 수</div>
             </div>
           </div>
-
+         
+        <!-- 평점추이 그래프 추가 -->
+        <div v-show="activeTab==='summary'" class="r-card summary-trend-card">
+          <div class="r-card-hd">
+            <div class="r-card-title">
+              <div class="r-title-icon ic-sky">
+                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+                </svg>
+              </div>
+              평점 점수 추이
+            </div>
+            <div class="chart-toolbar">
+              <div class="chart-toggle">
+                <button :class="['ct-btn',chartMode==='daily'?'active':'']" @click="chartMode='daily'">일별</button>
+                <button :class="['ct-btn',chartMode==='monthly'?'active':'']" @click="chartMode='monthly'">월별</button>
+              </div>
+            </div>
+          </div>
+          <div class="r-card-body">
+            <div class="chart-container summary-chart-container">
+              <canvas id="summaryRatingTrendChart"></canvas>
+            </div>
+            <div style="display:flex;gap:16px;margin-top:12px;font-size:12px;color:var(--text-4)">
+              <span style="display:flex;align-items:center;gap:5px">
+                <span style="width:10px;height:10px;border-radius:50%;background:var(--brand-500);display:inline-block"></span> 평균 평점
+              </span>
+              <span style="display:flex;align-items:center;gap:5px">
+                <span style="width:10px;height:10px;border-radius:50%;background:#f43f5e;display:inline-block"></span> 급변 구간 (최저점)
+              </span>
+            </div>
+          </div>
+        </div>
           <!-- ── EXECUTIVE SUMMARY ── -->
           <div v-show="activeTab==='summary'" class="r-card">
             <div class="r-card-hd">

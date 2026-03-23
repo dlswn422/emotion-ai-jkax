@@ -317,15 +317,18 @@ Detractor (0~6)
 
 
 ==============================
-10 키워드 워드클라우드
+🔟 키워드 워드클라우드
 ==============================
 1. 리뷰 텍스트에서 반복 등장하는 대표 키워드를 추출하라.
 2. 반드시 positive_keywords, negative_keywords, all_keywords 3개 배열을 반환하라.
 3. 각 배열은 최대 12개까지 반환하라.
 4. 각 항목은 text, size 키를 가진 객체 형식으로 반환하라.
 5. positive_keywords는 긍정 맥락 키워드만, negative_keywords는 부정 맥락 키워드만 넣어라.
-6. all_keywords는 긍정/부정을 포함한 전체 핵심 키워드를 빈도와 중요도 기준으로 정리하라.
-7. 리뷰에 직접 없는 단어를 임의로 만들지 마라.
+6. all_keywords는 별도로 새로 추출하지 말고, positive_keywords와 negative_keywords에 포함된 항목만 합쳐서 구성하라.
+7. all_keywords에는 긍정 키워드와 부정 키워드가 원문 그대로 포함되어야 하며, text와 size 값도 각 원본 배열의 값을 그대로 유지하라.
+8. 동일한 text가 positive_keywords와 negative_keywords에 동시에 등장하는 경우는 허용하지 말고, 더 적절한 감성 한쪽에만 배치하라.
+9. all_keywords에서 표시 색상은 각 키워드의 감성 분류를 그대로 따라야 한다. positive_keywords에서 온 키워드는 전체에서도 동일한 초록색, negative_keywords에서 온 키워드는 전체에서도 동일한 빨간색으로 표시하라.
+10. 리뷰에 직접 없는 단어를 임의로 만들지 마라.
 
 ==============================
 최종 검증 규칙

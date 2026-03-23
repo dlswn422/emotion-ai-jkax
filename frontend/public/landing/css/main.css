@@ -1755,3 +1755,12 @@ img{image-rendering:-webkit-optimize-contrast;image-rendering:crisp-edges}
   color:var(--text-4);
   font-size:14px;
 }
+
+.summary-trend-card {
+  margin-top: 20px;
+  margin-bottom: 20px;
+}
+
+.summary-chart-container {
+  height: 220px;
+}
