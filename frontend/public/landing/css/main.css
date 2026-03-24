@@ -1874,3 +1874,6 @@ img{image-rendering:-webkit-optimize-contrast;image-rendering:crisp-edges}
 .company-logo-img-up-goodai {
   transform: translateY(-5px);
 }
+.company-logo-img-up-sahabat {
+  transform: translateY(-8px);
+}

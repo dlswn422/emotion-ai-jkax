@@ -155,9 +155,11 @@ export const StoreListPage = defineComponent({
                       :alt="company.name"
                       :class="[
                         'company-logo-img',
-                        company.id === 'store_6' ? 'company-logo-img-up-sinill' : '',
-                        company.id === 'store_7' ? 'company-logo-img-up-ck' : '',
-                        company.id === 'store_8' ? 'company-logo-img-up-goodai' : ''
+                        company.id === 'store_6' ? 'company-logo-img-up-sahabat' : '',
+                        company.id === 'store_7' ? 'company-logo-img-up-sinill' : '',
+                        company.id === 'store_8' ? 'company-logo-img-up-ck' : '',
+                        company.id === 'store_9' ? 'company-logo-img-up-goodai' : ''
+
                       ]"
                     />
                   </div>
