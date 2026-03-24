@@ -199,21 +199,6 @@ def get_store_customers_by_period(
     # 하단 고객 리스트
     customers = _build_customer_list(list_customers)
 
-    # 디버깅용 로그
-    print("\n=== CUSTOMER SERVICE RESULT ===")
-    print("store_id =", store_id)
-    print("current month =", current_start, "~", current_end_exclusive)
-    print("previous month =", previous_start, "~", previous_end_exclusive)
-    print("current review count =", len(current_reviews))
-    print("previous review count =", len(previous_reviews))
-    print("current customer count =", len(current_customers))
-    print("previous customer count =", len(previous_customers))
-    print("summary =", summary)
-    print("risk_distribution =", risk_distribution)
-    print("visit_frequency_distribution =", visit_frequency_distribution)
-    print("customers sample =", customers[:3])
-    print("================================\n")
-
     return {
         "summary": summary,
         "risk_distribution": risk_distribution,
@@ -222,7 +207,6 @@ def get_store_customers_by_period(
         "cohort": cohort,
         "customers": customers,
     }
-
 
 # ----------------------------
 # query helpers
