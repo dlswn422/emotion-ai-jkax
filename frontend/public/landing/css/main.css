@@ -1875,5 +1875,5 @@ img{image-rendering:-webkit-optimize-contrast;image-rendering:crisp-edges}
   transform: translateY(-5px);
 }
 .company-logo-img-up-sahabat {
-  transform: translateY(-8px);
+  transform: translate(-2px, -8px);
 }
