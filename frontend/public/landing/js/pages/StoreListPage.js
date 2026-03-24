@@ -178,7 +178,7 @@ export const StoreListPage = defineComponent({
                 </div>
 
                 <button class="sc-cta company-btn" @click.stop="openAnalysis(company)">
-                  {{ company.name }} 기업 분석하기
+                  {{ company.name }} {{ company.id === 'store_6' ? '매장 분석하기' : '기업 분석하기' }}
                   <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
                     <path d="M5 12h14M12 5l7 7-7 7" />
                   </svg>
