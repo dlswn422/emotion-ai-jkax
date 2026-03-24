@@ -124,7 +124,7 @@ export const STORES = [
           {
     id: 'store_6',
     type: 'company',
-    name: '사하바트',
+    name: 'Sahabat',
     address: 'Global Lounge Sahabat, Jl. Ki Hajar Dewantara, RT.2/RW.4, Mekarmukti, Kec. Cikarang Utara,',
     country: '인도네시아',
     category: '카페',
