@@ -544,7 +544,7 @@ export const ReportPage = defineComponent({
           churnPct: Math.round(Number(c.churn_probability ?? 0) * 100),
           risk: c.risk_level || 'LOW',
           visitFreq: c.visit_frequency_label || riskToVisitFreq(c.risk_level),
-          avgSpend: c.avg_spend || '₩40,000',
+          avgSpend: c.avg_spend ?? null,
           tags: Array.isArray(c.tags) && c.tags.length ? c.tags : sentimentTags(c),
         })),
       };

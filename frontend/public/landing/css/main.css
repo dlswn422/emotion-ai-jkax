@@ -1619,7 +1619,7 @@ img{image-rendering:-webkit-optimize-contrast;image-rendering:crisp-edges}
   border-radius:var(--r-full);white-space:nowrap;
 }
 .ca-risk-high{background:#fff1f2;color:#e11d48}
-.ca-risk-medium{background:#fffbeb;color:#d97706}
+.ca-risk-medium{background:#fffbeb; color:#d97706;}
 .ca-risk-low{background:#f0fdf4;color:#16a34a}
 .ca-rating-cell{display:flex;align-items:center;gap:4px;font-weight:700;color:var(--text-1)}
 .ca-star{font-size:14px}
