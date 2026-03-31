@@ -12,7 +12,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.sessions import SessionMiddleware
 
-from backend.api import analysis, auth, stores, google_business, dashboard, customers
+from backend.api import analysis, auth, stores, google_business, dashboard, customers, tenant_news
 
 # =========================
 # FastAPI App
@@ -57,3 +57,4 @@ app.include_router(analysis.router)
 app.include_router(dashboard.router)
 app.include_router(google_business.router)
 app.include_router(customers.router)
+app.include_router(tenant_news.router)
