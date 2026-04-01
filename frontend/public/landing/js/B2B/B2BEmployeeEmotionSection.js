@@ -11,11 +11,12 @@ export const B2BEmployeeEmotionSection = defineComponent({
   },
 
   setup(props) {
+    
     const report = computed(
       () =>
         B2B_EMPLOYEE_EMOTION_MOCK[props.compId] ||
         B2B_EMPLOYEE_EMOTION_MOCK.shinilpharm
-    );
+      );
 
     const avgScore = computed(() => {
       const d = report.value?.jobplanetDetail;

@@ -3805,3 +3805,302 @@ img{image-rendering:-webkit-optimize-contrast;image-rendering:crisp-edges}
 .issue-low{background:#f0fdf4;border-left:3px solid #10b981;color:#166534}
 .b2b-issue-dot{width:6px;height:6px;border-radius:50%;margin-top:5px;flex-shrink:0;background:currentColor}
 .b2b-issue-text{}
+
+/* ============================================================
+   ALERT SYSTEM — NavBar 벨 + 패널 + 발송 모달
+   ============================================================ */
+
+/* ── NavBar 알림 버튼 ── */
+.nav-alert-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1.5px solid var(--border-base);
+  background: var(--n-0);
+  color: var(--text-2);
+  cursor: pointer;
+  transition: all .15s;
+  flex-shrink: 0;
+}
+.nav-alert-btn:hover {
+  background: var(--brand-50);
+  border-color: var(--brand-300);
+  color: var(--brand-600);
+}
+.nav-alert-badge {
+  position: absolute;
+  top: -4px; right: -4px;
+  min-width: 17px; height: 17px;
+  border-radius: 9px;
+  background: #f43f5e;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 800;
+  display: flex; align-items: center; justify-content: center;
+  padding: 0 3px;
+  border: 2px solid var(--n-0);
+  animation: alertPulse 2s infinite;
+  line-height: 1;
+}
+@keyframes alertPulse {
+  0%,100% { box-shadow: 0 0 0 0 rgba(244,63,94,.4); }
+  50%      { box-shadow: 0 0 0 5px rgba(244,63,94,0); }
+}
+
+/* ── 패널 슬라이드 트랜지션 ── */
+.alert-slide-enter-active,
+.alert-slide-leave-active { transition: opacity .2s, transform .25s cubic-bezier(.4,0,.2,1); }
+.alert-slide-enter-from,
+.alert-slide-leave-to   { opacity: 0; }
+.alert-slide-enter-from .alp-panel,
+.alert-slide-leave-to   .alp-panel { transform: translateX(100%); }
+
+/* ── 패널 배경 오버레이 ── */
+.alp-backdrop {
+  position: fixed; inset: 0; z-index: 1100;
+  background: rgba(15,23,42,.35);
+  backdrop-filter: blur(2px);
+}
+
+/* ── 패널 본체 ── */
+.alp-panel {
+  position: fixed;
+  top: 0; right: 0; bottom: 0;
+  width: 420px; max-width: 100vw;
+  background: var(--n-0);
+  border-left: 1.5px solid var(--border-base);
+  box-shadow: -8px 0 40px rgba(15,23,42,.12);
+  display: flex; flex-direction: column;
+  z-index: 1101;
+  transition: transform .25s cubic-bezier(.4,0,.2,1);
+  overflow: hidden;
+}
+
+/* 패널 헤더 */
+.alp-hd {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 18px 20px 16px;
+  border-bottom: 1.5px solid var(--border-base);
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  flex-shrink: 0;
+}
+.alp-hd-left { display: flex; align-items: center; gap: 10px; }
+.alp-hd-icon {
+  width: 32px; height: 32px; border-radius: 8px;
+  background: rgba(244,63,94,.15);
+  border: 1px solid rgba(244,63,94,.3);
+  display: flex; align-items: center; justify-content: center;
+  color: #f43f5e;
+}
+.alp-hd-title { font-size: 15px; font-weight: 700; color: #f8fafc; }
+.alp-unread-badge {
+  background: #f43f5e; color: #fff;
+  font-size: 10px; font-weight: 800;
+  padding: 1px 7px; border-radius: 9px;
+  animation: alertPulse 2s infinite;
+}
+.alp-hd-right { display: flex; align-items: center; gap: 8px; }
+.alp-read-all {
+  font-size: 12px; font-weight: 600; color: #94a3b8;
+  background: transparent; border: none; cursor: pointer;
+  padding: 4px 8px; border-radius: 6px;
+  transition: color .15s, background .15s;
+}
+.alp-read-all:hover { color: #f8fafc; background: rgba(255,255,255,.08); }
+.alp-close-btn {
+  width: 28px; height: 28px; border-radius: 6px;
+  background: rgba(255,255,255,.08); border: none; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  color: #94a3b8; transition: all .15s;
+}
+.alp-close-btn:hover { background: rgba(244,63,94,.2); color: #f43f5e; }
+
+/* 빈 상태 */
+.alp-empty {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 12px; color: var(--text-4); padding: 40px;
+  text-align: center; font-size: 13px;
+}
+.alp-empty-icon {
+  width: 56px; height: 56px; border-radius: 50%;
+  background: var(--n-100); border: 1.5px solid var(--border-base);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--text-4);
+}
+
+/* 알림 목록 */
+.alp-list { flex: 1; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+.alp-list::-webkit-scrollbar { width: 4px; }
+.alp-list::-webkit-scrollbar-thumb { background: var(--border-base); border-radius: 4px; }
+
+/* 알림 아이템 */
+.alp-item {
+  display: flex; align-items: flex-start; gap: 10px;
+  padding: 12px 14px; border-radius: 12px;
+  border: 1.5px solid var(--border-base);
+  background: var(--n-0);
+  cursor: pointer; transition: all .15s;
+  position: relative;
+}
+.alp-item:hover { border-color: var(--brand-300); background: var(--brand-50); }
+.alp-item.unread { border-left: 3px solid; }
+.alp-item.unread.alp-sev-critical { border-left-color: #f43f5e; background: #fff8f8; }
+.alp-item.unread.alp-sev-warning  { border-left-color: #f59e0b; background: #fffdf5; }
+.alp-item.unread.alp-sev-info     { border-left-color: #6366f1; background: #f8f7ff; }
+
+.alp-item-icon {
+  width: 32px; height: 32px; border-radius: 8px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+}
+.alp-item-body { flex: 1; min-width: 0; }
+.alp-item-top {
+  display: flex; align-items: center; gap: 6px;
+  flex-wrap: wrap; margin-bottom: 5px;
+}
+.alp-sev-tag {
+  font-size: 10px; font-weight: 700;
+  padding: 1px 7px; border-radius: 9px; border: 1px solid;
+  flex-shrink: 0;
+}
+.alp-item-tab {
+  font-size: 11px; color: var(--text-4); font-weight: 500;
+}
+.alp-item-time {
+  font-size: 10px; color: var(--text-4);
+  margin-left: auto; white-space: nowrap; flex-shrink: 0;
+}
+.alp-dot-unread {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: #f43f5e; flex-shrink: 0;
+}
+.alp-item-title {
+  font-size: 13px; font-weight: 700; color: var(--text-1);
+  margin-bottom: 3px; line-height: 1.4;
+}
+.alp-item-company {
+  display: flex; align-items: center; gap: 4px;
+  font-size: 11px; color: var(--text-4); font-weight: 500;
+}
+.alp-sent-info {
+  display: flex; align-items: center; gap: 4px;
+  font-size: 10px; color: #10b981; font-weight: 600; margin-top: 4px;
+}
+
+/* 아이템 액션 버튼 */
+.alp-item-actions { display: flex; flex-direction: column; gap: 4px; flex-shrink: 0; }
+.alp-send-btn {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 5px 10px; border-radius: 7px; font-size: 11px; font-weight: 700;
+  background: var(--brand-600); color: #fff; border: none; cursor: pointer;
+  transition: all .15s; white-space: nowrap;
+}
+.alp-send-btn:hover { background: var(--brand-700); transform: translateY(-1px); }
+.alp-send-btn.sent { background: #10b981; }
+.alp-del-btn {
+  width: 26px; height: 26px; border-radius: 6px;
+  background: var(--n-100); border: 1px solid var(--border-base);
+  color: var(--text-4); cursor: pointer; display: flex;
+  align-items: center; justify-content: center;
+  transition: all .15s;
+}
+.alp-del-btn:hover { background: #fff1f2; border-color: #fda4af; color: #f43f5e; }
+
+/* ── 발송 모달 ── */
+.alp-send-modal {
+  background: var(--n-0); border-radius: 20px;
+  width: 500px; max-width: 95vw;
+  box-shadow: 0 24px 80px rgba(15,23,42,.22);
+  overflow: hidden;
+}
+.alp-modal-summary {
+  margin: 0 20px 16px;
+  padding: 14px 16px; border-radius: 12px; border: 1.5px solid;
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+}
+.alp-modal-kw {
+  font-size: 18px; font-weight: 800; line-height: 1.2;
+}
+.alp-modal-meta {
+  font-size: 12px; color: var(--text-3); font-weight: 500;
+  width: 100%; margin-top: 2px;
+}
+
+/* 수신자 목록 */
+.alp-recip-label {
+  padding: 0 20px 8px;
+  font-size: 12px; font-weight: 700; color: var(--text-3);
+  letter-spacing: .04em; text-transform: uppercase;
+}
+.alp-recip-list { padding: 0 20px 4px; display: flex; flex-direction: column; gap: 6px; }
+.alp-recip-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 14px; border-radius: 10px;
+  border: 1.5px solid var(--border-base); cursor: pointer;
+  transition: all .15s;
+}
+.alp-recip-item:hover { border-color: var(--brand-300); background: var(--brand-50); }
+.alp-recip-chk { width: 15px; height: 15px; accent-color: var(--brand-600); cursor: pointer; flex-shrink: 0; }
+.alp-recip-info { display: flex; flex-direction: column; gap: 1px; }
+.alp-recip-name { font-size: 13px; font-weight: 600; color: var(--text-1); }
+.alp-recip-email { font-size: 11px; color: var(--text-4); }
+
+/* 수신자 미리보기 칩 */
+.alp-recip-preview {
+  padding: 10px 20px 0;
+  font-size: 12px; color: var(--text-4); font-weight: 500;
+  display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+}
+.alp-recip-chip {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 2px 10px; border-radius: 9px; font-size: 11px; font-weight: 600;
+  background: var(--brand-50); color: var(--brand-700);
+  border: 1px solid var(--brand-200);
+}
+.alp-recip-chip.sent { background: #ecfdf5; color: #065f46; border-color: #a7f3d0; }
+
+/* 메시지 편집 영역 */
+.alp-msg-wrap { padding: 12px 20px; }
+.alp-msg-textarea {
+  width: 100%; resize: vertical;
+  padding: 12px 14px; border-radius: 10px;
+  border: 1.5px solid var(--border-base); background: var(--n-50);
+  font-size: 12px; font-family: 'Inter', monospace; line-height: 1.6;
+  color: var(--text-1); outline: none; transition: border-color .15s;
+  box-sizing: border-box;
+}
+.alp-msg-textarea:focus { border-color: var(--brand-400); background: var(--n-0); }
+
+/* 로딩 스피너 */
+.alp-spinner {
+  width: 12px; height: 12px; border-radius: 50%;
+  border: 2px solid rgba(255,255,255,.3);
+  border-top-color: #fff;
+  animation: spin .6s linear infinite; display: inline-block;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* 발송 완료 화면 */
+.alp-success {
+  padding: 40px 24px;
+  display: flex; flex-direction: column; align-items: center;
+  text-align: center; gap: 12px;
+}
+.alp-success-icon {
+  width: 64px; height: 64px; border-radius: 50%;
+  background: #ecfdf5; border: 2px solid #a7f3d0;
+  display: flex; align-items: center; justify-content: center;
+}
+.alp-success-title { font-size: 18px; font-weight: 800; color: var(--text-1); }
+.alp-success-desc  { font-size: 13px; color: var(--text-3); line-height: 1.6; }
+.alp-success-recipients { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; }
+
+/* ── 반응형 ── */
+@media(max-width:480px){
+  .alp-panel { width: 100vw; }
+  .alp-send-modal { width: 100vw; border-radius: 20px 20px 0 0; }
+}
