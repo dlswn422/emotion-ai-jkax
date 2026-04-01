@@ -3734,3 +3734,74 @@ img{image-rendering:-webkit-optimize-contrast;image-rendering:crisp-edges}
     grid-template-columns:1fr;
   }
 }
+
+/* ══════════════════════════════════════════════════════
+   잡플래닛 직원 감정 분석 — 종합 요약 카드
+══════════════════════════════════════════════════════ */
+.jp-summary-card{
+  background:linear-gradient(135deg,#fff8f2 0%,#fff 60%);
+  border:1.5px solid #fed7aa;
+  border-radius:var(--r-xl);
+  padding:28px 32px;
+  display:flex;align-items:center;gap:32px;flex-wrap:wrap;
+  margin-bottom:20px;
+}
+.jp-summary-left{flex:0 0 auto}
+.jp-logo-badge{
+  display:inline-block;
+  background:#ff6b35;color:#fff;
+  font-size:11px;font-weight:800;letter-spacing:.06em;
+  padding:3px 10px;border-radius:var(--r-full);
+  margin-bottom:8px;
+}
+.jp-summary-title{font-size:18px;font-weight:800;color:var(--text-1);margin-bottom:2px}
+.jp-summary-sub{font-size:12px;color:var(--text-4)}
+
+.jp-summary-score-wrap{
+  display:flex;flex-direction:column;align-items:center;gap:4px;
+  flex:0 0 auto;
+}
+.jp-summary-score{font-size:52px;font-weight:900;line-height:1}
+.jp-summary-denom{font-size:14px;color:var(--text-4);font-weight:600;margin-top:-4px}
+.jp-summary-stars{display:flex;gap:2px;margin-top:6px}
+
+.jp-summary-bars{flex:1;min-width:220px;display:flex;flex-direction:column;gap:10px}
+.jp-mini-bar-row{display:flex;align-items:center;gap:10px}
+.jp-mini-lbl{font-size:12px;font-weight:600;color:var(--text-3);width:60px;flex-shrink:0}
+.jp-mini-track{flex:1;height:8px;background:var(--n-100);border-radius:var(--r-full);overflow:hidden}
+.jp-mini-fill{height:100%;border-radius:var(--r-full);transition:width .8s var(--ease-out)}
+.jp-mini-val{font-size:12px;font-weight:800;width:32px;text-align:right;flex-shrink:0}
+
+@media(max-width:700px){
+  .jp-summary-card{flex-direction:column;align-items:flex-start;gap:20px}
+  .jp-summary-score-wrap{flex-direction:row;align-items:flex-end;gap:8px}
+}
+
+/* ── JobPlanet Detail ── */
+.jp-detail-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:24px}
+.jp-detail-card{
+  background:var(--n-50);border:1.5px solid var(--border-base);border-radius:var(--r-lg);
+  padding:16px;text-align:center;
+  transition:box-shadow var(--dur-base),border-color var(--dur-base);
+}
+.jp-detail-card:hover{box-shadow:var(--shadow-md);border-color:#ff6b35}
+.jp-cat-name{font-size:12px;font-weight:700;color:var(--text-2);margin-bottom:8px}
+.jp-cat-score{font-size:28px;font-weight:800;line-height:1;margin-bottom:6px}
+.jp-cat-stars{margin-bottom:8px}
+.jp-cat-bar-wrap{height:4px;background:var(--n-200);border-radius:var(--r-full);overflow:hidden}
+.jp-cat-bar{height:100%;border-radius:var(--r-full);transition:width .8s var(--ease-out)}
+.jp-pros-cons{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:4px}
+.jp-pc-label{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:var(--text-2);margin-bottom:10px}
+.jp-tags{display:flex;flex-wrap:wrap;gap:6px}
+.jp-tag{font-size:12px;font-weight:600;padding:4px 12px;border-radius:var(--r-full)}
+.jp-tag-pro{background:#ecfdf5;color:#059669;border:1px solid #a7f3d0}
+.jp-tag-con{background:#fff1f2;color:#e11d48;border:1px solid #fecdd3}
+
+/* ── Key issues ── */
+.b2b-issues{display:flex;flex-direction:column;gap:10px}
+.b2b-issue-row{display:flex;align-items:flex-start;gap:10px;padding:12px 14px;border-radius:var(--r-md);font-size:13px;line-height:1.5}
+.issue-high{background:#fff1f2;border-left:3px solid #f43f5e;color:#9f1239}
+.issue-medium{background:#fffbeb;border-left:3px solid #f59e0b;color:#92400e}
+.issue-low{background:#f0fdf4;border-left:3px solid #10b981;color:#166534}
+.b2b-issue-dot{width:6px;height:6px;border-radius:50%;margin-top:5px;flex-shrink:0;background:currentColor}
+.b2b-issue-text{}

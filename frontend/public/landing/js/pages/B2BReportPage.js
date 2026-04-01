@@ -6,6 +6,7 @@ import { AlertPanel } from '../components/AlertPanel.js';
 import { DateModal } from '../components/DateModal.js';
 import { B2BCustomerTrendSection } from '../B2B/B2BCustomerTrendSection.js';
 import { B2BCompetitiveSection } from '../B2B/B2BCompetitiveSection.js';
+import { B2BEmployeeEmotionSection } from '../B2B/B2BEmployeeEmotionSection.js';
 import {
   B2B_COMPANIES,
   B2B_REPORTS,
@@ -22,6 +23,7 @@ export const B2BReportPage = defineComponent({
     DateModal,
     B2BCustomerTrendSection,
     B2BCompetitiveSection,
+    B2BEmployeeEmotionSection,
   },
 
   setup() {
@@ -44,6 +46,32 @@ export const B2BReportPage = defineComponent({
     const loading = ref(false);
     const activeTab = ref('external');
     const showPeriodModal = ref(false);
+
+    const internalTopKpis = computed(() => {
+  if (company.id === 'shinilpharm') {
+    return {
+      signalCount: 16,
+      reviewRating: 'N/A',
+      reviewSub: '데이터 미연동',
+      competitiveRank: 3,
+      competitorCount: 4,
+      competitiveScore: 62,
+      employeeScore: 12,
+      employeeTrend: '+4',
+    };
+  }
+
+  return {
+    signalCount: 0,
+    reviewRating: 'N/A',
+    reviewSub: '데이터 미연동',
+    competitiveRank: '-',
+    competitorCount: 0,
+    competitiveScore: 0,
+    employeeScore: 0,
+    employeeTrend: '0',
+  };
+});
 
     const TAB_DEFS = [
       {
@@ -108,6 +136,7 @@ export const B2BReportPage = defineComponent({
       onPeriodConfirm,
       printReport,
       fmtDate,
+      internalTopKpis,
     };
   },
 
@@ -249,6 +278,7 @@ export const B2BReportPage = defineComponent({
           </div>
 
           <div v-show="activeTab==='external'">
+          
             <B2BCustomerTrendSection
               :comp-id="company.id"
               :analysis-period="analysisPeriod"
@@ -267,10 +297,75 @@ export const B2BReportPage = defineComponent({
             />
           </div>
 
-          <div v-show="activeTab==='internal'" class="tab-status-screen wip" style="margin-top:18px">
-            <div class="tab-screen-badge wip">작업중</div>
-            <h2 class="tab-screen-title">직원 감정 분석 탭은 다음 단계에서 맞출 예정</h2>
-          </div>
+<div v-show="activeTab==='internal'">
+  <div class="b2b-top-kpi" style="margin-bottom:20px">
+    <div class="b2b-tkpi">
+      <div class="b2b-tkpi-icon" style="background:linear-gradient(135deg,#8b5cf6,#a78bfa)">
+        <svg width="15" height="15" fill="none" stroke="#fff" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M13 10V3L4 14h7v7l9-11h-7z"/>
+        </svg>
+      </div>
+      <div>
+        <div class="b2b-tkpi-label">고객 동향 신호</div>
+        <div class="b2b-tkpi-val" style="color:#8b5cf6">
+          {{ internalTopKpis.signalCount }}<span class="b2b-tkpi-unit">개</span>
+        </div>
+        <div class="b2b-tkpi-trend">모니터링 키워드</div>
+      </div>
+    </div>
+
+    <div class="b2b-tkpi">
+      <div class="b2b-tkpi-icon" style="background:linear-gradient(135deg,#94a3b8,#cbd5e1)">
+        <svg width="15" height="15" fill="none" stroke="#fff" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
+        </svg>
+      </div>
+      <div>
+        <div class="b2b-tkpi-label">리뷰 감정 평점</div>
+        <div class="b2b-tkpi-val" style="color:#94a3b8">
+          {{ internalTopKpis.reviewRating }}
+        </div>
+        <div class="b2b-tkpi-trend" style="color:#94a3b8">{{ internalTopKpis.reviewSub }}</div>
+      </div>
+    </div>
+
+    <div class="b2b-tkpi">
+      <div class="b2b-tkpi-icon" style="background:linear-gradient(135deg,#f59e0b,#fbbf24)">
+        <svg width="15" height="15" fill="none" stroke="#fff" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M12 20V10M18 20V4M6 20v-6"/>
+        </svg>
+      </div>
+      <div>
+        <div class="b2b-tkpi-label">경쟁사 대비 순위</div>
+        <div class="b2b-tkpi-val" style="color:#f59e0b">
+          {{ internalTopKpis.competitiveRank }}위
+          <span class="b2b-tkpi-unit">/ {{ internalTopKpis.competitorCount }}개사</span>
+        </div>
+        <div class="b2b-tkpi-trend">점수 {{ internalTopKpis.competitiveScore }}점</div>
+      </div>
+    </div>
+
+    <div class="b2b-tkpi">
+      <div class="b2b-tkpi-icon" style="background:linear-gradient(135deg,#8b5cf6,#a78bfa)">
+        <svg width="15" height="15" fill="none" stroke="#fff" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0"/>
+        </svg>
+      </div>
+      <div>
+        <div class="b2b-tkpi-label">직원 감정 분석</div>
+        <div class="b2b-tkpi-val" style="color:#8b5cf6">
+          {{ internalTopKpis.employeeScore }}
+        </div>
+        <div class="b2b-tkpi-trend">▲ {{ internalTopKpis.employeeTrend }}p 전월 대비</div>
+      </div>
+    </div>
+  </div>
+
+  <B2BEmployeeEmotionSection
+    :comp-id="company.id"
+    :analysis-period="analysisPeriod"
+  />
+</div>
         </main>
       </div>
     </div>
