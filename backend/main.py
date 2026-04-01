@@ -21,6 +21,8 @@ from backend.api import (
     customers,
     tenant_news,
     tenant_disclosures,
+    monitoring_targets,
+    industry_targets,
 )
 
 # =========================
@@ -68,3 +70,5 @@ app.include_router(google_business.router)
 app.include_router(customers.router)
 app.include_router(tenant_news.router)
 app.include_router(tenant_disclosures.router)
+app.include_router(monitoring_targets.router)
+app.include_router(industry_targets.router)

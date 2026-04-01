@@ -24,17 +24,20 @@ def get_b2b_tenants(db: Session) -> List[Dict[str, Any]]:
 
 def get_disclosure_targets_by_tenant(db: Session, tenant_id: int) -> List[Dict[str, Any]]:
     """
-    1차 기준:
-    - managed_clients + industry_targets 를 합쳐서 사용
-    - corp_code 있는 대상만 공시 수집
+    변경 기준:
+    - managed_clients = 고객사
+    - monitoring_targets(target_role='POTENTIAL') = 잠재고객
+    - 둘만 실제 공시 수집 대상
     """
     sql = text("""
         with target_union as (
             select
+                id as source_target_id,
                 company_name,
                 corp_code,
                 null::text as stock_code,
-                'managed_clients' as target_source
+                'CLIENT' as company_role,
+                'managed_clients' as source_type
             from public.managed_clients
             where tenant_id = :tenant_id
               and corp_code is not null
@@ -43,16 +46,27 @@ def get_disclosure_targets_by_tenant(db: Session, tenant_id: int) -> List[Dict[s
             union
 
             select
+                id as source_target_id,
                 company_name,
                 corp_code,
-                null::text as stock_code,
-                'industry_targets' as target_source
-            from public.industry_targets
+                stock_code,
+                'POTENTIAL' as company_role,
+                'monitoring_targets' as source_type
+            from public.monitoring_targets
             where tenant_id = :tenant_id
+              and target_role = 'POTENTIAL'
+              and status = 'ACTIVE'
+              and is_active = true
               and corp_code is not null
               and trim(corp_code) <> ''
         )
-        select distinct company_name, corp_code, stock_code, target_source
+        select distinct
+            source_target_id,
+            company_name,
+            corp_code,
+            stock_code,
+            company_role,
+            source_type
         from target_union
         order by company_name nulls last
     """)
@@ -106,6 +120,9 @@ def insert_disclosure(
             rm,
             link,
             raw_payload,
+            company_role,
+            source_type,
+            source_target_id,
             collected_at,
             created_at
         )
@@ -121,6 +138,9 @@ def insert_disclosure(
             :rm,
             :link,
             cast(:raw_payload as jsonb),
+            :company_role,
+            :source_type,
+            :source_target_id,
             :collected_at,
             :created_at
         )
@@ -140,6 +160,9 @@ def insert_disclosure(
             "rm": item.get("rm"),
             "link": build_dart_link(rcept_no),
             "raw_payload": __import__("json").dumps(item, ensure_ascii=False),
+            "company_role": target.get("company_role"),
+            "source_type": target.get("source_type"),
+            "source_target_id": target.get("source_target_id"),
             "collected_at": now_utc,
             "created_at": now_utc,
         },
