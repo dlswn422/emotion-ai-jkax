@@ -4,6 +4,9 @@ import { LandingPage } from '../pages/LandingPage.js';
 import { StoreListPage } from '../pages/StoreListPage.js';
 import { ReportPage } from '../pages/ReportPage.js';
 import { CustomerPage } from '../pages/CustomerPage.js';
+import { B2BPage } from '../pages/B2BPage.js';
+import { B2BReportPage } from '../pages/B2BReportPage.js';
+import { AdminPage } from '../pages/AdminPage.js';
 
 export const router = createRouter({
   history: createWebHashHistory(),
@@ -11,7 +14,10 @@ export const router = createRouter({
     { path: '/', component: LandingPage },
     { path: '/stores', component: StoreListPage },
     { path: '/report/:id', component: ReportPage },
-    { path: '/stores/:id/customers', component: CustomerPage }
+    { path: '/B2B', component: B2BPage },
+    { path: '/B2B-report/:id', component: B2BReportPage },
+    { path: '/admin', component: AdminPage },
+    { path: '/stores/:id/customers', component: CustomerPage },
   ],
-  scrollBehavior: () => ({ top: 0 })
+  scrollBehavior: () => ({ top: 0 }),
 });
