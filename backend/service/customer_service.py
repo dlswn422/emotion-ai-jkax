@@ -177,18 +177,20 @@ def get_store_customers_by_period(
     )
 
     # 상단 KPI 카드용 요약
+    # 현재값은 화면에서 선택한 from ~ to 기간 기준으로 맞춘다.
     summary = _build_summary(
-        current_customers=current_customers,
+        current_customers=list_customers,
         previous_customers=previous_customers,
-        current_reviews=current_reviews,
+        current_reviews=list_reviews,
         previous_reviews=previous_reviews,
     )
 
     # 리스크 분포(High / Medium / Low)
-    risk_distribution = _build_risk_distribution(current_customers)
+    # 상단 카드/차트도 하단과 동일하게 선택 기간 기준으로 맞춘다.
+    risk_distribution = _build_risk_distribution(list_customers)
 
     # 방문 빈도 분포(주1회+, 월2회, 월1회, 첫방문 등)
-    visit_frequency_distribution = _build_visit_frequency_distribution(current_customers)
+    visit_frequency_distribution = _build_visit_frequency_distribution(list_customers)
 
     # 고객 세그먼트
     segments = _build_segments(list_customers)
@@ -547,6 +549,7 @@ def _build_customer_metrics(
                 "visit_frequency_label": visit_frequency_label,
                 "is_repeat_customer": is_repeat_customer,
                 "is_first_visit_customer": is_first_visit_customer,
+                "days_since_last": days_since_last,
             }
         )
 

@@ -1,7 +1,8 @@
 const { defineComponent, ref, computed, nextTick, watch, onMounted, onUnmounted } = Vue;
 
-import { DB_STORE, destroyChart } from './Shared.js';
-import { B2B_CUSTOMER_TREND_MOCK } from '../data/B2BCustomerTrendMock.js';
+// 공통 차트 정리 함수 / 고객 동향 분석 API 함수
+import { destroyChart } from './Shared.js';
+import { fetchDashboardCustomerTrend } from '../api/dashboardCustomerTrend.js';
 
 export const B2BCustomerTrendSection = defineComponent({
   name: 'B2BCustomerTrendSection',
@@ -12,45 +13,36 @@ export const B2BCustomerTrendSection = defineComponent({
   },
 
   setup(props) {
+    // 화면 토글 상태
     const kwChartMode = ref('rank');
     const prospectFilter = ref('');
 
+    // 실데이터 저장 상태
+    const signalKeywords = ref([]);
+    const prospects = ref([]);
+
+    // 차트 인스턴스
     let kwDailyChartInst = null;
     let kwMonthlyChartInst = null;
 
-    const mockBlock = computed(
-      () =>
-        B2B_CUSTOMER_TREND_MOCK[props.compId] || {
-          signalKeywords: [],
-          prospects: [],
-        }
-    );
+    // 화면에서 바로 쓰는 데이터 소스
+    const signalKeywordsSource = computed(() => signalKeywords.value || []);
+    const prospectsSource = computed(() => prospects.value || []);
 
-    const dbSignalKeywords = computed(() => DB_STORE.getSignalKeywords(props.compId));
-    const dbProspects = computed(() => DB_STORE.getProspects(props.compId));
-
-    const signalKeywordsSource = computed(() => {
-      const rows = dbSignalKeywords.value || [];
-      return rows.length ? rows : mockBlock.value.signalKeywords;
-    });
-
-    const prospectsSource = computed(() => {
-      const rows = dbProspects.value || [];
-      return rows.length ? rows : mockBlock.value.prospects;
-    });
-
+    // 상단 KPI 계산
     const externalTopKpis = computed(() => {
-      const signalKeywords = signalKeywordsSource.value;
-      const prospects = prospectsSource.value;
+      const signalKeywordRows = signalKeywordsSource.value;
+      const prospectRows = prospectsSource.value;
 
       return {
-        totalHits: signalKeywords.reduce((s, k) => s + Number(k.hit_count || 0), 0),
-        activeKeywordCount: signalKeywords.filter((k) => k.active !== false).length,
-        prospectCount: prospects.length,
-        highCount: prospects.filter((p) => p.opportunity_grade === 'high').length,
+        totalHits: signalKeywordRows.reduce((s, k) => s + Number(k.hit_count || 0), 0),
+        activeKeywordCount: signalKeywordRows.filter((k) => k.active !== false).length,
+        prospectCount: prospectRows.length,
+        highCount: prospectRows.filter((p) => p.opportunity_grade === 'high').length,
       };
     });
 
+    // 키워드 표/차트용 가공 데이터
     const externalKeywordRows = computed(() =>
       [...signalKeywordsSource.value]
         .filter((k) => k.active !== false)
@@ -66,12 +58,14 @@ export const B2BCustomerTrendSection = defineComponent({
         }))
     );
 
+    // 고객 후보 필터링
     const filteredProspects = computed(() => {
       const base = prospectsSource.value;
       if (!prospectFilter.value) return base;
       return base.filter((x) => x.opportunity_grade === prospectFilter.value);
     });
 
+    // 일별 추이 라인차트 생성
     function makeLineChart(canvasId, labels, datasets) {
       const el = document.getElementById(canvasId);
       if (!el) return null;
@@ -109,6 +103,7 @@ export const B2BCustomerTrendSection = defineComponent({
       });
     }
 
+    // 월별 추이 바차트 생성
     function makeBarChart(canvasId, labels, datasets) {
       const el = document.getElementById(canvasId);
       if (!el) return null;
@@ -143,6 +138,7 @@ export const B2BCustomerTrendSection = defineComponent({
       });
     }
 
+    // 일별 차트 데이터 생성
     async function buildKwDailyChart() {
       await nextTick();
       const rows = externalKeywordRows.value.slice(0, 5);
@@ -177,6 +173,7 @@ export const B2BCustomerTrendSection = defineComponent({
       kwDailyChartInst = makeLineChart('kwDailyChart', labels, datasets);
     }
 
+    // 월별 차트 데이터 생성
     async function buildKwMonthlyChart() {
       await nextTick();
       destroyChart(kwMonthlyChartInst);
@@ -218,49 +215,70 @@ export const B2BCustomerTrendSection = defineComponent({
       ]);
     }
 
+    // API 호출부
+    async function loadCustomerTrend() {
+      try {
+        const result = await fetchDashboardCustomerTrend(
+          props.compId,
+          props.analysisPeriod?.start,
+          props.analysisPeriod?.end
+        );
+
+        signalKeywords.value = Array.isArray(result?.signalKeywords)
+          ? result.signalKeywords
+          : [];
+
+        prospects.value = Array.isArray(result?.prospects)
+          ? result.prospects
+          : [];
+      } catch (e) {
+        console.error(e);
+        signalKeywords.value = [];
+        prospects.value = [];
+      }
+    }
+
+    // 차트 모드 변경 시 차트 다시 그림
     watch(kwChartMode, async (mode) => {
       if (mode === 'daily') await buildKwDailyChart();
       if (mode === 'monthly') await buildKwMonthlyChart();
     });
 
+    // 기업 / 기간 변경 시 API 재호출
+    watch(
+      () => [props.compId, props.analysisPeriod?.start, props.analysisPeriod?.end],
+      async () => {
+        await loadCustomerTrend();
+        await nextTick();
+
+        if (kwChartMode.value === 'daily') await buildKwDailyChart();
+        if (kwChartMode.value === 'monthly') await buildKwMonthlyChart();
+      }
+    );
+
+    // 최초 진입 시 데이터 로드
     onMounted(async () => {
-      await DB_STORE.loadAll();
+      await loadCustomerTrend();
       await nextTick();
 
       if (kwChartMode.value === 'daily') await buildKwDailyChart();
       if (kwChartMode.value === 'monthly') await buildKwMonthlyChart();
     });
 
+    // 화면 이탈 시 차트 정리
     onUnmounted(() => {
       destroyChart(kwDailyChartInst);
       destroyChart(kwMonthlyChartInst);
     });
 
-    async function updateProspectSalesStatus(prospect, newStatus) {
-      try {
-        if (!prospect._id || !DB_STORE.updateProspect) return;
-
-        await DB_STORE.updateProspect(prospect._id, {
-          ...prospect,
-          comp_id: prospect.comp_id || props.compId,
-          sales_status: newStatus,
-        });
-      } catch (e) {
-        console.error(e);
-      }
-    }
-
     return {
       kwChartMode,
       prospectFilter,
-      dbSignalKeywords,
-      dbProspects,
       signalKeywordsSource,
       prospectsSource,
       externalTopKpis,
       externalKeywordRows,
       filteredProspects,
-      updateProspectSalesStatus,
     };
   },
 
@@ -476,22 +494,11 @@ export const B2BCustomerTrendSection = defineComponent({
                 {{ p.opportunity_grade === 'high' ? 'HIGH' : p.opportunity_grade === 'medium' ? 'MED' : 'LOW' }}
               </span>
 
-              <div class="cdt-status-cycle" title="클릭하여 영업 상태 변경">
+              <div class="cdt-status-cycle" title="영업 상태 표시">
                 <span
                   class="cdt-status-chip"
                   :class="'cdt-st-' + (p.sales_status || 'new')"
-                  @click.stop="updateProspectSalesStatus(
-                    p,
-                    p.sales_status==='new'
-                      ? 'contacted'
-                      : p.sales_status==='contacted'
-                      ? 'qualified'
-                      : p.sales_status==='qualified'
-                      ? 'lost'
-                      : 'new'
-                  )"
-                  style="cursor:pointer"
-                  title="클릭 → 다음 단계"
+                  title="현재 영업 상태"
                 >
                   {{
                     p.sales_status==='new'

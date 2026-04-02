@@ -1,10 +1,18 @@
-const { defineComponent, ref, computed, nextTick, watch, onMounted, onUnmounted } = Vue;
+const {
+  defineComponent,
+  ref,
+  computed,
+  nextTick,
+  watch,
+  onMounted,
+  onUnmounted,
+} = Vue;
 
-import { DB_STORE, destroyChart } from './Shared.js';
-import { B2B_COMPETITIVE_MOCK } from '../data/B2BCompetitiveMock.js';
+import { destroyChart } from "./Shared.js";
+import { fetchDashboardCompetitorAnalysis } from "../api/dashboardCompetitorAnalysis.js";
 
 export const B2BCompetitiveSection = defineComponent({
-  name: 'B2BCompetitiveSection',
+  name: "B2BCompetitiveSection",
 
   props: {
     compId: { type: String, required: true },
@@ -12,23 +20,19 @@ export const B2BCompetitiveSection = defineComponent({
   },
 
   setup(props) {
-    const compChartMode = ref('rank');
-    const compDetailFilter = ref('all');
+    // 화면 토글 상태
+    const compChartMode = ref("rank");
+    const compDetailFilter = ref("all");
+
+    // 실데이터 저장 상태
+    const issueSources = ref([]);
+    const issueKeywords = ref([]);
 
     let compIssueDailyChartInst = null;
     let compIssueMonthlyChartInst = null;
 
-    const mockBlock = computed(() => B2B_COMPETITIVE_MOCK[props.compId] || { issueSources: [], issueKeywords: [] });
-
-    const dbCompIssueSources = computed(() => {
-      const rows = DB_STORE.getCompIssueSources ? DB_STORE.getCompIssueSources(props.compId) : [];
-      return rows && rows.length ? rows : mockBlock.value.issueSources;
-    });
-
-    const dbCompIssueKeywords = computed(() => {
-      const rows = DB_STORE.getCompIssueKeywords ? DB_STORE.getCompIssueKeywords(props.compId) : [];
-      return rows && rows.length ? rows : mockBlock.value.issueKeywords;
-    });
+    const dbCompIssueSources = computed(() => issueSources.value || []);
+    const dbCompIssueKeywords = computed(() => issueKeywords.value || []);
 
     const activeKeywords = computed(() =>
       [...dbCompIssueKeywords.value].filter((k) => k.active !== false)
@@ -38,10 +42,16 @@ export const B2BCompetitiveSection = defineComponent({
       [...dbCompIssueSources.value].filter((s) => s.active !== false)
     );
 
+    // 상단 KPI 계산
     const topKpis = computed(() => {
       const keywords = activeKeywords.value;
-      const totalHits = keywords.reduce((sum, row) => sum + Number(row.hit_count || 0), 0);
-      const highCount = keywords.filter((row) => row.signal_level === 'high').length;
+      const totalHits = keywords.reduce(
+        (sum, row) => sum + Number(row.hit_count || 0),
+        0
+      );
+      const highCount = keywords.filter(
+        (row) => row.signal_level === "high"
+      ).length;
 
       return {
         totalHits,
@@ -52,13 +62,17 @@ export const B2BCompetitiveSection = defineComponent({
     });
 
     const sortedKeywords = computed(() =>
-      [...activeKeywords.value].sort((a, b) => Number(b.hit_count || 0) - Number(a.hit_count || 0))
+      [...activeKeywords.value].sort(
+        (a, b) => Number(b.hit_count || 0) - Number(a.hit_count || 0)
+      )
     );
 
     const filteredDetailRows = computed(() => {
       const rows = [...activeKeywords.value];
-      if (compDetailFilter.value === 'all') return rows;
-      return rows.filter((row) => row.signal_level === compDetailFilter.value);
+      if (compDetailFilter.value === "all") return rows;
+      return rows.filter(
+        (row) => row.signal_level === compDetailFilter.value
+      );
     });
 
     function makeLineChart(canvasId, labels, datasets) {
@@ -66,16 +80,16 @@ export const B2BCompetitiveSection = defineComponent({
       if (!el) return null;
 
       return new Chart(el, {
-        type: 'line',
+        type: "line",
         data: { labels, datasets },
         options: {
           responsive: true,
           maintainAspectRatio: false,
-          interaction: { mode: 'index', intersect: false },
+          interaction: { mode: "index", intersect: false },
           plugins: {
             legend: {
               display: true,
-              position: 'top',
+              position: "top",
               labels: { boxWidth: 10, font: { size: 11 } },
             },
           },
@@ -86,12 +100,12 @@ export const B2BCompetitiveSection = defineComponent({
           scales: {
             x: {
               grid: { display: false },
-              ticks: { color: '#94a3b8', font: { size: 10 } },
+              ticks: { color: "#94a3b8", font: { size: 10 } },
             },
             y: {
               beginAtZero: true,
-              grid: { color: 'rgba(0,0,0,.05)' },
-              ticks: { color: '#94a3b8', font: { size: 10 }, stepSize: 1 },
+              grid: { color: "rgba(0,0,0,.05)" },
+              ticks: { color: "#94a3b8", font: { size: 10 }, stepSize: 1 },
             },
           },
         },
@@ -103,7 +117,7 @@ export const B2BCompetitiveSection = defineComponent({
       if (!el) return null;
 
       return new Chart(el, {
-        type: 'bar',
+        type: "bar",
         data: { labels, datasets },
         options: {
           responsive: true,
@@ -111,7 +125,7 @@ export const B2BCompetitiveSection = defineComponent({
           plugins: {
             legend: {
               display: true,
-              position: 'top',
+              position: "top",
               labels: { boxWidth: 10, font: { size: 11 } },
             },
           },
@@ -119,13 +133,13 @@ export const B2BCompetitiveSection = defineComponent({
             x: {
               stacked: true,
               grid: { display: false },
-              ticks: { color: '#94a3b8', font: { size: 11 } },
+              ticks: { color: "#94a3b8", font: { size: 11 } },
             },
             y: {
               stacked: true,
               beginAtZero: true,
-              grid: { color: 'rgba(0,0,0,.05)' },
-              ticks: { color: '#94a3b8', font: { size: 10 } },
+              grid: { color: "rgba(0,0,0,.05)" },
+              ticks: { color: "#94a3b8", font: { size: 10 } },
             },
           },
         },
@@ -145,7 +159,7 @@ export const B2BCompetitiveSection = defineComponent({
         labels.push(`${d.getMonth() + 1}/${d.getDate()}`);
       }
 
-      const COLORS = ['#f43f5e', '#f59e0b', '#6366f1', '#10b981', '#8b5cf6'];
+      const COLORS = ["#f43f5e", "#f59e0b", "#6366f1", "#10b981", "#8b5cf6"];
 
       const datasets = rows.map((kw, idx) => {
         const total = kw.hit_count || 0;
@@ -160,13 +174,17 @@ export const B2BCompetitiveSection = defineComponent({
           label: kw.keyword,
           data,
           borderColor: COLORS[idx % COLORS.length],
-          backgroundColor: COLORS[idx % COLORS.length] + '15',
+          backgroundColor: COLORS[idx % COLORS.length] + "15",
           fill: false,
           pointBackgroundColor: COLORS[idx % COLORS.length],
         };
       });
 
-      compIssueDailyChartInst = makeLineChart('compIssueDailyChart', labels, datasets);
+      compIssueDailyChartInst = makeLineChart(
+        "compIssueDailyChart",
+        labels,
+        datasets
+      );
     }
 
     async function buildCompIssueMonthlyChart() {
@@ -174,9 +192,15 @@ export const B2BCompetitiveSection = defineComponent({
       destroyChart(compIssueMonthlyChartInst);
 
       const rows = activeKeywords.value;
-      const highTotal = rows.filter((k) => k.signal_level === 'high').reduce((s, k) => s + (k.hit_count || 0), 0);
-      const medTotal = rows.filter((k) => k.signal_level === 'medium').reduce((s, k) => s + (k.hit_count || 0), 0);
-      const lowTotal = rows.filter((k) => k.signal_level === 'low').reduce((s, k) => s + (k.hit_count || 0), 0);
+      const highTotal = rows
+        .filter((k) => k.signal_level === "high")
+        .reduce((s, k) => s + (k.hit_count || 0), 0);
+      const medTotal = rows
+        .filter((k) => k.signal_level === "medium")
+        .reduce((s, k) => s + (k.hit_count || 0), 0);
+      const lowTotal = rows
+        .filter((k) => k.signal_level === "low")
+        .reduce((s, k) => s + (k.hit_count || 0), 0);
 
       const labels = [];
       for (let i = 5; i >= 0; i--) {
@@ -186,39 +210,87 @@ export const B2BCompetitiveSection = defineComponent({
       }
 
       const growFactor = (total, idx) =>
-        Math.max(0, Math.round((total * (0.45 + (idx / 5) * 0.75)) / 3 + Math.random() * 1.5));
+        Math.max(
+          0,
+          Math.round(
+            (total * (0.45 + (idx / 5) * 0.75)) / 3 + Math.random() * 1.5
+          )
+        );
 
-      compIssueMonthlyChartInst = makeBarChart('compIssueMonthlyChart', labels, [
+      compIssueMonthlyChartInst = makeBarChart("compIssueMonthlyChart", labels, [
         {
-          label: 'HIGH',
+          label: "HIGH",
           data: labels.map((_, i) => growFactor(highTotal, i)),
-          backgroundColor: 'rgba(244,63,94,.8)',
+          backgroundColor: "rgba(244,63,94,.8)",
           borderRadius: 5,
         },
         {
-          label: 'MED',
+          label: "MED",
           data: labels.map((_, i) => growFactor(medTotal, i)),
-          backgroundColor: 'rgba(245,158,11,.7)',
+          backgroundColor: "rgba(245,158,11,.7)",
           borderRadius: 5,
         },
         {
-          label: 'LOW',
+          label: "LOW",
           data: labels.map((_, i) => growFactor(lowTotal, i)),
-          backgroundColor: 'rgba(148,163,184,.5)',
+          backgroundColor: "rgba(148,163,184,.5)",
           borderRadius: 5,
         },
       ]);
     }
 
+    // API 호출부
+    async function loadCompetitorAnalysis() {
+      try {
+        const result = await fetchDashboardCompetitorAnalysis(
+          props.compId,
+          props.analysisPeriod?.start,
+          props.analysisPeriod?.end
+        );
+
+        issueSources.value = Array.isArray(result?.issueSources)
+          ? result.issueSources
+          : [];
+        issueKeywords.value = Array.isArray(result?.issueKeywords)
+          ? result.issueKeywords
+          : [];
+      } catch (error) {
+        console.error("경쟁사 분석 API 호출 실패:", error);
+        issueSources.value = [];
+        issueKeywords.value = [];
+      }
+
+      await nextTick();
+
+      if (compChartMode.value === "daily") {
+        await buildCompIssueDailyChart();
+      }
+
+      if (compChartMode.value === "monthly") {
+        await buildCompIssueMonthlyChart();
+      }
+    }
+
     watch(compChartMode, async (mode) => {
-      if (mode === 'daily') await buildCompIssueDailyChart();
-      if (mode === 'monthly') await buildCompIssueMonthlyChart();
+      if (mode === "daily") await buildCompIssueDailyChart();
+      if (mode === "monthly") await buildCompIssueMonthlyChart();
     });
 
+    // 기업 / 기간 변경 시 API 재호출
+    watch(
+      () => [
+        props.compId,
+        props.analysisPeriod?.start,
+        props.analysisPeriod?.end,
+      ],
+      async () => {
+        await loadCompetitorAnalysis();
+      }
+    );
+
+    // 최초 진입 시 데이터 로드
     onMounted(async () => {
-      await nextTick();
-      if (compChartMode.value === 'daily') await buildCompIssueDailyChart();
-      if (compChartMode.value === 'monthly') await buildCompIssueMonthlyChart();
+      await loadCompetitorAnalysis();
     });
 
     onUnmounted(() => {
