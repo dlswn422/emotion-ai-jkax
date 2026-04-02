@@ -47,6 +47,19 @@ export const NavBar = defineComponent({
 
         <button
           v-if="page === 'landing'"
+          class="nav-pill"
+          style="background:linear-gradient(135deg,#312e81,#4338ca);color:#fff;border:none"
+          @click="router.push('/mindmap')"
+        >
+          <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+            <circle cx="12" cy="11" r="3"/>
+          </svg>
+          민심지도
+        </button>
+
+        <button
+          v-if="page === 'landing'"
           class="nav-pill nav-pill-b2b"
           @click="router.push('/B2B')"
         >
