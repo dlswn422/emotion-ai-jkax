@@ -1,7 +1,7 @@
 const { defineComponent, ref, computed } = Vue;
 const { useRouter } = VueRouter;
 
-import { STORES } from '../data/stores.js';
+import { STORES } from '../data/storesMock.js';
 import { NavBar } from '../components/NavBar.js';
 import { DateModal } from '../components/DateModal.js';
 

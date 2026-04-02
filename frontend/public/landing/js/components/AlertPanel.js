@@ -1,5 +1,5 @@
 const { defineComponent, ref } = Vue;
-import { ALERT_STORE, ALERT_SEVERITY } from '../B2B/shared.js';
+import { ALERT_STORE, ALERT_SEVERITY } from '../b2b/Shared.js';
 export const AlertPanel = defineComponent({
   name: 'AlertPanel',
   setup() {

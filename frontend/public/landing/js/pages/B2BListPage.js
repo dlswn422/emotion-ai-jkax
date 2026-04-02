@@ -4,6 +4,7 @@ const { useRouter } = VueRouter;
 import { NavBar } from '../components/NavBar.js';
 import { DateModal } from '../components/DateModal.js';
 import { AlertPanel } from '../components/AlertPanel.js';
+import { B2B_COMPANIES } from '../data/b2bMock.js';
 
 export const B2BPage = defineComponent({
   name: 'B2BPage',
@@ -14,72 +15,6 @@ export const B2BPage = defineComponent({
     const searchQ = ref('');
     const showModal = ref(false);
     const selectedComp = ref(null);
-
-    const B2B_COMPANIES = [
-      {
-        id: 'shinilpharm',
-        name: '신일팜글래스(주)',
-        industry: '의료용 유리용기 제조',
-        size: '중견기업',
-        country: '대한민국',
-        logo: 'SG',
-        logoColor: '#1a5fa8',
-        logoBg: '#dbeafe',
-        desc: '의료용 유리 앰풀·바이알 전문 제조 · 월 3천만개 생산 · KRX 상장 (001380) · ISO 15378 인증 · 수출 40개국+',
-        hasOwnReview: false,
-        googleRating: 3.8,
-        reviewCount: 124,
-        status: 'active',
-        tabStatus: {
-          external: 'ready',
-          ownreview: 'wip',
-          competitive: 'ready',
-          internal: 'ready',
-        },
-      },
-      {
-        id: 'comp_1',
-        name: 'Hyundai Motors Indonesia',
-        industry: '자동차',
-        size: '대기업',
-        country: '인도네시아',
-        logo: 'HM',
-        logoColor: '#002C5F',
-        logoBg: '#e8f0fe',
-        desc: '현대자동차 인도네시아 법인 · 전국 120개 딜러십 네트워크',
-        hasOwnReview: true,
-        googleRating: 4.3,
-        reviewCount: 2840,
-        status: 'active',
-        tabStatus: {
-          external: 'ready',
-          ownreview: 'ready',
-          competitive: 'ready',
-          internal: 'ready',
-        },
-      },
-      {
-        id: 'comp_2',
-        name: 'BrightFin Fintech',
-        industry: '핀테크',
-        size: '중소기업',
-        country: '싱가포르',
-        logo: 'BF',
-        logoColor: '#0ea5e9',
-        logoBg: '#e0f2fe',
-        desc: 'B2B 결제 SaaS 플랫폼 · 동남아시아 14개국 운영',
-        hasOwnReview: false,
-        googleRating: 4.1,
-        reviewCount: 387,
-        status: 'active',
-        tabStatus: {
-          external: 'ready',
-          ownreview: 'disabled',
-          competitive: 'ready',
-          internal: 'disabled',
-        },
-      },
-    ];
 
     const DB_STORE_FALLBACK = {
       loadAll() {},

@@ -1,7 +1,7 @@
 const { defineComponent, ref, computed, nextTick, watch, onMounted, onUnmounted } = Vue;
 
-import { DB_STORE, destroyChart } from './shared.js';
-import { B2B_CUSTOMER_TREND_MOCK } from './B2BCustomerTrendMock.js';
+import { DB_STORE, destroyChart } from './Shared.js';
+import { B2B_CUSTOMER_TREND_MOCK } from '../data/B2BCustomerTrendMock.js';
 
 export const B2BCustomerTrendSection = defineComponent({
   name: 'B2BCustomerTrendSection',

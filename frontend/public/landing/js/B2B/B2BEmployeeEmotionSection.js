@@ -1,6 +1,6 @@
 const { defineComponent, computed } = Vue;
 
-import { B2B_EMPLOYEE_EMOTION_MOCK } from './B2BEmployeeEmotionMock.js';
+import { B2B_EMPLOYEE_EMOTION_MOCK } from '../data/B2BEmployeeEmotionMock.js';
 
 export const B2BEmployeeEmotionSection = defineComponent({
   name: 'B2BEmployeeEmotionSection',

@@ -10,13 +10,13 @@ const {
 
 const { useRouter, useRoute } = VueRouter;
 
-import { STORES } from '../data/stores.js';
+import { STORES } from '../data/storesMock.js';
 import { fmtDate, starsStr } from '../utils/helpers.js';
 import { destroyChart } from '../utils/charts.js';
 import { NavBar } from '../components/NavBar.js';
 import { analyzeCx, getRatingTrend } from '../api/reports.js';
 import { getCustomers } from '../api/customers.js';
-import { CustomerPage } from './CustomerPage.js';
+import { CustomerPage } from './StoreCustomerAnalysisPage.js';
 
 export const ReportPage = defineComponent({
   name: 'ReportPage',

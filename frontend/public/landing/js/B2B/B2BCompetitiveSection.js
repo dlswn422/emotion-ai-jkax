@@ -1,7 +1,7 @@
 const { defineComponent, ref, computed, nextTick, watch, onMounted, onUnmounted } = Vue;
 
-import { DB_STORE, destroyChart } from './shared.js';
-import { B2B_COMPETITIVE_MOCK } from './B2BCompetitiveMock.js';
+import { DB_STORE, destroyChart } from './Shared.js';
+import { B2B_COMPETITIVE_MOCK } from '../data/B2BCompetitiveMock.js';
 
 export const B2BCompetitiveSection = defineComponent({
   name: 'B2BCompetitiveSection',
