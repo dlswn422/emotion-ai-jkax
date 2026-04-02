@@ -15,6 +15,7 @@ export const B2BCompetitiveSection = defineComponent({
   name: "B2BCompetitiveSection",
 
   props: {
+    tenantId: { type: [String, Number], required: true },
     compId: { type: String, required: true },
     analysisPeriod: { type: Object, required: true },
   },
@@ -243,7 +244,7 @@ export const B2BCompetitiveSection = defineComponent({
     async function loadCompetitorAnalysis() {
       try {
         const result = await fetchDashboardCompetitorAnalysis(
-          props.compId,
+          props.tenantId,
           props.analysisPeriod?.start,
           props.analysisPeriod?.end
         );
@@ -255,7 +256,7 @@ export const B2BCompetitiveSection = defineComponent({
           ? result.issueKeywords
           : [];
       } catch (error) {
-        console.error("경쟁사 분석 API 호출 실패:", error);
+        console.error(error);
         issueSources.value = [];
         issueKeywords.value = [];
       }
@@ -279,6 +280,7 @@ export const B2BCompetitiveSection = defineComponent({
     // 기업 / 기간 변경 시 API 재호출
     watch(
       () => [
+        props.tenantId,
         props.compId,
         props.analysisPeriod?.start,
         props.analysisPeriod?.end,

@@ -1,6 +1,7 @@
 export const B2B_COMPANIES = [
   {
     id: 'shinilpharm',
+    tenant_id: 1,
     name: '신일팜글래스(주)',
     industry: '의료용 유리용기 제조',
     size: '중견기업',
@@ -22,6 +23,7 @@ export const B2B_COMPANIES = [
   },
   {
     id: 'comp_1',
+    tenant_id: 2,
     name: 'Hyundai Motors Indonesia',
     industry: '자동차',
     size: '대기업',
@@ -43,6 +45,7 @@ export const B2B_COMPANIES = [
   },
   {
     id: 'comp_2',
+    tenant_id: 3,
     name: 'BrightFin Fintech',
     industry: '핀테크',
     size: '중소기업',

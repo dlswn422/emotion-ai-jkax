@@ -534,24 +534,24 @@ def _build_customer_metrics(
         # 평균 평점 기준 감성 라벨
         sentiment = _rating_to_sentiment(avg_rating)
 
-        result.append(
-            {
-                "author_name": customer_name,
-                "review_count": visit_count_current,
-                "total_review_count_all_time": visit_count_all,
-                "avg_rating": avg_rating,
-                "last_activity_dt": last_dt,
-                "last_activity": last_dt.strftime("%Y-%m-%d") if last_dt else None,
-                "first_visit_dt": first_all_dt,
-                "sentiment": sentiment,
-                "churn_score": churn_score,
-                "churn_level": risk_level,
-                "visit_frequency_label": visit_frequency_label,
-                "is_repeat_customer": is_repeat_customer,
-                "is_first_visit_customer": is_first_visit_customer,
-                "days_since_last": days_since_last,
-            }
-        )
+    result.append(
+        {
+            "author_name": customer_name,
+            "review_count": visit_count_current,
+            "total_review_count_all_time": visit_count_all,
+            "avg_rating": avg_rating,
+            "last_activity_dt": last_dt,
+            "last_activity": last_dt.strftime("%Y-%m-%d") if last_dt else None,
+            "first_visit_dt": first_all_dt,
+            "sentiment": sentiment,
+            "churn_score": churn_score,
+            "churn_level": risk_level,
+            "visit_frequency_label": visit_frequency_label,
+            "is_repeat_customer": is_repeat_customer,
+            "is_first_visit_customer": is_first_visit_customer,
+            "days_since_last": days_since_last,
+        }
+    )
 
     return result
 

@@ -444,8 +444,7 @@ export const ReportPage = defineComponent({
      * 고객 분석 API 응답을 CustomerPage용 구조로 변환
      */
     function adaptCustomers(customerJson) {
-      console.log('=== adaptCustomers input ===', customerJson);
-
+     
       const summary = customerJson.summary || {};
       const riskDistribution = customerJson.risk_distribution || {};
       const visitFrequencyDistribution = customerJson.visit_frequency_distribution || {};

@@ -4,16 +4,16 @@ const { useRouter, useRoute } = VueRouter;
 import { NavBar } from '../components/NavBar.js';
 import { AlertPanel } from '../components/AlertPanel.js';
 import { DateModal } from '../components/DateModal.js';
-import { B2BCustomerTrendSection } from '../B2B/B2BCustomerTrendSection.js';
-import { B2BCompetitiveSection } from '../B2B/B2BCompetitiveSection.js';
-import { B2BEmployeeEmotionSection } from '../B2B/B2BEmployeeEmotionSection.js';
+import { B2BCustomerTrendSection } from '../b2b/B2BCustomerTrendSection.js';
+import { B2BCompetitiveSection } from '../b2b/B2BCompetitiveSection.js';
+import { B2BEmployeeEmotionSection } from '../b2b/B2BEmployeeEmotionSection.js';
 import {
   B2B_COMPANIES,
   B2B_REPORTS,
   GLOBAL_TAB_STATUSES,
   detectAndCreateAlerts,
   fmtDate,
-} from '../B2B/shared.js';
+} from '../b2b/Shared.js';
 
 export const B2BReportPage = defineComponent({
   name: 'B2BReportPage',
@@ -33,7 +33,7 @@ export const B2BReportPage = defineComponent({
     const compId = route.params.id;
     const company = B2B_COMPANIES.find((c) => c.id === compId) || B2B_COMPANIES[0];
     const report = B2B_REPORTS[compId] || B2B_REPORTS[B2B_COMPANIES[0].id];
-
+  
     const selectedStart = route.query.start || report.period.start;
     const selectedEnd = route.query.end || report.period.end;
     const analysisPeriod = { start: selectedStart, end: selectedEnd };
@@ -280,6 +280,7 @@ export const B2BReportPage = defineComponent({
           <div v-show="activeTab==='external'">
           
             <B2BCustomerTrendSection
+              :tenant-id="company.tenant_id"
               :comp-id="company.id"
               :analysis-period="analysisPeriod"
             />
@@ -292,6 +293,7 @@ export const B2BReportPage = defineComponent({
 
           <div v-show="activeTab==='competitive'">
             <B2BCompetitiveSection
+              :tenant-id="company.tenant_id"
               :comp-id="company.id"
               :analysis-period="analysisPeriod"
             />
