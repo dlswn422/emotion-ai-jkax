@@ -153,23 +153,41 @@ export const B2BCompetitiveSection = defineComponent({
 
       const rows = sortedKeywords.value.slice(0, 5);
 
+      const endDate = props.analysisPeriod?.end
+        ? new Date(props.analysisPeriod.end)
+        : new Date();
+
       const labels = [];
+      const labelKeys = [];
+
       for (let i = 13; i >= 0; i--) {
-        const d = new Date();
-        d.setDate(d.getDate() - i);
-        labels.push(`${d.getMonth() + 1}/${d.getDate()}`);
+        const d = new Date(endDate);
+        d.setDate(endDate.getDate() - i);
+
+        const month = d.getMonth() + 1;
+        const day = d.getDate();
+
+        labels.push(`${month}/${day}`);
+        labelKeys.push(
+          `${d.getFullYear()}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`
+        );
       }
 
       const COLORS = ["#f43f5e", "#f59e0b", "#6366f1", "#10b981", "#8b5cf6"];
 
       const datasets = rows.map((kw, idx) => {
-        const total = kw.hit_count || 0;
-        const denom = labels.reduce((s, _, j) => s + Math.pow(1.12, j), 0);
+        const data = new Array(labels.length).fill(0);
+        const hitCount = Number(kw.hit_count || 0);
 
-        const data = labels.map((_, i) => {
-          const w = Math.pow(1.12, i);
-          return Math.round((total * w) / denom);
-        });
+        if (kw.last_hit) {
+          const hitDate = new Date(kw.last_hit);
+          const hitKey = `${hitDate.getFullYear()}-${String(hitDate.getMonth() + 1).padStart(2, "0")}-${String(hitDate.getDate()).padStart(2, "0")}`;
+          const hitIdx = labelKeys.indexOf(hitKey);
+
+          if (hitIdx !== -1) {
+            data[hitIdx] = hitCount;
+          }
+        }
 
         return {
           label: kw.keyword,
@@ -193,47 +211,59 @@ export const B2BCompetitiveSection = defineComponent({
       destroyChart(compIssueMonthlyChartInst);
 
       const rows = activeKeywords.value;
-      const highTotal = rows
-        .filter((k) => k.signal_level === "high")
-        .reduce((s, k) => s + (k.hit_count || 0), 0);
-      const medTotal = rows
-        .filter((k) => k.signal_level === "medium")
-        .reduce((s, k) => s + (k.hit_count || 0), 0);
-      const lowTotal = rows
-        .filter((k) => k.signal_level === "low")
-        .reduce((s, k) => s + (k.hit_count || 0), 0);
+
+      const endDate = props.analysisPeriod?.end
+        ? new Date(props.analysisPeriod.end)
+        : new Date();
 
       const labels = [];
+      const monthKeys = [];
+
       for (let i = 5; i >= 0; i--) {
-        const d = new Date();
-        d.setMonth(d.getMonth() - i);
+        const d = new Date(endDate);
+        d.setMonth(endDate.getMonth() - i);
+
+        const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+        monthKeys.push(key);
         labels.push(`${d.getMonth() + 1}월`);
       }
 
-      const growFactor = (total, idx) =>
-        Math.max(
-          0,
-          Math.round(
-            (total * (0.45 + (idx / 5) * 0.75)) / 3 + Math.random() * 1.5
-          )
-        );
+      const highData = new Array(labels.length).fill(0);
+      const medData = new Array(labels.length).fill(0);
+      const lowData = new Array(labels.length).fill(0);
+
+      rows.forEach((row) => {
+        if (!row.last_hit) return;
+
+        const d = new Date(row.last_hit);
+        const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+        const idx = monthKeys.indexOf(key);
+
+        if (idx === -1) return;
+
+        const hitCount = Number(row.hit_count || 0);
+
+        if (row.signal_level === "high") highData[idx] += hitCount;
+        else if (row.signal_level === "medium") medData[idx] += hitCount;
+        else lowData[idx] += hitCount;
+      });
 
       compIssueMonthlyChartInst = makeBarChart("compIssueMonthlyChart", labels, [
         {
           label: "HIGH",
-          data: labels.map((_, i) => growFactor(highTotal, i)),
+          data: highData,
           backgroundColor: "rgba(244,63,94,.8)",
           borderRadius: 5,
         },
         {
           label: "MED",
-          data: labels.map((_, i) => growFactor(medTotal, i)),
+          data: medData,
           backgroundColor: "rgba(245,158,11,.7)",
           borderRadius: 5,
         },
         {
           label: "LOW",
-          data: labels.map((_, i) => growFactor(lowTotal, i)),
+          data: lowData,
           backgroundColor: "rgba(148,163,184,.5)",
           borderRadius: 5,
         },

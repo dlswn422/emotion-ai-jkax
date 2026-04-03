@@ -28,14 +28,6 @@ export async function fetchDashboardCompetitorAnalysis(tenantId, from, to) {
 
   const json = await apiFetch(url);
 
-  console.log("[competitor api] tenantId =", tenantId);
-  console.log("[competitor api] query =", query);
-  console.log("[competitor api] url =", url);
-  console.log("[competitor api] raw json =", json);
-  console.log("[competitor api] keyword_hits length =", json?.keyword_hits?.length);
-  console.log("[competitor api] competitor_details length =", json?.competitor_details?.length);
-
-  // competitor_details에서 source 목록 중복 제거
   const sourceMap = new Map();
 
   if (Array.isArray(json?.competitor_details)) {
@@ -55,31 +47,46 @@ export async function fetchDashboardCompetitorAnalysis(tenantId, from, to) {
     });
   }
 
+  // keyword_hits 기준 실제 집계값 맵
+  const keywordMetaMap = new Map();
+
+  if (Array.isArray(json?.keyword_hits)) {
+    json.keyword_hits.forEach((row) => {
+      const keyword = row?.keyword ?? "";
+      if (!keyword) return;
+
+      keywordMetaMap.set(keyword, {
+        hit_count: Number(row?.hit_count ?? 0),
+        last_hit: row?.last_detected_at ?? "",
+        signal_level:
+          String(row?.level ?? "MEDIUM").toUpperCase() === "HIGH"
+            ? "high"
+            : String(row?.level ?? "MEDIUM").toUpperCase() === "LOW"
+            ? "low"
+            : "medium",
+      });
+    });
+  }
+
   const mappedIssueSources = Array.from(sourceMap.values());
 
   const mappedIssueKeywords = Array.isArray(json?.competitor_details)
-    ? json.competitor_details.map((row, idx) => ({
-        _id: `${row?.keyword ?? "kw"}-${row?.company_name ?? "comp"}-${idx}`,
-        keyword: row?.keyword ?? "",
-        signal_level:
-          String(row?.signal_level ?? "MEDIUM").toUpperCase() === "HIGH"
-            ? "high"
-            : String(row?.signal_level ?? "MEDIUM").toUpperCase() === "LOW"
-            ? "low"
-            : "medium",
-        hit_count: 1,
-        last_hit: row?.detected_at ?? "",
-        active: true,
-        source_name: row?.source_label ?? "",
-        competitor_name: row?.company_name ?? "",
-        opportunity: row?.summary ?? "",
-      }))
-    : [];
+    ? json.competitor_details.map((row, idx) => {
+        const meta = keywordMetaMap.get(row?.keyword ?? "") || {};
 
-  console.log("[competitor api] mappedIssueSources =", mappedIssueSources);
-  console.log("[competitor api] mappedIssueSources length =", mappedIssueSources.length);
-  console.log("[competitor api] mappedIssueKeywords =", mappedIssueKeywords);
-  console.log("[competitor api] mappedIssueKeywords length =", mappedIssueKeywords.length);
+        return {
+          _id: `${row?.keyword ?? "kw"}-${row?.company_name ?? "comp"}-${idx}`,
+          keyword: row?.keyword ?? "",
+          signal_level: meta.signal_level ?? "medium",
+          hit_count: Number(meta.hit_count ?? 0),
+          last_hit: meta.last_hit ?? row?.detected_at ?? "",
+          active: true,
+          source_name: row?.source_label ?? "",
+          competitor_name: row?.company_name ?? "",
+          opportunity: row?.summary ?? "",
+        };
+      })
+    : [];
 
   return {
     issueSources: mappedIssueSources,
