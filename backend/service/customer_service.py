@@ -484,8 +484,6 @@ def _build_customer_metrics(
         visit_count_all = len(all_reviews_sorted)
 
         # 마지막 활동 이후 경과일
-        # 현재 코드에서는 실제 반환값으로 쓰진 않지만
-        # 디버깅/확장용으로 계산해둔 값
         days_since_last = max((now_dt - last_dt).days, 0) if last_dt else 999
 
         # 누적 리뷰 2개 이상이면 재방문 고객
@@ -495,21 +493,18 @@ def _build_customer_metrics(
         is_first_visit_customer = visit_count_all == 1
 
         # 방문 빈도 라벨
-        # 현재월 리뷰 수와 첫 방문 여부를 보고 분류
         visit_frequency_label = _classify_visit_frequency(
             visit_count=visit_count_current,
             first_visit_customer=is_first_visit_customer,
         )
 
         # 부정 리뷰 수
-        # 현재 분석 구간 안에서 rating <= 2 인 리뷰 개수
         negative_count = sum(
             1 for r in reviews_sorted
             if r.rating is not None and float(r.rating) <= 2
         )
 
         # 부정 리뷰 비율
-        # = 부정 리뷰 수 / 평점이 있는 리뷰 수
         negative_ratio = (negative_count / len(ratings)) if ratings else 0.0
 
         # churn.py는 timezone aware datetime을 기대하므로 UTC tzinfo를 다시 붙임
@@ -518,10 +513,6 @@ def _build_customer_metrics(
         )
 
         # 이탈 점수 계산
-        # churn.py 내부 로직:
-        # - 평균 평점이 낮을수록 점수 증가
-        # - 부정 리뷰 비율이 높을수록 점수 증가
-        # - 최근 활동 공백이 길수록 점수 증가
         churn_score = calculate_churn_score(
             avg_rating=avg_rating,
             negative_ratio=negative_ratio,
@@ -534,24 +525,24 @@ def _build_customer_metrics(
         # 평균 평점 기준 감성 라벨
         sentiment = _rating_to_sentiment(avg_rating)
 
-    result.append(
-        {
-            "author_name": customer_name,
-            "review_count": visit_count_current,
-            "total_review_count_all_time": visit_count_all,
-            "avg_rating": avg_rating,
-            "last_activity_dt": last_dt,
-            "last_activity": last_dt.strftime("%Y-%m-%d") if last_dt else None,
-            "first_visit_dt": first_all_dt,
-            "sentiment": sentiment,
-            "churn_score": churn_score,
-            "churn_level": risk_level,
-            "visit_frequency_label": visit_frequency_label,
-            "is_repeat_customer": is_repeat_customer,
-            "is_first_visit_customer": is_first_visit_customer,
-            "days_since_last": days_since_last,
-        }
-    )
+        result.append(
+            {
+                "author_name": customer_name,
+                "review_count": visit_count_current,
+                "total_review_count_all_time": visit_count_all,
+                "avg_rating": avg_rating,
+                "last_activity_dt": last_dt,
+                "last_activity": last_dt.strftime("%Y-%m-%d") if last_dt else None,
+                "first_visit_dt": first_all_dt,
+                "sentiment": sentiment,
+                "churn_score": churn_score,
+                "churn_level": risk_level,
+                "visit_frequency_label": visit_frequency_label,
+                "is_repeat_customer": is_repeat_customer,
+                "is_first_visit_customer": is_first_visit_customer,
+                "days_since_last": days_since_last,
+            }
+        )
 
     return result
 

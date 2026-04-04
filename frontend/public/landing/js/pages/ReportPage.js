@@ -5,21 +5,21 @@ const {
   onMounted,
   onUnmounted,
   nextTick,
-  watch
+  watch,
 } = Vue;
 
 const { useRouter, useRoute } = VueRouter;
 
-import { STORES } from '../data/storesMock.js';
-import { fmtDate, starsStr } from '../utils/helpers.js';
-import { destroyChart } from '../utils/charts.js';
-import { NavBar } from '../components/NavBar.js';
-import { analyzeCx, getRatingTrend } from '../api/reports.js';
-import { getCustomers } from '../api/customers.js';
-import { CustomerPage } from './StoreCustomerAnalysisPage.js';
+import { STORES } from "../data/storesMock.js";
+import { fmtDate, starsStr } from "../utils/helpers.js";
+import { destroyChart } from "../utils/charts.js";
+import { NavBar } from "../components/NavBar.js";
+import { analyzeCx, getRatingTrend } from "../api/reports.js";
+import { getCustomers } from "../api/customers.js";
+import { CustomerPage } from "./StoreCustomerAnalysisPage.js";
 
 export const ReportPage = defineComponent({
-  name: 'ReportPage',
+  name: "ReportPage",
   components: { NavBar, CustomerPage },
 
   setup() {
@@ -27,17 +27,17 @@ export const ReportPage = defineComponent({
     const router = useRouter();
 
     // 키워드 워드클라우드 탭 상태
-    const keywordTab = ref('all');
+    const keywordTab = ref("all");
 
     // 현재 보고서 대상 매장
     const storeId = route.params.id;
-    const store = STORES.find(s => s.id === storeId) || STORES[0];
+    const store = STORES.find((s) => s.id === storeId) || STORES[0];
 
     // 로딩 / 에러 / 활성 탭 / 차트 모드 상태
     const loading = ref(true);
-    const error = ref('');
-    const activeTab = ref('summary');
-    const chartMode = ref('daily');
+    const error = ref("");
+    const activeTab = ref("summary");
+    const chartMode = ref("daily");
 
     // 보고서 / 고객 분석 데이터 상태
     const report = ref(null);
@@ -51,7 +51,7 @@ export const ReportPage = defineComponent({
       riskDistribution: {},
       visitFrequencyDistribution: {},
       segments: {},
-      cohort: { rows: [], summary_text: '' },
+      cohort: { rows: [], summary_text: "" },
       list: [],
     });
 
@@ -63,61 +63,61 @@ export const ReportPage = defineComponent({
     // 좌측 사이드바 메뉴
     const NAV_ITEMS = [
       {
-        id: 'summary',
-        label: 'Executive Summary',
-        icon: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z'
+        id: "summary",
+        label: "Executive Summary",
+        icon: "M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z",
       },
       {
-        id: 'rating',
-        label: 'Overall Rating',
-        icon: 'M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z'
+        id: "rating",
+        label: "Overall Rating",
+        icon: "M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z",
       },
       {
-        id: 'segment',
-        label: 'Segment Analysis',
+        id: "segment",
+        label: "Segment Analysis",
         hidden: true,
-        icon: 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z'
+        icon: "M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z",
       },
       {
-        id: 'keyword',
-        label: '키워드 워드클라우드',
-        icon: 'M7 18a4.6 4.6 0 01.88-9.117A5.5 5.5 0 0118.5 10a3.5 3.5 0 010 7H7z'
+        id: "keyword",
+        label: "키워드 워드클라우드",
+        icon: "M7 18a4.6 4.6 0 01.88-9.117A5.5 5.5 0 0118.5 10a3.5 3.5 0 010 7H7z",
       },
       {
-        id: 'nps',
-        label: 'NPS Score',
-        icon: 'M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z'
+        id: "nps",
+        label: "NPS Score",
+        icon: "M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z",
       },
       {
-        id: 'trend',
-        label: '평점 추이',
-        icon: 'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z'
+        id: "trend",
+        label: "평점 추이",
+        icon: "M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z",
       },
       {
-        id: 'drivers',
-        label: 'Key Drivers',
-        icon: 'M13 7h8m0 0v8m0-8l-8 8-4-4-6 6'
+        id: "drivers",
+        label: "Key Drivers",
+        icon: "M13 7h8m0 0v8m0-8l-8 8-4-4-6 6",
       },
       {
-        id: 'improve',
-        label: 'Improvements',
-        icon: 'M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z M15 12a3 3 0 11-6 0 3 3 0 016 0z'
+        id: "improve",
+        label: "Improvements",
+        icon: "M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z M15 12a3 3 0 11-6 0 3 3 0 016 0z",
       },
       {
-        id: 'insights',
-        label: 'AI Insights',
-        icon: 'M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z'
+        id: "insights",
+        label: "AI Insights",
+        icon: "M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z",
       },
       {
-        id: 'action',
-        label: 'Action Plan',
-        icon: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4'
+        id: "action",
+        label: "Action Plan",
+        icon: "M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4",
       },
       {
-        id: 'customers',
-        label: '고객 분석',
-        icon: 'M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z',
-        divider: true
+        id: "customers",
+        label: "고객 분석",
+        icon: "M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z",
+        divider: true,
       },
     ];
 
@@ -149,7 +149,9 @@ export const ReportPage = defineComponent({
       }
 
       const avg = Number(overallRating || 0);
-      const five = Math.round(safeCount * (avg >= 4.5 ? 0.62 : avg >= 4.0 ? 0.50 : 0.35));
+      const five = Math.round(
+        safeCount * (avg >= 4.5 ? 0.62 : avg >= 4.0 ? 0.5 : 0.35),
+      );
       const four = Math.round(safeCount * 0.23);
       const three = Math.round(safeCount * 0.09);
       const two = Math.round(safeCount * 0.04);
@@ -172,11 +174,12 @@ export const ReportPage = defineComponent({
       const neg = json.negative_keywords || json.negative || [];
       const all = json.all_keywords || json.all || [];
 
-      function toWordItems(list = [], type = 'all') {
+      function toWordItems(list = [], type = "all") {
         return list
           .map((item) => {
-            const text = typeof item === 'string' ? item : (item.text || '');
-            const rawSize = typeof item === 'object' ? Number(item.size || 0) : 0;
+            const text = typeof item === "string" ? item : item.text || "";
+            const rawSize =
+              typeof item === "object" ? Number(item.size || 0) : 0;
 
             let size = 18;
             if (rawSize >= 34) size = 28;
@@ -187,22 +190,31 @@ export const ReportPage = defineComponent({
             return {
               text,
               size,
-              tone: type === 'positive' ? 'pos' : type === 'negative' ? 'neg' : 'all',
+              tone:
+                type === "positive"
+                  ? "pos"
+                  : type === "negative"
+                    ? "neg"
+                    : "all",
             };
           })
-          .filter(v => v.text);
+          .filter((v) => v.text);
       }
 
-      const positiveItems = toWordItems(pos, 'positive');
-      const negativeItems = toWordItems(neg, 'negative');
+      const positiveItems = toWordItems(pos, "positive");
+      const negativeItems = toWordItems(neg, "negative");
 
-      const positiveMap = new Map(positiveItems.map(item => [item.text, item]));
-      const negativeMap = new Map(negativeItems.map(item => [item.text, item]));
+      const positiveMap = new Map(
+        positiveItems.map((item) => [item.text, item]),
+      );
+      const negativeMap = new Map(
+        negativeItems.map((item) => [item.text, item]),
+      );
 
       const mergedAll = [];
 
       all.forEach((item) => {
-        const text = typeof item === 'string' ? item : (item.text || '');
+        const text = typeof item === "string" ? item : item.text || "";
         if (!text) return;
 
         if (positiveMap.has(text)) {
@@ -217,13 +229,13 @@ export const ReportPage = defineComponent({
       });
 
       positiveItems.forEach((item) => {
-        if (!mergedAll.some(v => v.text === item.text)) {
+        if (!mergedAll.some((v) => v.text === item.text)) {
           mergedAll.push(item);
         }
       });
 
       negativeItems.forEach((item) => {
-        if (!mergedAll.some(v => v.text === item.text)) {
+        if (!mergedAll.some((v) => v.text === item.text)) {
           mergedAll.push(item);
         }
       });
@@ -242,7 +254,7 @@ export const ReportPage = defineComponent({
       return (list || []).slice(0, 5).map((item, idx) => ({
         name: item.name || item.label || `강점 ${idx + 1}`,
         pct: Number(item.pct ?? item.value ?? item.score ?? item.ratio ?? 0),
-        emoji: item.emoji || '✨',
+        emoji: item.emoji || "✨",
       }));
     }
 
@@ -252,10 +264,10 @@ export const ReportPage = defineComponent({
     function normalizeImprovements(list = []) {
       return (list || []).slice(0, 5).map((item, idx) => ({
         name: item.name || item.label || `개선항목 ${idx + 1}`,
-        desc: item.desc || item.description || '',
-        emoji: item.emoji || '🛠',
-        badge: item.badge || '개선 필요',
-        badgeClass: item.badgeClass || 'badge-warn',
+        desc: item.desc || item.description || "",
+        emoji: item.emoji || "🛠",
+        badge: item.badge || "개선 필요",
+        badgeClass: item.badgeClass || "badge-warn",
       }));
     }
 
@@ -263,27 +275,24 @@ export const ReportPage = defineComponent({
      * AI 인사이트 데이터 정규화
      */
     function normalizeInsights(json = {}) {
-      const raw =
-        json.strategic_insights ||
-        json.insights ||
-        [];
+      const raw = json.strategic_insights || json.insights || [];
 
       if (raw.length) {
         return raw.map((item, idx) => ({
           title: item.title || `인사이트 ${idx + 1}`,
-          desc: item.desc || item.description || '',
-          emoji: item.emoji || '💡',
+          desc: item.desc || item.description || "",
+          emoji: item.emoji || "💡",
         }));
       }
 
       return [
         {
-          title: '리뷰 기반 인사이트',
+          title: "리뷰 기반 인사이트",
           desc:
             json.executive_summary?.summary ||
             json.executive_summary ||
-            '리뷰 기반 핵심 인사이트가 생성되었습니다.',
-          emoji: '💡',
+            "리뷰 기반 핵심 인사이트가 생성되었습니다.",
+          emoji: "💡",
         },
       ];
     }
@@ -295,21 +304,29 @@ export const ReportPage = defineComponent({
       const raw = json.action_plan || json.action_plans || json.actions || [];
 
       return raw.map((item, idx) => {
-        const priority = item.priority || (idx === 0 ? 'HIGH' : idx === 1 ? 'MEDIUM' : 'LOW');
+        const priority =
+          item.priority || (idx === 0 ? "HIGH" : idx === 1 ? "MEDIUM" : "LOW");
 
         return {
           label:
-            priority === 'HIGH' ? 'High' :
-            priority === 'MEDIUM' ? 'Medium' : 'Low',
+            priority === "HIGH"
+              ? "High"
+              : priority === "MEDIUM"
+                ? "Medium"
+                : "Low",
 
           cls:
-            priority === 'HIGH' ? 'high' :
-            priority === 'MEDIUM' ? 'medium' : 'low',
+            priority === "HIGH"
+              ? "high"
+              : priority === "MEDIUM"
+                ? "medium"
+                : "low",
 
           title: item.title || `실행 과제 ${idx + 1}`,
-          desc: item.desc || item.description || '',
-          tags: item.tags || (item.expected_effect ? [item.expected_effect] : []),
-          deadline: item.deadline || item.timeline || 'TBD',
+          desc: item.desc || item.description || "",
+          tags:
+            item.tags || (item.expected_effect ? [item.expected_effect] : []),
+          deadline: item.deadline || item.timeline || "TBD",
         };
       });
     }
@@ -323,24 +340,30 @@ export const ReportPage = defineComponent({
         return seg.map((item) => ({
           label: item.label,
           val: item.val,
-          delta: item.delta || '',
-          trend: item.trend || 'up',
+          delta: item.delta || "",
+          trend: item.trend || "up",
         }));
       }
 
-      return [
-        { label: '평균 객단가', val: '₩42,000', delta: '', trend: 'up' },
-      ];
+      return [{ label: "평균 객단가", val: "₩42,000", delta: "", trend: "up" }];
     }
 
     /**
      * NPS 관련 값 구성
      */
     function buildNps(cxJson = {}) {
-      const score = Number(cxJson.kpi?.nps ?? cxJson.nps?.score ?? cxJson.nps ?? 0);
-      const promoters = Number(cxJson.nps?.promoters ?? cxJson.kpi?.promoters ?? 0);
-      const passives = Number(cxJson.nps?.passives ?? cxJson.kpi?.passives ?? 100);
-      const detractors = Number(cxJson.nps?.detractors ?? cxJson.kpi?.detractors ?? 0);
+      const score = Number(
+        cxJson.kpi?.nps ?? cxJson.nps?.score ?? cxJson.nps ?? 0,
+      );
+      const promoters = Number(
+        cxJson.nps?.promoters ?? cxJson.kpi?.promoters ?? 0,
+      );
+      const passives = Number(
+        cxJson.nps?.passives ?? cxJson.kpi?.passives ?? 100,
+      );
+      const detractors = Number(
+        cxJson.nps?.detractors ?? cxJson.kpi?.detractors ?? 0,
+      );
 
       return { score, promoters, passives, detractors };
     }
@@ -348,9 +371,18 @@ export const ReportPage = defineComponent({
     /**
      * CX API 응답을 화면용 report 구조로 변환
      */
-    function adaptCxReport(cxJson, trendDaily, trendMonthly, currentStore, from, to) {
+    function adaptCxReport(
+      cxJson,
+      trendDaily,
+      trendMonthly,
+      currentStore,
+      from,
+      to,
+    ) {
       const overallRating = Number(cxJson.rating ?? cxJson.overall_rating ?? 0);
-      const sentiment = normalizeSentiment(cxJson.kpi?.sentiment || cxJson.sentiment || {});
+      const sentiment = normalizeSentiment(
+        cxJson.kpi?.sentiment || cxJson.sentiment || {},
+      );
       const reviewCount = Number(cxJson.review_count ?? 0);
 
       return {
@@ -361,28 +393,32 @@ export const ReportPage = defineComponent({
         execSummary:
           cxJson.executive_summary?.summary ||
           cxJson.executive_summary ||
-          '분석 요약이 없습니다.',
+          "분석 요약이 없습니다.",
         pillars: [
           {
-            type: 'strength',
-            label: '주요 강점',
-            val: (cxJson.drivers_of_satisfaction || [])
-              .slice(0, 3)
-              .map(v => v.name || v.label || v)
-              .join(' · ') || '데이터 없음',
+            type: "strength",
+            label: "주요 강점",
+            val:
+              (cxJson.drivers_of_satisfaction || [])
+                .slice(0, 3)
+                .map((v) => v.name || v.label || v)
+                .join(" · ") || "데이터 없음",
           },
           {
-            type: 'issue',
-            label: '주요 개선점',
-            val: (cxJson.areas_for_improvement || [])
-              .slice(0, 3)
-              .map(v => v.name || v.label || v)
-              .join(' · ') || '데이터 없음',
+            type: "issue",
+            label: "주요 개선점",
+            val:
+              (cxJson.areas_for_improvement || [])
+                .slice(0, 3)
+                .map((v) => v.name || v.label || v)
+                .join(" · ") || "데이터 없음",
           },
           {
-            type: 'opportunity',
-            label: '핵심 기회',
-            val: cxJson.executive_summary?.opportunity || '데이터 기반 기회 요약 없음',
+            type: "opportunity",
+            label: "핵심 기회",
+            val:
+              cxJson.executive_summary?.opportunity ||
+              "데이터 기반 기회 요약 없음",
           },
         ],
         overallRating,
@@ -390,7 +426,7 @@ export const ReportPage = defineComponent({
         sentiment,
         nps: buildNps(cxJson),
         reviewCount,
-        ratingDist: (cxJson.rating_distribution || []).map(item => ({
+        ratingDist: (cxJson.rating_distribution || []).map((item) => ({
           stars: Number(item.stars),
           count: Number(item.count),
         })),
@@ -415,9 +451,9 @@ export const ReportPage = defineComponent({
      * 리스크 레벨을 방문 빈도 라벨로 변환
      */
     function riskToVisitFreq(risk) {
-      if (risk === 'HIGH') return '월 1회';
-      if (risk === 'MEDIUM') return '월 2회';
-      return '월 3회+';
+      if (risk === "HIGH") return "월 1회";
+      if (risk === "MEDIUM") return "월 2회";
+      return "월 3회+";
     }
 
     /**
@@ -427,27 +463,27 @@ export const ReportPage = defineComponent({
       const tags = [];
       if (customer.sentiment) {
         tags.push(
-          customer.sentiment === 'positive'
-            ? '긍정 리뷰'
-            : customer.sentiment === 'negative'
-              ? '부정 리뷰'
-              : '중립 리뷰'
+          customer.sentiment === "positive"
+            ? "긍정 리뷰"
+            : customer.sentiment === "negative"
+              ? "부정 리뷰"
+              : "중립 리뷰",
         );
       }
-      if (customer.risk_level === 'HIGH') tags.push('이탈 위험');
-      if (Number(customer.total_reviews ?? 0) >= 3) tags.push('반복 방문');
-      if (Number(customer.avg_rating ?? 0) >= 4) tags.push('고평점');
-      return tags.length ? tags : ['리뷰 고객'];
+      if (customer.risk_level === "HIGH") tags.push("이탈 위험");
+      if (Number(customer.total_reviews ?? 0) >= 3) tags.push("반복 방문");
+      if (Number(customer.avg_rating ?? 0) >= 4) tags.push("고평점");
+      return tags.length ? tags : ["리뷰 고객"];
     }
 
     /**
      * 고객 분석 API 응답을 CustomerPage용 구조로 변환
      */
     function adaptCustomers(customerJson) {
-     
       const summary = customerJson.summary || {};
       const riskDistribution = customerJson.risk_distribution || {};
-      const visitFrequencyDistribution = customerJson.visit_frequency_distribution || {};
+      const visitFrequencyDistribution =
+        customerJson.visit_frequency_distribution || {};
       const segments = customerJson.segments || {};
       const cohort = customerJson.cohort || {};
 
@@ -497,7 +533,9 @@ export const ReportPage = defineComponent({
           monthly_1: Number(visitFrequencyDistribution.monthly_1 ?? 0),
           occasional: Number(visitFrequencyDistribution.occasional ?? 0),
           first_visit: Number(visitFrequencyDistribution.first_visit ?? 0),
-          repeat_intent_rate: Number(visitFrequencyDistribution.repeat_intent_rate ?? 0),
+          repeat_intent_rate: Number(
+            visitFrequencyDistribution.repeat_intent_rate ?? 0,
+          ),
         },
 
         segments: {
@@ -522,29 +560,32 @@ export const ReportPage = defineComponent({
             count: Number(segments.reactivation?.count ?? 0),
             share_pct: Number(segments.reactivation?.share_pct ?? 0),
             avg_rating: Number(segments.reactivation?.avg_rating ?? 0),
-            reactivation_probability: Number(segments.reactivation?.reactivation_probability ?? 0),
+            reactivation_probability: Number(
+              segments.reactivation?.reactivation_probability ?? 0,
+            ),
           },
           insights: Array.isArray(segments.insights) ? segments.insights : [],
         },
 
         cohort: {
           rows: Array.isArray(cohort.rows) ? cohort.rows : [],
-          summary_text: cohort.summary_text || '',
+          summary_text: cohort.summary_text || "",
         },
 
         list: (customerJson.customers || []).map((c, idx) => ({
-          id: `${c.author_name || 'customer'}-${idx}`,
-          name: c.author_name || '익명 고객',
+          id: `${c.author_name || "customer"}-${idx}`,
+          name: c.author_name || "익명 고객",
           reviewCount: Number(c.total_reviews ?? 0),
           reviews: Number(c.total_reviews ?? 0),
           rating: Number(c.avg_rating ?? 0),
-          lastActivity: c.last_review_at || '-',
-          sentiment: c.sentiment || 'neutral',
+          lastActivity: c.last_review_at || "-",
+          sentiment: c.sentiment || "neutral",
           churnPct: Math.round(Number(c.churn_probability ?? 0) * 100),
-          risk: c.risk_level || 'LOW',
+          risk: c.risk_level || "LOW",
           visitFreq: c.visit_frequency_label || riskToVisitFreq(c.risk_level),
           avgSpend: c.avg_spend ?? null,
-          tags: Array.isArray(c.tags) && c.tags.length ? c.tags : sentimentTags(c),
+          tags:
+            Array.isArray(c.tags) && c.tags.length ? c.tags : sentimentTags(c),
         })),
       };
     }
@@ -563,53 +604,60 @@ export const ReportPage = defineComponent({
     const maxDistCount = computed(() => {
       const dist = report.value?.ratingDist || [];
       if (!dist.length) return 1;
-      return Math.max(...dist.map(d => d.count), 1);
+      return Math.max(...dist.map((d) => d.count), 1);
     });
 
     /**
      * 평점 추이 라인차트 생성
      * target: trend | summary
      */
-    async function buildLineChart(canvasId = 'ratingTrendChart', target = 'trend') {
+    async function buildLineChart(
+      canvasId = "ratingTrendChart",
+      target = "trend",
+    ) {
       await nextTick();
       const canvas = document.getElementById(canvasId);
       if (!canvas || !report.value) return;
 
-      if (target === 'trend') {
+      if (target === "trend") {
         destroyChart(lineChart);
       } else {
         destroyChart(summaryLineChart);
       }
 
       const raw =
-        chartMode.value === 'daily'
-          ? (report.value.dailyRatings || [])
-          : (report.value.monthlyRatings || []);
+        chartMode.value === "daily"
+          ? report.value.dailyRatings || []
+          : report.value.monthlyRatings || [];
 
-      const labels = raw.map(d => d.d);
-      const vals = raw.map(d => d.r);
+      const labels = raw.map((d) => d.d);
+      const vals = raw.map((d) => d.r);
 
       if (!vals.length) return;
 
       const minIdx = vals.indexOf(Math.min(...vals));
 
       const chart = new Chart(canvas, {
-        type: 'line',
+        type: "line",
         data: {
           labels,
-          datasets: [{
-            label: '평균 평점',
-            data: vals,
-            borderColor: '#6366f1',
-            backgroundColor: 'rgba(99,102,241,.06)',
-            borderWidth: 2.5,
-            fill: true,
-            tension: 0.45,
-            pointRadius: vals.map((_, i) => i === minIdx ? 7 : 4),
-            pointBackgroundColor: vals.map((_, i) => i === minIdx ? '#f43f5e' : '#6366f1'),
-            pointBorderColor: '#fff',
-            pointBorderWidth: 2.5
-          }]
+          datasets: [
+            {
+              label: "평균 평점",
+              data: vals,
+              borderColor: "#6366f1",
+              backgroundColor: "rgba(99,102,241,.06)",
+              borderWidth: 2.5,
+              fill: true,
+              tension: 0.45,
+              pointRadius: vals.map((_, i) => (i === minIdx ? 7 : 4)),
+              pointBackgroundColor: vals.map((_, i) =>
+                i === minIdx ? "#f43f5e" : "#6366f1",
+              ),
+              pointBorderColor: "#fff",
+              pointBorderWidth: 2.5,
+            },
+          ],
         },
         options: {
           responsive: true,
@@ -617,34 +665,38 @@ export const ReportPage = defineComponent({
           plugins: {
             legend: { display: false },
             tooltip: {
-              backgroundColor: '#0f172a',
-              titleFont: { size: 12, family: 'Inter', weight: '600' },
-              bodyFont: { size: 13, family: 'Inter' },
+              backgroundColor: "#0f172a",
+              titleFont: { size: 12, family: "Inter", weight: "600" },
+              bodyFont: { size: 13, family: "Inter" },
               padding: 12,
               cornerRadius: 8,
               callbacks: {
-                label: ctx => ` 평점: ${Number(ctx.parsed.y).toFixed(1)}`
-              }
-            }
+                label: (ctx) => ` 평점: ${Number(ctx.parsed.y).toFixed(1)}`,
+              },
+            },
           },
           scales: {
             x: {
               grid: { display: false },
               border: { display: false },
-              ticks: { font: { size: 11, family: 'Inter' }, color: '#94a3b8' }
+              ticks: { font: { size: 11, family: "Inter" }, color: "#94a3b8" },
             },
             y: {
               min: 1,
               max: 5,
-              grid: { color: '#f1f5f9' },
+              grid: { color: "#f1f5f9" },
               border: { display: false },
-              ticks: { stepSize: 1, font: { size: 11, family: 'Inter' }, color: '#94a3b8' }
-            }
-          }
-        }
+              ticks: {
+                stepSize: 1,
+                font: { size: 11, family: "Inter" },
+                color: "#94a3b8",
+              },
+            },
+          },
+        },
       });
 
-      if (target === 'trend') {
+      if (target === "trend") {
         lineChart = chart;
       } else {
         summaryLineChart = chart;
@@ -656,33 +708,43 @@ export const ReportPage = defineComponent({
      */
     async function buildDonutChart() {
       await nextTick();
-      const canvas = document.getElementById('sentimentDonutChart');
+      const canvas = document.getElementById("sentimentDonutChart");
       if (!canvas || !report.value) return;
 
       destroyChart(donutChart);
 
-      const s = report.value.sentiment || { positive: 0, neutral: 0, negative: 0 };
+      const s = report.value.sentiment || {
+        positive: 0,
+        neutral: 0,
+        negative: 0,
+      };
 
       donutChart = new Chart(canvas, {
-        type: 'doughnut',
+        type: "doughnut",
         data: {
-          labels: ['긍정', '중립', '부정'],
-          datasets: [{
-            data: [s.positive, s.neutral, s.negative],
-            backgroundColor: ['#10b981', '#f59e0b', '#f43f5e'],
-            borderWidth: 0,
-            hoverOffset: 6
-          }]
+          labels: ["긍정", "중립", "부정"],
+          datasets: [
+            {
+              data: [s.positive, s.neutral, s.negative],
+              backgroundColor: ["#10b981", "#f59e0b", "#f43f5e"],
+              borderWidth: 0,
+              hoverOffset: 6,
+            },
+          ],
         },
         options: {
           responsive: true,
           maintainAspectRatio: false,
-          cutout: '74%',
+          cutout: "74%",
           plugins: {
             legend: { display: false },
-            tooltip: { backgroundColor: '#0f172a', padding: 10, cornerRadius: 8 }
-          }
-        }
+            tooltip: {
+              backgroundColor: "#0f172a",
+              padding: 10,
+              cornerRadius: 8,
+            },
+          },
+        },
       });
     }
 
@@ -691,8 +753,8 @@ export const ReportPage = defineComponent({
      */
     function formatDateLocal(date) {
       const y = date.getFullYear();
-      const m = String(date.getMonth() + 1).padStart(2, '0');
-      const d = String(date.getDate()).padStart(2, '0');
+      const m = String(date.getMonth() + 1).padStart(2, "0");
+      const d = String(date.getDate()).padStart(2, "0");
       return `${y}-${m}-${d}`;
     }
 
@@ -716,7 +778,7 @@ export const ReportPage = defineComponent({
      */
     async function loadReport() {
       loading.value = true;
-      error.value = '';
+      error.value = "";
 
       try {
         const defaults = getDefaultDateRange();
@@ -724,29 +786,42 @@ export const ReportPage = defineComponent({
         const to = route.query.to || route.query.end || defaults.to;
 
         //API 4개 병렬호출
-        const [cxJson, trendDaily, trendMonthly, customerJson] = await Promise.all([
-          analyzeCx(storeId, from, to), 
-          getRatingTrend(storeId, 'day', from, to),
-          getRatingTrend(storeId, 'month', from, to),
-          getCustomers(storeId, from, to),
-        ]);
+        const [cxJson, trendDaily, trendMonthly, customerJson] =
+          await Promise.all([
+            analyzeCx(storeId, from, to),
+            getRatingTrend(storeId, "day", from, to),
+            getRatingTrend(storeId, "month", from, to),
+            getCustomers(storeId, from, to),
+          ]);
 
-        report.value = adaptCxReport(cxJson, trendDaily, trendMonthly, store, from, to);
+        console.log("cxJson =", cxJson);
+        console.log("trendDaily =", trendDaily);
+        console.log("trendMonthly =", trendMonthly);
+        console.log("customerJson =", customerJson);
+
+        report.value = adaptCxReport(
+          cxJson,
+          trendDaily,
+          trendMonthly,
+          store,
+          from,
+          to,
+        );
         customers.value = adaptCustomers(customerJson);
 
         loading.value = false;
         await nextTick();
 
-        if (activeTab.value === 'rating') await buildDonutChart();
-        if (activeTab.value === 'summary') {
-          await buildLineChart('summaryRatingTrendChart', 'summary');
+        if (activeTab.value === "rating") await buildDonutChart();
+        if (activeTab.value === "summary") {
+          await buildLineChart("summaryRatingTrendChart", "summary");
         }
-        if (activeTab.value === 'trend') {
-          await buildLineChart('ratingTrendChart', 'trend');
+        if (activeTab.value === "trend") {
+          await buildLineChart("ratingTrendChart", "trend");
         }
       } catch (e) {
         console.error(e);
-        error.value = e.message || '보고서 데이터를 불러오지 못했습니다.';
+        error.value = e.message || "보고서 데이터를 불러오지 못했습니다.";
         loading.value = false;
       }
     }
@@ -756,8 +831,8 @@ export const ReportPage = defineComponent({
      */
     watch(activeTab, async (tab) => {
       if (!report.value) return;
-      if (tab === 'trend') await buildLineChart('ratingTrendChart', 'trend');
-      if (tab === 'rating') await buildDonutChart();
+      if (tab === "trend") await buildLineChart("ratingTrendChart", "trend");
+      if (tab === "rating") await buildDonutChart();
     });
 
     /**
@@ -766,10 +841,10 @@ export const ReportPage = defineComponent({
     watch(chartMode, async () => {
       if (!report.value) return;
 
-      await buildLineChart('summaryRatingTrendChart', 'summary');
+      await buildLineChart("summaryRatingTrendChart", "summary");
 
-      if (activeTab.value === 'trend') {
-        await buildLineChart('ratingTrendChart', 'trend');
+      if (activeTab.value === "trend") {
+        await buildLineChart("ratingTrendChart", "trend");
       }
     });
 
@@ -792,7 +867,13 @@ export const ReportPage = defineComponent({
      * 순위별 스타일 클래스 반환
      */
     function rankClass(i) {
-      return i === 0 ? 'rank-gold' : i === 1 ? 'rank-silver' : i === 2 ? 'rank-bronze' : 'rank-other';
+      return i === 0
+        ? "rank-gold"
+        : i === 1
+          ? "rank-silver"
+          : i === 2
+            ? "rank-bronze"
+            : "rank-other";
     }
 
     return {
@@ -810,7 +891,7 @@ export const ReportPage = defineComponent({
       printReport,
       router,
       customers,
-      keywordTab
+      keywordTab,
     };
   },
 
@@ -1482,5 +1563,5 @@ export const ReportPage = defineComponent({
         </div>
       </div>
     </div>
-  `
+  `,
 });
