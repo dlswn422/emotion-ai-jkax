@@ -1,20 +1,20 @@
 const { defineComponent, ref, computed } = Vue;
 const { useRouter } = VueRouter;
 
-import { STORES } from '../data/storesMock.js';
-import { NavBar } from '../components/NavBar.js';
-import { DateModal } from '../components/DateModal.js';
+import { STORES } from "../data/storesMock.js";
+import { NavBar } from "../components/NavBar.js";
+import { DateModal } from "../components/DateModal.js";
 
 export const StoreListPage = defineComponent({
-  name: 'StoreListPage',
+  name: "StoreListPage",
   components: { NavBar, DateModal },
 
   setup() {
     const router = useRouter();
 
     // 매장 / 기업 검색어 상태
-    const searchQ = ref('');
-    const companySearchQ = ref('');
+    const searchQ = ref("");
+    const companySearchQ = ref("");
 
     // 날짜 선택 모달 상태
     const showModal = ref(false);
@@ -22,7 +22,7 @@ export const StoreListPage = defineComponent({
 
     // 기업 목록만 추출
     const companies = computed(() =>
-      STORES.filter(item => item.type === 'company')
+      STORES.filter((item) => item.type === "company"),
     );
 
     // 기업 검색 필터링
@@ -30,14 +30,14 @@ export const StoreListPage = defineComponent({
       const q = companySearchQ.value.trim().toLowerCase();
       if (!q) return companies.value;
 
-      return companies.value.filter(company =>
-        company.name.toLowerCase().includes(q)
+      return companies.value.filter((company) =>
+        company.name.toLowerCase().includes(q),
       );
     });
 
     // 매장 목록만 추출
     const demoStores = computed(() =>
-      STORES.filter(item => item.type === 'store')
+      STORES.filter((item) => item.type === "store"),
     );
 
     // 매장 검색 필터링
@@ -45,9 +45,10 @@ export const StoreListPage = defineComponent({
       const q = searchQ.value.trim().toLowerCase();
       if (!q) return demoStores.value;
 
-      return demoStores.value.filter(store =>
-        store.name.toLowerCase().includes(q) ||
-        store.address.toLowerCase().includes(q)
+      return demoStores.value.filter(
+        (store) =>
+          store.name.toLowerCase().includes(q) ||
+          store.address.toLowerCase().includes(q),
       );
     });
 
@@ -93,13 +94,7 @@ export const StoreListPage = defineComponent({
       <div class="page-shell">
         <div class="page-body">
           <!-- 데모 데이터 안내 배너 -->
-          <div class="alert-bar">
-            <div class="alert-bar-icon">⚠️</div>
-            <span>
-              Google API 승인 전 단계입니다.
-              현재 화면은 <strong>데모 데이터</strong> 기반으로 표시됩니다.
-            </span>
-          </div>
+       
 
           <!-- 페이지 헤더 -->
           <div class="page-hero-bar">
@@ -154,11 +149,11 @@ export const StoreListPage = defineComponent({
                       :src="company.logoSrc"
                       :alt="company.name"
                       :class="[
-                        'company-logo-img',
                         company.id === 'store_6' ? 'company-logo-img-up-sahabat' : '',
                         company.id === 'store_7' ? 'company-logo-img-up-sinill' : '',
-                        company.id === 'store_8' ? 'company-logo-img-up-ck' : '',
-                        company.id === 'store_9' ? 'company-logo-img-up-goodai' : ''
+                        company.id === 'store_8' ? 'company-logo-img-up-etoday' : '',
+                        company.id === 'store_9' ? 'company-logo-img-up-ck' : '',
+                        company.id === 'store_10' ? 'company-logo-img-up-goodai' : ''
 
                       ]"
                     />

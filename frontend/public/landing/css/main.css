@@ -1877,6 +1877,9 @@ img{image-rendering:-webkit-optimize-contrast;image-rendering:crisp-edges}
 .company-logo-img-up-sahabat {
   transform: translate(-2px, -8px);
 }
+.company-logo-img-up-etoday {
+  transform: translateY(-17px);
+}
 
 .btn-b2b{
   background:linear-gradient(135deg,#0f172a,#1e293b);
