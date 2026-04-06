@@ -47,7 +47,8 @@ app.add_middleware(
         "http://localhost:3000",
         "https://cxnexus.ai",
         "https://www.cxnexus.ai",
-        "https://emotion-ai-jkax-wqsd.vercel.app"
+        "https://emotion-ai-jkax-wqsd.vercel.app",
+        "https://emotion-ai-jkax-wqsd-git-changsootest2-dlswn422s-projects.vercel.app"
     ],
     allow_credentials=True,
     allow_methods=["*"],
