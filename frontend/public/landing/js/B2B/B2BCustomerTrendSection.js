@@ -9,7 +9,7 @@ const {
 } = Vue;
 
 // 공통 차트 정리 함수 / 고객 동향 분석 API 함수
-import { destroyChart } from "./Shared.js";
+import { destroyChart } from "./shared.js";
 import { fetchDashboardCustomerTrend } from "../api/dashboardCustomerTrend.js";
 
 export const B2BCustomerTrendSection = defineComponent({

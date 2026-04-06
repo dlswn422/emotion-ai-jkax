@@ -1,20 +1,45 @@
 const { defineComponent, ref } = Vue;
-import { ALERT_STORE, ALERT_SEVERITY } from '../b2b/Shared.js';
+import { ALERT_STORE, ALERT_SEVERITY } from "../b2b/shared.js";
 export const AlertPanel = defineComponent({
-  name: 'AlertPanel',
+  name: "AlertPanel",
   setup() {
     /* 수신자 목록 (Admin에서 확장 가능) */
     const RECIPIENTS = [
-      { id: 'ceo',  name: '대표이사 (CEO)',      email: 'ceo@company.com',      checked: ref(true) },
-      { id: 'coo',  name: '최고운영책임자 (COO)', email: 'coo@company.com',      checked: ref(false) },
-      { id: 'cmo',  name: '마케팅총괄 (CMO)',     email: 'cmo@company.com',      checked: ref(false) },
-      { id: 'cso',  name: '전략기획실장 (CSO)',   email: 'strategy@company.com', checked: ref(false) },
-      { id: 'cs',   name: 'CS팀장',              email: 'cs@company.com',       checked: ref(false) },
+      {
+        id: "ceo",
+        name: "대표이사 (CEO)",
+        email: "ceo@company.com",
+        checked: ref(true),
+      },
+      {
+        id: "coo",
+        name: "최고운영책임자 (COO)",
+        email: "coo@company.com",
+        checked: ref(false),
+      },
+      {
+        id: "cmo",
+        name: "마케팅총괄 (CMO)",
+        email: "cmo@company.com",
+        checked: ref(false),
+      },
+      {
+        id: "cso",
+        name: "전략기획실장 (CSO)",
+        email: "strategy@company.com",
+        checked: ref(false),
+      },
+      {
+        id: "cs",
+        name: "CS팀장",
+        email: "cs@company.com",
+        checked: ref(false),
+      },
     ];
 
     const store = ALERT_STORE;
     const sendStep = ref(1); // 1: 수신자 선택 2: 메시지 편집 3: 발송 완료
-    const editMsg = ref('');
+    const editMsg = ref("");
     const sending = ref(false);
 
     function openSend(alert) {
@@ -22,16 +47,22 @@ export const AlertPanel = defineComponent({
       editMsg.value = buildDefaultMsg(alert);
       sendStep.value = 1;
       RECIPIENTS.forEach((r) => {
-        r.checked.value = r.id === 'ceo';
+        r.checked.value = r.id === "ceo";
       });
       store.showSendModal = true;
     }
 
     function buildDefaultMsg(a) {
-      const now = new Date().toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' });
+      const now = new Date().toLocaleString("ko-KR", {
+        timeZone: "Asia/Seoul",
+      });
 
       return `[CXNexus 경영진 Alert — ${
-        a.severity === 'critical' ? '🔴 긴급' : a.severity === 'warning' ? '🟡 주의' : '🔵 정보'
+        a.severity === "critical"
+          ? "🔴 긴급"
+          : a.severity === "warning"
+            ? "🟡 주의"
+            : "🔵 정보"
       }]
 
 안녕하세요. CXNexus 자동 알림 시스템입니다.
@@ -53,7 +84,9 @@ ${a.desc}
       sending.value = true;
       await new Promise((r) => setTimeout(r, 1200)); // 전송 시뮬레이션
 
-      const recipients = RECIPIENTS.filter((r) => r.checked.value).map((r) => r.name);
+      const recipients = RECIPIENTS.filter((r) => r.checked.value).map(
+        (r) => r.name,
+      );
 
       if (store.pendingAlert) {
         store.markSent(store.pendingAlert.id, recipients);
@@ -72,13 +105,13 @@ ${a.desc}
     const sevCfg = (id) => ALERT_SEVERITY[id] || ALERT_SEVERITY.info;
 
     function fmtDate(iso) {
-      if (!iso) return '';
+      if (!iso) return "";
       const d = new Date(iso);
-      return d.toLocaleString('ko-KR', {
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
+      return d.toLocaleString("ko-KR", {
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
       });
     }
 

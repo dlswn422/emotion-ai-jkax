@@ -1,22 +1,22 @@
 const { defineComponent, ref, computed } = Vue;
 const { useRouter, useRoute } = VueRouter;
 
-import { NavBar } from '../components/NavBar.js';
-import { AlertPanel } from '../components/AlertPanel.js';
-import { DateModal } from '../components/DateModal.js';
-import { B2BCustomerTrendSection } from '../b2b/B2BCustomerTrendSection.js';
-import { B2BCompetitiveSection } from '../b2b/B2BCompetitiveSection.js';
-import { B2BEmployeeEmotionSection } from '../b2b/B2BEmployeeEmotionSection.js';
+import { NavBar } from "../components/NavBar.js";
+import { AlertPanel } from "../components/AlertPanel.js";
+import { DateModal } from "../components/DateModal.js";
+import { B2BCustomerTrendSection } from "../b2b/B2BCustomerTrendSection.js";
+import { B2BCompetitiveSection } from "../b2b/B2BCompetitiveSection.js";
+import { B2BEmployeeEmotionSection } from "../b2b/B2BEmployeeEmotionSection.js";
 import {
   B2B_COMPANIES,
   B2B_REPORTS,
   GLOBAL_TAB_STATUSES,
   detectAndCreateAlerts,
   fmtDate,
-} from '../b2b/Shared.js';
+} from "../b2b/shared.js";
 
 export const B2BReportPage = defineComponent({
-  name: 'B2BReportPage',
+  name: "B2BReportPage",
   components: {
     NavBar,
     AlertPanel,
@@ -31,9 +31,10 @@ export const B2BReportPage = defineComponent({
     const router = useRouter();
 
     const compId = route.params.id;
-    const company = B2B_COMPANIES.find((c) => c.id === compId) || B2B_COMPANIES[0];
+    const company =
+      B2B_COMPANIES.find((c) => c.id === compId) || B2B_COMPANIES[0];
     const report = B2B_REPORTS[compId] || B2B_REPORTS[B2B_COMPANIES[0].id];
-  
+
     const selectedStart = route.query.start || report.period.start;
     const selectedEnd = route.query.end || report.period.end;
     const analysisPeriod = { start: selectedStart, end: selectedEnd };
@@ -44,67 +45,67 @@ export const B2BReportPage = defineComponent({
     });
 
     const loading = ref(false);
-    const activeTab = ref('external');
+    const activeTab = ref("external");
     const showPeriodModal = ref(false);
 
     const internalTopKpis = computed(() => {
-  if (company.id === 'shinilpharm') {
-    return {
-      signalCount: 16,
-      reviewRating: 'N/A',
-      reviewSub: '데이터 미연동',
-      competitiveRank: 3,
-      competitorCount: 4,
-      competitiveScore: 62,
-      employeeScore: 12,
-      employeeTrend: '+4',
-    };
-  }
+      if (company.id === "shinilpharm") {
+        return {
+          signalCount: 16,
+          reviewRating: "N/A",
+          reviewSub: "데이터 미연동",
+          competitiveRank: 3,
+          competitorCount: 4,
+          competitiveScore: 62,
+          employeeScore: 12,
+          employeeTrend: "+4",
+        };
+      }
 
-  return {
-    signalCount: 0,
-    reviewRating: 'N/A',
-    reviewSub: '데이터 미연동',
-    competitiveRank: '-',
-    competitorCount: 0,
-    competitiveScore: 0,
-    employeeScore: 0,
-    employeeTrend: '0',
-  };
-});
+      return {
+        signalCount: 0,
+        reviewRating: "N/A",
+        reviewSub: "데이터 미연동",
+        competitiveRank: "-",
+        competitorCount: 0,
+        competitiveScore: 0,
+        employeeScore: 0,
+        employeeTrend: "0",
+      };
+    });
 
     const TAB_DEFS = [
       {
-        id: 'external',
-        label: '고객 동향 분석',
-        icon: 'M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7',
+        id: "external",
+        label: "고객 동향 분석",
+        icon: "M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7",
       },
       {
-        id: 'ownreview',
-        label: '리뷰 감정 분석',
-        icon: 'M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z',
+        id: "ownreview",
+        label: "리뷰 감정 분석",
+        icon: "M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z",
       },
       {
-        id: 'competitive',
-        label: '경쟁사 분석',
-        icon: 'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z',
+        id: "competitive",
+        label: "경쟁사 분석",
+        icon: "M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z",
       },
       {
-        id: 'internal',
-        label: '직원 감정 분석',
-        icon: 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0',
+        id: "internal",
+        label: "직원 감정 분석",
+        icon: "M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0",
       },
     ];
 
     const B2B_TABS = computed(() =>
       TAB_DEFS.map((t) => ({
         ...t,
-        status: (GLOBAL_TAB_STATUSES[compId] || {})[t.id] || 'ready',
-      }))
+        status: (GLOBAL_TAB_STATUSES[compId] || {})[t.id] || "ready",
+      })),
     );
 
     function selectTab(tab) {
-      if (tab.status === 'disabled') return;
+      if (tab.status === "disabled") return;
       activeTab.value = tab.id;
     }
 

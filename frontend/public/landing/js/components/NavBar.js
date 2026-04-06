@@ -1,11 +1,11 @@
 const { defineComponent } = Vue;
 const { useRouter } = VueRouter;
 
-import { ALERT_STORE } from '../b2b/Shared.js';
+import { ALERT_STORE } from "../b2b/shared.js";
 
 export const NavBar = defineComponent({
-  name: 'NavBar',
-  props: { page: { type: String, default: '' } },
+  name: "NavBar",
+  props: { page: { type: String, default: "" } },
 
   setup(props) {
     const router = useRouter();
