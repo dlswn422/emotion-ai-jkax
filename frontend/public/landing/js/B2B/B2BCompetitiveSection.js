@@ -8,7 +8,7 @@ const {
   onUnmounted,
 } = Vue;
 
-import { destroyChart } from "./Shared.js";
+import { destroyChart } from "./shared.js";
 import { fetchDashboardCompetitorAnalysis } from "../api/dashboardCompetitorAnalysis.js";
 
 export const B2BCompetitiveSection = defineComponent({
@@ -36,11 +36,11 @@ export const B2BCompetitiveSection = defineComponent({
     const dbCompIssueKeywords = computed(() => issueKeywords.value || []);
 
     const activeKeywords = computed(() =>
-      [...dbCompIssueKeywords.value].filter((k) => k.active !== false)
+      [...dbCompIssueKeywords.value].filter((k) => k.active !== false),
     );
 
     const activeSources = computed(() =>
-      [...dbCompIssueSources.value].filter((s) => s.active !== false)
+      [...dbCompIssueSources.value].filter((s) => s.active !== false),
     );
 
     // 상단 KPI 계산
@@ -48,10 +48,10 @@ export const B2BCompetitiveSection = defineComponent({
       const keywords = activeKeywords.value;
       const totalHits = keywords.reduce(
         (sum, row) => sum + Number(row.hit_count || 0),
-        0
+        0,
       );
       const highCount = keywords.filter(
-        (row) => row.signal_level === "high"
+        (row) => row.signal_level === "high",
       ).length;
 
       return {
@@ -64,16 +64,14 @@ export const B2BCompetitiveSection = defineComponent({
 
     const sortedKeywords = computed(() =>
       [...activeKeywords.value].sort(
-        (a, b) => Number(b.hit_count || 0) - Number(a.hit_count || 0)
-      )
+        (a, b) => Number(b.hit_count || 0) - Number(a.hit_count || 0),
+      ),
     );
 
     const filteredDetailRows = computed(() => {
       const rows = [...activeKeywords.value];
       if (compDetailFilter.value === "all") return rows;
-      return rows.filter(
-        (row) => row.signal_level === compDetailFilter.value
-      );
+      return rows.filter((row) => row.signal_level === compDetailFilter.value);
     });
 
     function makeLineChart(canvasId, labels, datasets) {
@@ -169,7 +167,7 @@ export const B2BCompetitiveSection = defineComponent({
 
         labels.push(`${month}/${day}`);
         labelKeys.push(
-          `${d.getFullYear()}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`
+          `${d.getFullYear()}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`,
         );
       }
 
@@ -202,7 +200,7 @@ export const B2BCompetitiveSection = defineComponent({
       compIssueDailyChartInst = makeLineChart(
         "compIssueDailyChart",
         labels,
-        datasets
+        datasets,
       );
     }
 
@@ -248,26 +246,30 @@ export const B2BCompetitiveSection = defineComponent({
         else lowData[idx] += hitCount;
       });
 
-      compIssueMonthlyChartInst = makeBarChart("compIssueMonthlyChart", labels, [
-        {
-          label: "HIGH",
-          data: highData,
-          backgroundColor: "rgba(244,63,94,.8)",
-          borderRadius: 5,
-        },
-        {
-          label: "MED",
-          data: medData,
-          backgroundColor: "rgba(245,158,11,.7)",
-          borderRadius: 5,
-        },
-        {
-          label: "LOW",
-          data: lowData,
-          backgroundColor: "rgba(148,163,184,.5)",
-          borderRadius: 5,
-        },
-      ]);
+      compIssueMonthlyChartInst = makeBarChart(
+        "compIssueMonthlyChart",
+        labels,
+        [
+          {
+            label: "HIGH",
+            data: highData,
+            backgroundColor: "rgba(244,63,94,.8)",
+            borderRadius: 5,
+          },
+          {
+            label: "MED",
+            data: medData,
+            backgroundColor: "rgba(245,158,11,.7)",
+            borderRadius: 5,
+          },
+          {
+            label: "LOW",
+            data: lowData,
+            backgroundColor: "rgba(148,163,184,.5)",
+            borderRadius: 5,
+          },
+        ],
+      );
     }
 
     // API 호출부
@@ -276,7 +278,7 @@ export const B2BCompetitiveSection = defineComponent({
         const result = await fetchDashboardCompetitorAnalysis(
           props.tenantId,
           props.analysisPeriod?.start,
-          props.analysisPeriod?.end
+          props.analysisPeriod?.end,
         );
 
         issueSources.value = Array.isArray(result?.issueSources)
@@ -317,7 +319,7 @@ export const B2BCompetitiveSection = defineComponent({
       ],
       async () => {
         await loadCompetitorAnalysis();
-      }
+      },
     );
 
     // 최초 진입 시 데이터 로드

@@ -1,16 +1,12 @@
 const { defineComponent, ref, computed, onMounted, watch } = Vue;
 const { useRouter, useRoute } = VueRouter;
 
-import { NavBar } from '../components/NavBar.js';
-import { AlertPanel } from '../components/AlertPanel.js';
-import {
-  DB_STORE,
-  B2B_COMPANIES,
-  GLOBAL_TAB_STATUSES,
-} from '../B2B/shared.js';
+import { NavBar } from "../components/NavBar.js";
+import { AlertPanel } from "../components/AlertPanel.js";
+import { DB_STORE, B2B_COMPANIES, GLOBAL_TAB_STATUSES } from "../b2b/shared.js";
 
 export const AdminPage = defineComponent({
-  name: 'AdminPage',
+  name: "AdminPage",
   components: { NavBar, AlertPanel },
 
   setup() {
@@ -18,60 +14,62 @@ export const AdminPage = defineComponent({
     const route = useRoute();
 
     const VALID_ADMIN_TABS = [
-      'competitors',
-      'customers',
-      'datasources',
-      'keywords',
-      'prospects',
-      'ci_sources',
-      'ci_keywords',
-      'tabstatus',
+      "competitors",
+      "customers",
+      "datasources",
+      "keywords",
+      "prospects",
+      "ci_sources",
+      "ci_keywords",
+      "tabstatus",
     ];
 
     const initTab =
       route.query.tab && VALID_ADMIN_TABS.includes(route.query.tab)
         ? route.query.tab
-        : 'competitors';
+        : "competitors";
 
     const adminTab = ref(initTab);
     const db = DB_STORE;
     const saving = ref(false);
-    const saveMsg = ref('');
+    const saveMsg = ref("");
     let saveMsgTimer = null;
 
-    function showSaveOk(msg = '저장되었습니다 ✓') {
+    function showSaveOk(msg = "저장되었습니다 ✓") {
       saveMsg.value = msg;
       if (saveMsgTimer) clearTimeout(saveMsgTimer);
       saveMsgTimer = setTimeout(() => {
-        saveMsg.value = '';
+        saveMsg.value = "";
       }, 2500);
     }
 
-    function showSaveErr(msg = '저장 실패 — 다시 시도하세요') {
-      saveMsg.value = '⚠ ' + msg;
+    function showSaveErr(msg = "저장 실패 — 다시 시도하세요") {
+      saveMsg.value = "⚠ " + msg;
       if (saveMsgTimer) clearTimeout(saveMsgTimer);
       saveMsgTimer = setTimeout(() => {
-        saveMsg.value = '';
+        saveMsg.value = "";
       }, 4000);
     }
 
-    const selectedCompId = ref(B2B_COMPANIES[0]?.id || 'shinilpharm');
+    const selectedCompId = ref(B2B_COMPANIES[0]?.id || "shinilpharm");
 
     /* =========================
        ① 경쟁사
     ========================= */
-    const compSearch = ref('');
+    const compSearch = ref("");
     const editingCompId = ref(null);
     const compDraft = ref({});
 
     const filteredComps = computed(() => {
       const q = compSearch.value.toLowerCase();
-      const all = db.competitors.filter((c) => c.comp_id === selectedCompId.value);
+      const all = db.competitors.filter(
+        (c) => c.comp_id === selectedCompId.value,
+      );
       return all.filter(
         (c) =>
           !q ||
           c.name.toLowerCase().includes(q) ||
-          (c.industry || '').toLowerCase().includes(q)
+          (c.industry || "").toLowerCase().includes(q),
       );
     });
 
@@ -100,11 +98,13 @@ export const AdminPage = defineComponent({
           note: compDraft.value.note,
           isMe: !!compDraft.value.isMe,
         });
-        showSaveOk(`'${compDraft.value.name}' 경쟁사 정보가 업데이트되었습니다 ✓`);
+        showSaveOk(
+          `'${compDraft.value.name}' 경쟁사 정보가 업데이트되었습니다 ✓`,
+        );
         editingCompId.value = null;
       } catch (e) {
         console.error(e);
-        showSaveErr('경쟁사 저장 실패 — 네트워크를 확인해 주세요');
+        showSaveErr("경쟁사 저장 실패 — 네트워크를 확인해 주세요");
       } finally {
         saving.value = false;
       }
@@ -113,14 +113,14 @@ export const AdminPage = defineComponent({
     const addingComp = ref(false);
     const newCompRow = ref({});
     const COMP_BLANK = () => ({
-      name: '',
-      industry: '',
+      name: "",
+      industry: "",
       score: 70,
       googleRating: 4.0,
       sentiment: 60,
       nps: 30,
-      color: '#6366f1',
-      note: '',
+      color: "#6366f1",
+      note: "",
       isMe: false,
     });
 
@@ -149,21 +149,21 @@ export const AdminPage = defineComponent({
         addingComp.value = false;
       } catch (e) {
         console.error(e);
-        showSaveErr('경쟁사 추가 실패');
+        showSaveErr("경쟁사 추가 실패");
       } finally {
         saving.value = false;
       }
     }
 
     async function deleteComp(_id) {
-      if (!confirm('이 경쟁사를 삭제하시겠습니까?')) return;
+      if (!confirm("이 경쟁사를 삭제하시겠습니까?")) return;
       saving.value = true;
       try {
         await db.deleteCompetitor(_id);
-        showSaveOk('경쟁사가 삭제되었습니다');
+        showSaveOk("경쟁사가 삭제되었습니다");
       } catch (e) {
         console.error(e);
-        showSaveErr('경쟁사 삭제 실패');
+        showSaveErr("경쟁사 삭제 실패");
       } finally {
         saving.value = false;
       }
@@ -172,21 +172,23 @@ export const AdminPage = defineComponent({
     /* =========================
        ② 고객
     ========================= */
-    const custSearch = ref('');
-    const custGrade = ref('ALL');
+    const custSearch = ref("");
+    const custGrade = ref("ALL");
     const editingCustId = ref(null);
     const custDraft = ref({});
 
     const filteredCust = computed(() => {
       const q = custSearch.value.toLowerCase();
-      const all = db.customers.filter((c) => c.comp_id === selectedCompId.value);
+      const all = db.customers.filter(
+        (c) => c.comp_id === selectedCompId.value,
+      );
       return all.filter(
         (c) =>
           (!q ||
             c.name.toLowerCase().includes(q) ||
-            (c.company || '').toLowerCase().includes(q) ||
-            (c.email || '').toLowerCase().includes(q)) &&
-          (custGrade.value === 'ALL' || c.grade === custGrade.value)
+            (c.company || "").toLowerCase().includes(q) ||
+            (c.email || "").toLowerCase().includes(q)) &&
+          (custGrade.value === "ALL" || c.grade === custGrade.value),
       );
     });
 
@@ -213,11 +215,13 @@ export const AdminPage = defineComponent({
           segment: custDraft.value.segment,
           note: custDraft.value.note,
         });
-        showSaveOk(`'${custDraft.value.name}' 고객 정보가 업데이트되었습니다 ✓`);
+        showSaveOk(
+          `'${custDraft.value.name}' 고객 정보가 업데이트되었습니다 ✓`,
+        );
         editingCustId.value = null;
       } catch (e) {
         console.error(e);
-        showSaveErr('고객 저장 실패 — 네트워크를 확인해 주세요');
+        showSaveErr("고객 저장 실패 — 네트워크를 확인해 주세요");
       } finally {
         saving.value = false;
       }
@@ -226,13 +230,13 @@ export const AdminPage = defineComponent({
     const addingCust = ref(false);
     const newCustRow = ref({});
     const CUST_BLANK = () => ({
-      name: '',
-      company: '',
-      contact: '',
-      email: '',
-      grade: '일반',
-      segment: '신규',
-      note: '',
+      name: "",
+      company: "",
+      contact: "",
+      email: "",
+      grade: "일반",
+      segment: "신규",
+      note: "",
     });
 
     function openAddCustRow() {
@@ -256,21 +260,21 @@ export const AdminPage = defineComponent({
         addingCust.value = false;
       } catch (e) {
         console.error(e);
-        showSaveErr('고객 추가 실패');
+        showSaveErr("고객 추가 실패");
       } finally {
         saving.value = false;
       }
     }
 
     async function deleteCust(_id) {
-      if (!confirm('이 고객을 삭제하시겠습니까?')) return;
+      if (!confirm("이 고객을 삭제하시겠습니까?")) return;
       saving.value = true;
       try {
         await db.deleteCustomer(_id);
-        showSaveOk('고객이 삭제되었습니다');
+        showSaveOk("고객이 삭제되었습니다");
       } catch (e) {
         console.error(e);
-        showSaveErr('고객 삭제 실패');
+        showSaveErr("고객 삭제 실패");
       } finally {
         saving.value = false;
       }
@@ -280,12 +284,12 @@ export const AdminPage = defineComponent({
        ③ 탭 상태
     ========================= */
     const TAB_LABELS = {
-      external: '고객 동향 분석',
-      ownreview: '리뷰 감정 분석',
-      competitive: '경쟁사 분석',
-      internal: '직원 감정 분석',
+      external: "고객 동향 분석",
+      ownreview: "리뷰 감정 분석",
+      competitive: "경쟁사 분석",
+      internal: "직원 감정 분석",
     };
-    const TAB_IDS = ['external', 'ownreview', 'competitive', 'internal'];
+    const TAB_IDS = ["external", "ownreview", "competitive", "internal"];
 
     function getTabStatus(cId, tabId) {
       return db.getTabStatus(cId, tabId);
@@ -295,81 +299,102 @@ export const AdminPage = defineComponent({
       saving.value = true;
       try {
         await db.setTabStatus(cId, tabId, status);
-        showSaveOk('탭 상태가 업데이트되었습니다 ✓');
+        showSaveOk("탭 상태가 업데이트되었습니다 ✓");
       } catch (e) {
         console.error(e);
-        showSaveErr('탭 상태 저장 실패');
+        showSaveErr("탭 상태 저장 실패");
       } finally {
         saving.value = false;
       }
     }
 
     const STATUS_CONFIG = {
-      ready: { label: '정상', color: '#10b981', bg: '#ecfdf5', border: '#a7f3d0' },
-      wip: { label: '작업중', color: '#b45309', bg: '#fef3c7', border: '#fde68a' },
-      disabled: { label: '미연동', color: '#64748b', bg: '#f1f5f9', border: '#cbd5e1' },
+      ready: {
+        label: "정상",
+        color: "#10b981",
+        bg: "#ecfdf5",
+        border: "#a7f3d0",
+      },
+      wip: {
+        label: "작업중",
+        color: "#b45309",
+        bg: "#fef3c7",
+        border: "#fde68a",
+      },
+      disabled: {
+        label: "미연동",
+        color: "#64748b",
+        bg: "#f1f5f9",
+        border: "#cbd5e1",
+      },
     };
 
     const wipCount = computed(() =>
       B2B_COMPANIES.reduce(
-        (a, c) => a + TAB_IDS.filter((t) => db.getTabStatus(c.id, t) === 'wip').length,
-        0
-      )
+        (a, c) =>
+          a + TAB_IDS.filter((t) => db.getTabStatus(c.id, t) === "wip").length,
+        0,
+      ),
     );
 
     const disabledCount = computed(() =>
       B2B_COMPANIES.reduce(
-        (a, c) => a + TAB_IDS.filter((t) => db.getTabStatus(c.id, t) === 'disabled').length,
-        0
-      )
+        (a, c) =>
+          a +
+          TAB_IDS.filter((t) => db.getTabStatus(c.id, t) === "disabled").length,
+        0,
+      ),
     );
 
     /* =========================
        공통
     ========================= */
-    const GRADE_COLORS = { VIP: '#6366f1', 우수: '#10b981', 일반: '#64748b' };
-    const SEG_OPTIONS = ['신규', '재구매', '장기거래', '휴면', '이탈위험'];
-    const scoreColor = (s) => (s >= 75 ? '#10b981' : s >= 60 ? '#f59e0b' : '#f43f5e');
+    const GRADE_COLORS = { VIP: "#6366f1", 우수: "#10b981", 일반: "#64748b" };
+    const SEG_OPTIONS = ["신규", "재구매", "장기거래", "휴면", "이탈위험"];
+    const scoreColor = (s) =>
+      s >= 75 ? "#10b981" : s >= 60 ? "#f59e0b" : "#f43f5e";
 
     /* =========================
        ④ 데이터 수집 원천
     ========================= */
-    const srcSearch = ref('');
+    const srcSearch = ref("");
     const editingSrcId = ref(null);
     const srcDraft = ref({});
     const addingSrc = ref(false);
     const newSrcRow = ref({});
     const SRC_BLANK = () => ({
       priority: 1,
-      site_name: '',
-      url: '',
-      method: 'API',
-      keywords: '',
-      purpose: '',
-      category: '신규 수요',
+      site_name: "",
+      url: "",
+      method: "API",
+      keywords: "",
+      purpose: "",
+      category: "신규 수요",
       active: true,
-      last_collected: '',
+      last_collected: "",
     });
 
-    const METHOD_OPTIONS = ['API', '크롤링', '크롤링/API', 'RSS'];
+    const METHOD_OPTIONS = ["API", "크롤링", "크롤링/API", "RSS"];
     const CATEGORY_OPTIONS = [
-      '확정 수요',
-      '생산 확대',
-      '신규 수요',
-      '실제 구매 수요',
-      '투자 동향',
-      '규제 동향',
-      '경쟁 동향',
+      "확정 수요",
+      "생산 확대",
+      "신규 수요",
+      "실제 구매 수요",
+      "투자 동향",
+      "규제 동향",
+      "경쟁 동향",
     ];
 
     const filteredSrcs = computed(() => {
       const q = srcSearch.value.toLowerCase();
-      const all = db.dataSources.filter((d) => d.comp_id === selectedCompId.value);
+      const all = db.dataSources.filter(
+        (d) => d.comp_id === selectedCompId.value,
+      );
       return all.filter(
         (d) =>
           !q ||
           d.site_name.toLowerCase().includes(q) ||
-          (d.keywords || '').toLowerCase().includes(q)
+          (d.keywords || "").toLowerCase().includes(q),
       );
     });
 
@@ -392,11 +417,13 @@ export const AdminPage = defineComponent({
           priority: Number(srcDraft.value.priority) || 1,
           active: !!srcDraft.value.active,
         });
-        showSaveOk(`'${srcDraft.value.site_name}' 수집 원천이 업데이트되었습니다 ✓`);
+        showSaveOk(
+          `'${srcDraft.value.site_name}' 수집 원천이 업데이트되었습니다 ✓`,
+        );
         editingSrcId.value = null;
       } catch (e) {
         console.error(e);
-        showSaveErr('수집 원천 저장 실패');
+        showSaveErr("수집 원천 저장 실패");
       } finally {
         saving.value = false;
       }
@@ -425,7 +452,7 @@ export const AdminPage = defineComponent({
         addingSrc.value = false;
       } catch (e) {
         console.error(e);
-        showSaveErr('수집 원천 추가 실패');
+        showSaveErr("수집 원천 추가 실패");
       } finally {
         saving.value = false;
       }
@@ -436,10 +463,10 @@ export const AdminPage = defineComponent({
       saving.value = true;
       try {
         await db.deleteDataSource(_id);
-        showSaveOk('수집 원천이 삭제되었습니다');
+        showSaveOk("수집 원천이 삭제되었습니다");
       } catch (e) {
         console.error(e);
-        showSaveErr('수집 원천 삭제 실패');
+        showSaveErr("수집 원천 삭제 실패");
       } finally {
         saving.value = false;
       }
@@ -448,32 +475,34 @@ export const AdminPage = defineComponent({
     /* =========================
        ⑤ 시그널 키워드
     ========================= */
-    const kwSearch = ref('');
+    const kwSearch = ref("");
     const editingKwId = ref(null);
     const kwDraft = ref({});
     const addingKw = ref(false);
     const newKwRow = ref({});
     const KW_BLANK = () => ({
-      keyword: '',
-      kw_type: '이벤트',
-      signal_level: 'medium',
-      source_ids: '',
-      trigger_desc: '',
+      keyword: "",
+      kw_type: "이벤트",
+      signal_level: "medium",
+      source_ids: "",
+      trigger_desc: "",
       hit_count: 0,
-      last_hit: '',
+      last_hit: "",
       active: true,
     });
-    const KW_TYPES = ['제품', '규제', '이벤트', '경쟁사', '동향', '고객명'];
-    const SIG_LEVELS = ['high', 'medium', 'low'];
+    const KW_TYPES = ["제품", "규제", "이벤트", "경쟁사", "동향", "고객명"];
+    const SIG_LEVELS = ["high", "medium", "low"];
 
     const filteredKws = computed(() => {
       const q = kwSearch.value.toLowerCase();
-      const all = db.signalKeywords.filter((k) => k.comp_id === selectedCompId.value);
+      const all = db.signalKeywords.filter(
+        (k) => k.comp_id === selectedCompId.value,
+      );
       return all.filter(
         (k) =>
           !q ||
           k.keyword.toLowerCase().includes(q) ||
-          (k.trigger_desc || '').toLowerCase().includes(q)
+          (k.trigger_desc || "").toLowerCase().includes(q),
       );
     });
 
@@ -500,7 +529,7 @@ export const AdminPage = defineComponent({
         editingKwId.value = null;
       } catch (e) {
         console.error(e);
-        showSaveErr('키워드 저장 실패');
+        showSaveErr("키워드 저장 실패");
       } finally {
         saving.value = false;
       }
@@ -529,7 +558,7 @@ export const AdminPage = defineComponent({
         addingKw.value = false;
       } catch (e) {
         console.error(e);
-        showSaveErr('키워드 추가 실패');
+        showSaveErr("키워드 추가 실패");
       } finally {
         saving.value = false;
       }
@@ -540,10 +569,10 @@ export const AdminPage = defineComponent({
       saving.value = true;
       try {
         await db.deleteSignalKeyword(_id);
-        showSaveOk('키워드가 삭제되었습니다');
+        showSaveOk("키워드가 삭제되었습니다");
       } catch (e) {
         console.error(e);
-        showSaveErr('키워드 삭제 실패');
+        showSaveErr("키워드 삭제 실패");
       } finally {
         saving.value = false;
       }
@@ -552,32 +581,32 @@ export const AdminPage = defineComponent({
     /* =========================
        ⑥ 신규 고객 후보
     ========================= */
-    const prospectSearch = ref('');
-    const prospectGrade = ref('');
-    const prospectStatus = ref('');
+    const prospectSearch = ref("");
+    const prospectGrade = ref("");
+    const prospectStatus = ref("");
     const editingPrId = ref(null);
     const prDraft = ref({});
     const addingPr = ref(false);
     const newPrRow = ref({});
-    const OPP_GRADES = ['high', 'medium', 'low'];
-    const SALES_STATUSES = ['new', 'contacted', 'qualified', 'lost'];
+    const OPP_GRADES = ["high", "medium", "low"];
+    const SALES_STATUSES = ["new", "contacted", "qualified", "lost"];
     const SALES_STATUS_KO = {
-      new: '신규',
-      contacted: '접촉완료',
-      qualified: '검증완료',
-      lost: '소멸',
+      new: "신규",
+      contacted: "접촉완료",
+      qualified: "검증완료",
+      lost: "소멸",
     };
-    const OPP_GRADE_KO = { high: 'HIGH', medium: 'MED', low: 'LOW' };
+    const OPP_GRADE_KO = { high: "HIGH", medium: "MED", low: "LOW" };
     const PR_BLANK = () => ({
-      prospect_name: '',
-      industry: '',
-      signal: '',
-      source: '',
-      opportunity_grade: 'medium',
-      ref_url: '',
-      detected_at: '',
-      sales_status: 'new',
-      note: '',
+      prospect_name: "",
+      industry: "",
+      signal: "",
+      source: "",
+      opportunity_grade: "medium",
+      ref_url: "",
+      detected_at: "",
+      sales_status: "new",
+      note: "",
     });
 
     const filteredProspects = computed(() => {
@@ -592,8 +621,8 @@ export const AdminPage = defineComponent({
           (p) =>
             !q ||
             p.prospect_name.toLowerCase().includes(q) ||
-            (p.signal || '').toLowerCase().includes(q) ||
-            (p.industry || '').toLowerCase().includes(q)
+            (p.signal || "").toLowerCase().includes(q) ||
+            (p.industry || "").toLowerCase().includes(q),
         );
     });
 
@@ -618,7 +647,7 @@ export const AdminPage = defineComponent({
         editingPrId.value = null;
       } catch (e) {
         console.error(e);
-        showSaveErr('고객 후보 저장 실패');
+        showSaveErr("고객 후보 저장 실패");
       } finally {
         saving.value = false;
       }
@@ -641,11 +670,13 @@ export const AdminPage = defineComponent({
           comp_id: selectedCompId.value,
           ...newPrRow.value,
         });
-        showSaveOk(`'${newPrRow.value.prospect_name}' 고객 후보가 추가되었습니다 ✓`);
+        showSaveOk(
+          `'${newPrRow.value.prospect_name}' 고객 후보가 추가되었습니다 ✓`,
+        );
         addingPr.value = false;
       } catch (e) {
         console.error(e);
-        showSaveErr('고객 후보 추가 실패');
+        showSaveErr("고객 후보 추가 실패");
       } finally {
         saving.value = false;
       }
@@ -656,10 +687,10 @@ export const AdminPage = defineComponent({
       saving.value = true;
       try {
         await db.deleteProspect(_id);
-        showSaveOk('고객 후보가 삭제되었습니다');
+        showSaveOk("고객 후보가 삭제되었습니다");
       } catch (e) {
         console.error(e);
-        showSaveErr('삭제 실패');
+        showSaveErr("삭제 실패");
       } finally {
         saving.value = false;
       }
@@ -668,30 +699,32 @@ export const AdminPage = defineComponent({
     /* =========================
        ⑦ 경쟁사 이슈 출처
     ========================= */
-    const ciSrcSearch = ref('');
+    const ciSrcSearch = ref("");
     const editingCiSrcId = ref(null);
     const ciSrcDraft = ref({});
     const addingCiSrc = ref(false);
     const newCiSrcRow = ref({});
     const CI_SRC_BLANK = () => ({
       priority: 1,
-      site_name: '',
-      url: '',
-      method: '크롤링',
-      keywords: '',
-      meaning: '',
+      site_name: "",
+      url: "",
+      method: "크롤링",
+      keywords: "",
+      meaning: "",
       active: true,
     });
-    const CI_METHOD_OPTIONS = ['API', '크롤링', '크롤링/API', 'RSS'];
+    const CI_METHOD_OPTIONS = ["API", "크롤링", "크롤링/API", "RSS"];
 
     const filteredCiSrcs = computed(() => {
       const q = ciSrcSearch.value.toLowerCase();
-      const all = db.compIssueSources.filter((s) => s.comp_id === selectedCompId.value);
+      const all = db.compIssueSources.filter(
+        (s) => s.comp_id === selectedCompId.value,
+      );
       return all.filter(
         (s) =>
           !q ||
           s.site_name.toLowerCase().includes(q) ||
-          (s.keywords || '').toLowerCase().includes(q)
+          (s.keywords || "").toLowerCase().includes(q),
       );
     });
 
@@ -714,11 +747,13 @@ export const AdminPage = defineComponent({
           priority: Number(ciSrcDraft.value.priority) || 1,
           active: !!ciSrcDraft.value.active,
         });
-        showSaveOk(`'${ciSrcDraft.value.site_name}' 이슈 출처가 업데이트되었습니다 ✓`);
+        showSaveOk(
+          `'${ciSrcDraft.value.site_name}' 이슈 출처가 업데이트되었습니다 ✓`,
+        );
         editingCiSrcId.value = null;
       } catch (e) {
         console.error(e);
-        showSaveErr('이슈 출처 저장 실패');
+        showSaveErr("이슈 출처 저장 실패");
       } finally {
         saving.value = false;
       }
@@ -743,11 +778,13 @@ export const AdminPage = defineComponent({
           priority: Number(newCiSrcRow.value.priority) || 1,
           active: !!newCiSrcRow.value.active,
         });
-        showSaveOk(`'${newCiSrcRow.value.site_name}' 이슈 출처가 추가되었습니다 ✓`);
+        showSaveOk(
+          `'${newCiSrcRow.value.site_name}' 이슈 출처가 추가되었습니다 ✓`,
+        );
         addingCiSrc.value = false;
       } catch (e) {
         console.error(e);
-        showSaveErr('이슈 출처 추가 실패');
+        showSaveErr("이슈 출처 추가 실패");
       } finally {
         saving.value = false;
       }
@@ -758,10 +795,10 @@ export const AdminPage = defineComponent({
       saving.value = true;
       try {
         await db.deleteCompIssueSource(_id);
-        showSaveOk('이슈 출처가 삭제되었습니다');
+        showSaveOk("이슈 출처가 삭제되었습니다");
       } catch (e) {
         console.error(e);
-        showSaveErr('삭제 실패');
+        showSaveErr("삭제 실패");
       } finally {
         saving.value = false;
       }
@@ -770,31 +807,33 @@ export const AdminPage = defineComponent({
     /* =========================
        ⑧ 경쟁사 이슈 키워드
     ========================= */
-    const ciKwSearch = ref('');
+    const ciKwSearch = ref("");
     const editingCiKwId = ref(null);
     const ciKwDraft = ref({});
     const addingCiKw = ref(false);
     const newCiKwRow = ref({});
     const CI_KW_BLANK = () => ({
-      keyword: '',
-      competitor_name: '',
-      source_name: '',
-      signal_level: 'medium',
+      keyword: "",
+      competitor_name: "",
+      source_name: "",
+      signal_level: "medium",
       hit_count: 0,
-      last_hit: '',
-      opportunity: '',
+      last_hit: "",
+      opportunity: "",
       active: true,
     });
-    const CI_SIG_LEVELS = ['high', 'medium', 'low'];
+    const CI_SIG_LEVELS = ["high", "medium", "low"];
 
     const filteredCiKws = computed(() => {
       const q = ciKwSearch.value.toLowerCase();
-      const all = db.compIssueKeywords.filter((k) => k.comp_id === selectedCompId.value);
+      const all = db.compIssueKeywords.filter(
+        (k) => k.comp_id === selectedCompId.value,
+      );
       return all.filter(
         (k) =>
           !q ||
           k.keyword.toLowerCase().includes(q) ||
-          (k.source_name || '').toLowerCase().includes(q)
+          (k.source_name || "").toLowerCase().includes(q),
       );
     });
 
@@ -817,11 +856,13 @@ export const AdminPage = defineComponent({
           hit_count: Number(ciKwDraft.value.hit_count) || 0,
           active: !!ciKwDraft.value.active,
         });
-        showSaveOk(`'${ciKwDraft.value.keyword}' 이슈 키워드가 업데이트되었습니다 ✓`);
+        showSaveOk(
+          `'${ciKwDraft.value.keyword}' 이슈 키워드가 업데이트되었습니다 ✓`,
+        );
         editingCiKwId.value = null;
       } catch (e) {
         console.error(e);
-        showSaveErr('이슈 키워드 저장 실패');
+        showSaveErr("이슈 키워드 저장 실패");
       } finally {
         saving.value = false;
       }
@@ -846,11 +887,13 @@ export const AdminPage = defineComponent({
           hit_count: Number(newCiKwRow.value.hit_count) || 0,
           active: !!newCiKwRow.value.active,
         });
-        showSaveOk(`'${newCiKwRow.value.keyword}' 이슈 키워드가 추가되었습니다 ✓`);
+        showSaveOk(
+          `'${newCiKwRow.value.keyword}' 이슈 키워드가 추가되었습니다 ✓`,
+        );
         addingCiKw.value = false;
       } catch (e) {
         console.error(e);
-        showSaveErr('이슈 키워드 추가 실패');
+        showSaveErr("이슈 키워드 추가 실패");
       } finally {
         saving.value = false;
       }
@@ -861,10 +904,10 @@ export const AdminPage = defineComponent({
       saving.value = true;
       try {
         await db.deleteCompIssueKeyword(_id);
-        showSaveOk('이슈 키워드가 삭제되었습니다');
+        showSaveOk("이슈 키워드가 삭제되었습니다");
       } catch (e) {
         console.error(e);
-        showSaveErr('삭제 실패');
+        showSaveErr("삭제 실패");
       } finally {
         saving.value = false;
       }
@@ -880,8 +923,9 @@ export const AdminPage = defineComponent({
     watch(
       () => route.query.tab,
       (newTab) => {
-        if (newTab && VALID_ADMIN_TABS.includes(newTab)) adminTab.value = newTab;
-      }
+        if (newTab && VALID_ADMIN_TABS.includes(newTab))
+          adminTab.value = newTab;
+      },
     );
 
     return {

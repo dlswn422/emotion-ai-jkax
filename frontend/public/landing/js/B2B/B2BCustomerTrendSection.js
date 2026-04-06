@@ -1,11 +1,19 @@
-const { defineComponent, ref, computed, nextTick, watch, onMounted, onUnmounted } = Vue;
+const {
+  defineComponent,
+  ref,
+  computed,
+  nextTick,
+  watch,
+  onMounted,
+  onUnmounted,
+} = Vue;
 
 // 공통 차트 정리 함수 / 고객 동향 분석 API 함수
-import { destroyChart } from './Shared.js';
-import { fetchDashboardCustomerTrend } from '../api/dashboardCustomerTrend.js';
+import { destroyChart } from "./Shared.js";
+import { fetchDashboardCustomerTrend } from "../api/dashboardCustomerTrend.js";
 
 export const B2BCustomerTrendSection = defineComponent({
-  name: 'B2BCustomerTrendSection',
+  name: "B2BCustomerTrendSection",
 
   props: {
     tenantId: { type: [String, Number], required: true },
@@ -15,8 +23,8 @@ export const B2BCustomerTrendSection = defineComponent({
 
   setup(props) {
     // 화면 토글 상태
-    const kwChartMode = ref('rank');
-    const prospectFilter = ref('');
+    const kwChartMode = ref("rank");
+    const prospectFilter = ref("");
 
     // 실데이터 저장 상태
     const signalKeywords = ref([]);
@@ -36,10 +44,15 @@ export const B2BCustomerTrendSection = defineComponent({
       const prospectRows = prospectsSource.value;
 
       return {
-        totalHits: signalKeywordRows.reduce((s, k) => s + Number(k.hit_count || 0), 0),
-        activeKeywordCount: signalKeywordRows.filter((k) => k.active !== false).length,
+        totalHits: signalKeywordRows.reduce(
+          (s, k) => s + Number(k.hit_count || 0),
+          0,
+        ),
+        activeKeywordCount: signalKeywordRows.filter((k) => k.active !== false)
+          .length,
         prospectCount: prospectRows.length,
-        highCount: prospectRows.filter((p) => p.opportunity_grade === 'high').length,
+        highCount: prospectRows.filter((p) => p.opportunity_grade === "high")
+          .length,
       };
     });
 
@@ -51,12 +64,12 @@ export const B2BCustomerTrendSection = defineComponent({
         .map((row) => ({
           _id: row._id,
           keyword: row.keyword,
-          kw_type: row.kw_type || '이벤트',
-          signal_level: row.signal_level || 'medium',
+          kw_type: row.kw_type || "이벤트",
+          signal_level: row.signal_level || "medium",
           hit_count: Number(row.hit_count || 0),
           last_hit: row.last_hit || props.analysisPeriod.end,
           active: row.active,
-        }))
+        })),
     );
 
     // 고객 후보 필터링
@@ -72,16 +85,16 @@ export const B2BCustomerTrendSection = defineComponent({
       if (!el) return null;
 
       return new Chart(el, {
-        type: 'line',
+        type: "line",
         data: { labels, datasets },
         options: {
           responsive: true,
           maintainAspectRatio: false,
-          interaction: { mode: 'index', intersect: false },
+          interaction: { mode: "index", intersect: false },
           plugins: {
             legend: {
               display: true,
-              position: 'top',
+              position: "top",
               labels: { boxWidth: 10, font: { size: 11 } },
             },
           },
@@ -92,12 +105,12 @@ export const B2BCustomerTrendSection = defineComponent({
           scales: {
             x: {
               grid: { display: false },
-              ticks: { color: '#94a3b8', font: { size: 10 } },
+              ticks: { color: "#94a3b8", font: { size: 10 } },
             },
             y: {
               beginAtZero: true,
-              grid: { color: 'rgba(0,0,0,.05)' },
-              ticks: { color: '#94a3b8', font: { size: 10 }, stepSize: 1 },
+              grid: { color: "rgba(0,0,0,.05)" },
+              ticks: { color: "#94a3b8", font: { size: 10 }, stepSize: 1 },
             },
           },
         },
@@ -110,7 +123,7 @@ export const B2BCustomerTrendSection = defineComponent({
       if (!el) return null;
 
       return new Chart(el, {
-        type: 'bar',
+        type: "bar",
         data: { labels, datasets },
         options: {
           responsive: true,
@@ -118,7 +131,7 @@ export const B2BCustomerTrendSection = defineComponent({
           plugins: {
             legend: {
               display: true,
-              position: 'top',
+              position: "top",
               labels: { boxWidth: 10, font: { size: 11 } },
             },
           },
@@ -126,13 +139,13 @@ export const B2BCustomerTrendSection = defineComponent({
             x: {
               stacked: true,
               grid: { display: false },
-              ticks: { color: '#94a3b8', font: { size: 11 } },
+              ticks: { color: "#94a3b8", font: { size: 11 } },
             },
             y: {
               stacked: true,
               beginAtZero: true,
-              grid: { color: 'rgba(0,0,0,.05)' },
-              ticks: { color: '#94a3b8', font: { size: 10 } },
+              grid: { color: "rgba(0,0,0,.05)" },
+              ticks: { color: "#94a3b8", font: { size: 10 } },
             },
           },
         },
@@ -152,26 +165,28 @@ export const B2BCustomerTrendSection = defineComponent({
         labels.push(`${d.getMonth() + 1}/${d.getDate()}`);
       }
 
-      const COLORS = ['#f43f5e', '#f59e0b', '#6366f1', '#10b981', '#8b5cf6'];
+      const COLORS = ["#f43f5e", "#f59e0b", "#6366f1", "#10b981", "#8b5cf6"];
 
       const datasets = rows.map((kw, idx) => {
         const total = kw.hit_count || 0;
         const data = labels.map((_, i) => {
           const w = Math.pow(1.15, i);
-          return Math.round(total * w / labels.reduce((s, _, j) => s + Math.pow(1.15, j), 0));
+          return Math.round(
+            (total * w) / labels.reduce((s, _, j) => s + Math.pow(1.15, j), 0),
+          );
         });
 
         return {
           label: kw.keyword,
           data,
           borderColor: COLORS[idx % COLORS.length],
-          backgroundColor: COLORS[idx % COLORS.length] + '15',
+          backgroundColor: COLORS[idx % COLORS.length] + "15",
           fill: false,
           pointBackgroundColor: COLORS[idx % COLORS.length],
         };
       });
 
-      kwDailyChartInst = makeLineChart('kwDailyChart', labels, datasets);
+      kwDailyChartInst = makeLineChart("kwDailyChart", labels, datasets);
     }
 
     // 월별 차트 데이터 생성
@@ -180,9 +195,15 @@ export const B2BCustomerTrendSection = defineComponent({
       destroyChart(kwMonthlyChartInst);
 
       const rows = externalKeywordRows.value;
-      const highTotal = rows.filter((k) => k.signal_level === 'high').reduce((s, k) => s + (k.hit_count || 0), 0);
-      const medTotal = rows.filter((k) => k.signal_level === 'medium').reduce((s, k) => s + (k.hit_count || 0), 0);
-      const lowTotal = rows.filter((k) => k.signal_level === 'low').reduce((s, k) => s + (k.hit_count || 0), 0);
+      const highTotal = rows
+        .filter((k) => k.signal_level === "high")
+        .reduce((s, k) => s + (k.hit_count || 0), 0);
+      const medTotal = rows
+        .filter((k) => k.signal_level === "medium")
+        .reduce((s, k) => s + (k.hit_count || 0), 0);
+      const lowTotal = rows
+        .filter((k) => k.signal_level === "low")
+        .reduce((s, k) => s + (k.hit_count || 0), 0);
 
       const labels = [];
       for (let i = 5; i >= 0; i--) {
@@ -192,25 +213,30 @@ export const B2BCustomerTrendSection = defineComponent({
       }
 
       const growFactor = (total, idx) =>
-        Math.max(0, Math.round(total * (0.45 + (idx / 5) * 0.75) / 3 + Math.random() * 1.5));
+        Math.max(
+          0,
+          Math.round(
+            (total * (0.45 + (idx / 5) * 0.75)) / 3 + Math.random() * 1.5,
+          ),
+        );
 
-      kwMonthlyChartInst = makeBarChart('kwMonthlyChart', labels, [
+      kwMonthlyChartInst = makeBarChart("kwMonthlyChart", labels, [
         {
-          label: 'HIGH',
+          label: "HIGH",
           data: labels.map((_, i) => growFactor(highTotal, i)),
-          backgroundColor: 'rgba(244,63,94,.8)',
+          backgroundColor: "rgba(244,63,94,.8)",
           borderRadius: 5,
         },
         {
-          label: 'MED',
+          label: "MED",
           data: labels.map((_, i) => growFactor(medTotal, i)),
-          backgroundColor: 'rgba(245,158,11,.7)',
+          backgroundColor: "rgba(245,158,11,.7)",
           borderRadius: 5,
         },
         {
-          label: 'LOW',
+          label: "LOW",
           data: labels.map((_, i) => growFactor(lowTotal, i)),
-          backgroundColor: 'rgba(148,163,184,.5)',
+          backgroundColor: "rgba(148,163,184,.5)",
           borderRadius: 5,
         },
       ]);
@@ -237,20 +263,25 @@ export const B2BCustomerTrendSection = defineComponent({
 
     // 차트 모드 변경 시 차트 다시 그림
     watch(kwChartMode, async (mode) => {
-      if (mode === 'daily') await buildKwDailyChart();
-      if (mode === 'monthly') await buildKwMonthlyChart();
+      if (mode === "daily") await buildKwDailyChart();
+      if (mode === "monthly") await buildKwMonthlyChart();
     });
 
     // 기업 / 기간 변경 시 API 재호출
     watch(
-      () => [props.tenantId, props.compId, props.analysisPeriod?.start, props.analysisPeriod?.end],
+      () => [
+        props.tenantId,
+        props.compId,
+        props.analysisPeriod?.start,
+        props.analysisPeriod?.end,
+      ],
       async () => {
         await loadCustomerTrend();
         await nextTick();
 
-        if (kwChartMode.value === 'daily') await buildKwDailyChart();
-        if (kwChartMode.value === 'monthly') await buildKwMonthlyChart();
-      }
+        if (kwChartMode.value === "daily") await buildKwDailyChart();
+        if (kwChartMode.value === "monthly") await buildKwMonthlyChart();
+      },
     );
 
     // 최초 진입 시 데이터 로드
@@ -258,8 +289,12 @@ export const B2BCustomerTrendSection = defineComponent({
       await loadCustomerTrend();
       await nextTick();
 
-      if (kwChartMode.value === 'daily') await buildKwDailyChart();
-      if (kwChartMode.value === 'monthly') await buildKwMonthlyChart();
+      console.log("signalKeywordsSource", signalKeywordsSource.value);
+      console.log("prospectsSource", prospectsSource.value);
+      console.log("externalTopKpis", externalTopKpis.value);
+
+      if (kwChartMode.value === "daily") await buildKwDailyChart();
+      if (kwChartMode.value === "monthly") await buildKwMonthlyChart();
     });
 
     // 화면 이탈 시 차트 정리

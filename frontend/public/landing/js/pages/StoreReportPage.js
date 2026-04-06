@@ -18,8 +18,8 @@ import { analyzeCx, getRatingTrend } from "../api/reports.js";
 import { getCustomers } from "../api/customers.js";
 import { CustomerPage } from "./StoreCustomerAnalysisPage.js";
 
-export const ReportPage = defineComponent({
-  name: "ReportPage",
+export const StoreReportPage = defineComponent({
+  name: "StoreReportPage",
   components: { NavBar, CustomerPage },
 
   setup() {
