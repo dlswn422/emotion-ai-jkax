@@ -312,7 +312,7 @@ export const StoreReportPage = defineComponent({
             priority === "HIGH"
               ? "High"
               : priority === "MEDIUM"
-                ? "Medium"
+                ? "Med"
                 : "Low",
 
           cls:
@@ -1505,7 +1505,7 @@ export const StoreReportPage = defineComponent({
 
                 <div style="display:flex;gap:6px">
                   <span style="font-size:11px;font-weight:700;padding:3px 10px;border-radius:var(--r-full);background:#fef2f2;color:#dc2626">High</span>
-                  <span style="font-size:11px;font-weight:700;padding:3px 10px;border-radius:var(--r-full);background:#fffbeb;color:#d97706">Medium</span>
+                  <span style="font-size:11px;font-weight:700;padding:3px 10px;border-radius:var(--r-full);background:#fffbeb;color:#d97706">Med</span>
                   <span style="font-size:11px;font-weight:700;padding:3px 10px;border-radius:var(--r-full);background:#f0fdf4;color:#16a34a">Low</span>
                 </div>
               </div>
