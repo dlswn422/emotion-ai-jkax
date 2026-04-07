@@ -1,28 +1,55 @@
 const { defineComponent } = Vue;
 const { useRouter } = VueRouter;
 
-import { NavBar } from '../components/NavBar.js';
-import { buildSparklinePath } from '../utils/charts.js';
+import { NavBar } from "../components/NavBar.js";
+import { buildSparklinePath } from "../utils/charts.js";
 
 export const LandingPage = defineComponent({
-  name: 'LandingPage',
+  name: "LandingPage",
   components: { NavBar },
 
   setup() {
     const router = useRouter();
 
-    const sparkData = [3.8, 4.1, 3.5, 4.3, 4.0, 4.5, 4.2, 4.6, 2.8, 3.5, 4.1, 4.4, 4.3];
+    const sparkData = [
+      3.8, 4.1, 3.5, 4.3, 4.0, 4.5, 4.2, 4.6, 2.8, 3.5, 4.1, 4.4, 4.3,
+    ];
     const sparkPath = buildSparklinePath(sparkData, 220, 56);
     const sparkArea = sparkPath + ` L ${220},${56} L 0,${56} Z`;
 
-    return { router, sparkPath, sparkArea };
+    const overlay = Vue.ref("none");
+
+    function handleUploadClick() {
+      overlay.value = "upload";
+
+      setTimeout(() => {
+        window.location.href = "/upload";
+      }, 400);
+    }
+
+    return { router, sparkPath, sparkArea, overlay, handleUploadClick };
   },
 
   template: `
-  <div class="landing-wrap">
-    <NavBar page="landing"/>
+      <div class="landing-wrap">
+        <div v-if="overlay !== 'none'" class="page-overlay">
+          <div class="page-overlay-card">
+            <div class="page-overlay-spinner"></div>
+            <p class="page-overlay-text">
+              {{
+                overlay === 'stores'
+                  ? '매장 목록으로 이동 중…'
+                  : overlay === 'upload'
+                  ? '업로드 화면으로 이동 중…'
+                  : '이동 중…'
+              }}
+            </p>
+          </div>
+        </div>
 
-    <section class="hero-section">
+        <NavBar page="landing"/>
+
+        <section class="hero-section">
       <div class="hero-noise"></div>
       <div class="hero-grid-lines"></div>
 
@@ -48,10 +75,36 @@ export const LandingPage = defineComponent({
           </p>
 
           <div class="hero-cta-row">
+              <button class="btn btn-brand btn-lg" @click="handleUploadClick">
+                <svg
+                  width="16"
+                  height="16"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.5"
+                  viewBox="0 0 24 24"
+                >
+                  <path d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
+                </svg>
+                파일 업로드
+              </button>
+          
             <button class="btn btn-brand btn-lg" @click="router.push('/stores')">
-              <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-                <path d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/>
-              </svg>
+                <svg
+                  width="16"
+                  height="16"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.2"
+                  viewBox="0 0 24 24"
+                >
+                  <path d="M7 10h10" stroke-linecap="round" />
+                  <path d="M7 14h6" stroke-linecap="round" />
+                  <path
+                    d="M21 12c0 4.418-4.03 8-9 8a9.94 9.94 0 01-4.255-.95L3 20l1.223-3.668A7.485 7.485 0 013 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+                    stroke-linejoin="round"
+                  />
+                </svg>
               매장 리뷰 분석
             </button>
 
@@ -60,18 +113,6 @@ export const LandingPage = defineComponent({
                 <path d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
               </svg>
               B2B 기업 대시보드
-            </button>
-
-            <button
-              class="btn btn-lg"
-              style="background:linear-gradient(135deg,#312e81,#4338ca);color:#fff;border:none"
-              @click="router.push('/mindmap')"
-            >
-              <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-                <path d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
-                <circle cx="12" cy="11" r="3"/>
-              </svg>
-              지자체 민심지도
             </button>
           </div>
 

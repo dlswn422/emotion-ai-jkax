@@ -7,7 +7,6 @@ import { CustomerPage } from "../pages/StoreCustomerAnalysisPage.js";
 import { B2BPage } from "../pages/B2BListPage.js";
 import { B2BReportPage } from "../pages/B2BReportPage.js";
 import { AdminPage } from "../pages/AdminPage.js";
-import { MindMapPage } from "../pages/MindMapPage.js";
 
 export const router = createRouter({
   history: createWebHashHistory(),
@@ -19,7 +18,6 @@ export const router = createRouter({
     { path: "/B2B-report/:id", component: B2BReportPage },
     { path: "/admin", component: AdminPage },
     { path: "/stores/:id/customers", component: CustomerPage },
-    { path: "/mindmap", component: MindMapPage },
   ],
   scrollBehavior: () => ({ top: 0 }),
 });

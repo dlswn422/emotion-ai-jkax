@@ -288,11 +288,6 @@ export const B2BCustomerTrendSection = defineComponent({
     onMounted(async () => {
       await loadCustomerTrend();
       await nextTick();
-
-      console.log("signalKeywordsSource", signalKeywordsSource.value);
-      console.log("prospectsSource", prospectsSource.value);
-      console.log("externalTopKpis", externalTopKpis.value);
-
       if (kwChartMode.value === "daily") await buildKwDailyChart();
       if (kwChartMode.value === "monthly") await buildKwMonthlyChart();
     });

@@ -794,11 +794,6 @@ export const StoreReportPage = defineComponent({
             getCustomers(storeId, from, to),
           ]);
 
-        console.log("cxJson =", cxJson);
-        console.log("trendDaily =", trendDaily);
-        console.log("trendMonthly =", trendMonthly);
-        console.log("customerJson =", customerJson);
-
         report.value = adaptCxReport(
           cxJson,
           trendDaily,

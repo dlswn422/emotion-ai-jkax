@@ -32,31 +32,23 @@ export const NavBar = defineComponent({
             class="nav-pill nav-pill-outline"
             @click="router.push('/stores')"
           >
-            <svg
-              width="16"
-              height="16"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2.5"
-              viewBox="0 0 24 24"
-            >
-              <path d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/>
-            </svg>
+                <svg
+                  width="16"
+                  height="16"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.2"
+                  viewBox="0 0 24 24"
+                >
+                  <path d="M7 10h10" stroke-linecap="round" />
+                  <path d="M7 14h6" stroke-linecap="round" />
+                  <path
+                    d="M21 12c0 4.418-4.03 8-9 8a9.94 9.94 0 01-4.255-.95L3 20l1.223-3.668A7.485 7.485 0 013 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+                    stroke-linejoin="round"
+                  />
+                </svg>
             매장 리뷰 분석
           </button>
-
-          <button
-            class="nav-pill"
-            style="background:linear-gradient(135deg,#312e81,#4338ca);color:#fff;border:none"
-            @click="router.push('/mindmap')"
-          >
-            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-              <path d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
-              <circle cx="12" cy="11" r="3"/>
-            </svg>
-            민심지도
-          </button>
-
           <button
             class="nav-pill nav-pill-b2b"
             @click="router.push('/B2B')"
