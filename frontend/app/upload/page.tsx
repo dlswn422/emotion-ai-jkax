@@ -6,8 +6,7 @@ import { useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import AppHeader from "../../components/common/AppHeader";
 
-const API_BASE =
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 type UploadState = "idle" | "uploading" | "done" | "error";
 
@@ -19,8 +18,6 @@ export default function UploadPage() {
   const [status, setStatus] = useState<UploadState>("idle");
   const [message, setMessage] = useState("");
   const [isDragging, setIsDragging] = useState(false);
-
-
 
   const fileLabel = useMemo(() => {
     if (!selectedFile) return "선택된 파일 없음";
@@ -77,96 +74,96 @@ export default function UploadPage() {
     setIsDragging(false);
   };
 
-    const handleUpload = async () => {
-      if (!selectedFile) {
-        setStatus("error");
-        setMessage("먼저 업로드할 파일을 선택해 주세요.");
-        return;
+  const handleUpload = async () => {
+    if (!selectedFile) {
+      setStatus("error");
+      setMessage("먼저 업로드할 파일을 선택해 주세요.");
+      return;
+    }
+
+    const controller = new AbortController();
+    const timeoutMs = 120000; // 120초
+    const timeoutId = window.setTimeout(() => {
+      console.warn("[upload] timeout reached, aborting request", {
+        timeoutMs,
+        at: new Date().toISOString(),
+      });
+      controller.abort();
+    }, timeoutMs);
+
+    try {
+      setStatus("uploading");
+      setMessage("파일을 분석 중입니다. 잠시만 기다려 주세요.");
+
+      const formData = new FormData();
+      formData.append("file", selectedFile);
+
+      console.log("[upload] start", {
+        fileName: selectedFile.name,
+        fileSize: selectedFile.size,
+        api: `${API_BASE}/analysis/file`,
+        startedAt: new Date().toISOString(),
+      });
+
+      const startedAt = Date.now();
+
+      const res = await fetch(`${API_BASE}/analysis/file`, {
+        method: "POST",
+        body: formData,
+        credentials: "include",
+        signal: controller.signal,
+      });
+
+      console.log("[upload] response arrived", {
+        ok: res.ok,
+        status: res.status,
+        elapsedMs: Date.now() - startedAt,
+        contentType: res.headers.get("content-type"),
+      });
+
+      const data = await res.json().catch(() => null);
+
+      console.log("[upload] response body", data);
+
+      if (!res.ok) {
+        throw new Error(
+          data?.detail ||
+            data?.message ||
+            `업로드 중 오류가 발생했습니다. (status: ${res.status})`,
+        );
       }
 
-      const controller = new AbortController();
-      const timeoutMs = 120000; // 120초
-      const timeoutId = window.setTimeout(() => {
-        console.warn("[upload] timeout reached, aborting request", {
-          timeoutMs,
-          at: new Date().toISOString(),
-        });
-        controller.abort();
-      }, timeoutMs);
+      sessionStorage.setItem("analysisResult", JSON.stringify(data));
 
-      try {
-        setStatus("uploading");
-        setMessage("파일을 분석 중입니다. 잠시만 기다려 주세요.");
+      console.log("[upload] success, navigating to dashboard", {
+        elapsedMs: Date.now() - startedAt,
+      });
 
-        const formData = new FormData();
-        formData.append("file", selectedFile);
+      setStatus("done");
+      setMessage("업로드 및 분석이 완료되었습니다. 대시보드로 이동합니다.");
 
-        console.log("[upload] start", {
-          fileName: selectedFile.name,
-          fileSize: selectedFile.size,
-          api: `${API_BASE}/analysis/file`,
-          startedAt: new Date().toISOString(),
-        });
+      setTimeout(() => {
+        router.push("/dashboard");
+      }, 700);
+    } catch (error) {
+      console.error("[upload] failed", error);
 
-        const startedAt = Date.now();
-
-        const res = await fetch(`${API_BASE}/analysis/file`, {
-          method: "POST",
-          body: formData,
-          credentials: "include",
-          signal: controller.signal,
-        });
-
-        console.log("[upload] response arrived", {
-          ok: res.ok,
-          status: res.status,
-          elapsedMs: Date.now() - startedAt,
-          contentType: res.headers.get("content-type"),
-        });
-
-        const data = await res.json().catch(() => null);
-
-        console.log("[upload] response body", data);
-
-        if (!res.ok) {
-          throw new Error(
-            data?.detail ||
-              data?.message ||
-              `업로드 중 오류가 발생했습니다. (status: ${res.status})`
-          );
-        }
-
-        sessionStorage.setItem("analysisResult", JSON.stringify(data));
-
-        console.log("[upload] success, navigating to dashboard", {
-          elapsedMs: Date.now() - startedAt,
-        });
-
-        setStatus("done");
-        setMessage("업로드 및 분석이 완료되었습니다. 대시보드로 이동합니다.");
-
-        setTimeout(() => {
-          router.push("/dashboard");
-        }, 700);
-      } catch (error) {
-        console.error("[upload] failed", error);
-
-        const text =
-          error instanceof DOMException && error.name === "AbortError"
-            ? "분석 응답이 지연되고 있습니다. 잠시 후 다시 시도해 주세요."
-            : error instanceof Error
+      const text =
+        error instanceof DOMException && error.name === "AbortError"
+          ? "분석 응답이 지연되고 있습니다. 잠시 후 다시 시도해 주세요."
+          : error instanceof Error
             ? error.message
             : "업로드 중 오류가 발생했습니다.";
 
-        setStatus("error");
-        setMessage(text);
-      } finally {
-        clearTimeout(timeoutId);
-        console.log("[upload] finished", {
-          at: new Date().toISOString(),
-        });
-      }
-    };
+      setStatus("error");
+      setMessage(text);
+    } finally {
+      clearTimeout(timeoutId);
+      console.log("[upload] finished", {
+        at: new Date().toISOString(),
+      });
+    }
+  };
   return (
     <div className="upload-page">
       <AppHeader variant="app" />
@@ -240,8 +237,8 @@ export default function UploadPage() {
                 status === "error"
                   ? "error"
                   : status === "done"
-                  ? "done"
-                  : "info"
+                    ? "done"
+                    : "info"
               }`}
             >
               {message}

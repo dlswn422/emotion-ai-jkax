@@ -7102,225 +7102,7 @@ img {
 }
 
 /* ============================================================
-   SMALL MOBILE FIX — 392px 이하
-   ============================================================ */
-@media (max-width: 392px) {
-  /* 공통 */
-  .cx-nav {
-    height: 56px;
-    padding: 0 12px;
-  }
-
-  .nav-inner {
-    gap: 8px;
-  }
-
-  .nav-logo {
-    gap: 8px;
-    min-width: 0;
-  }
-
-  .nav-logo-mark {
-    width: 30px;
-    height: 30px;
-    border-radius: 9px;
-    font-size: 12px;
-    flex-shrink: 0;
-  }
-
-  .nav-logo-text {
-    font-size: 15px;
-    line-height: 1;
-  }
-
-  .nav-logo-sub {
-    font-size: 9px;
-    margin-top: 0;
-    line-height: 1.1;
-  }
-
-  .nav-actions {
-    gap: 4px;
-    flex-shrink: 0;
-  }
-
-  .nav-pill {
-    padding: 6px 10px;
-    font-size: 12px;
-    gap: 5px;
-    flex-shrink: 0;
-    min-height: 34px;
-  }
-
-  /* landing에서 마지막 로그아웃 버튼은 아이콘만 보이게 */
-  .nav-actions .nav-pill:last-child {
-    width: 34px;
-    min-width: 34px;
-    padding: 0;
-    justify-content: center;
-    font-size: 0;
-  }
-
-  .nav-actions .nav-pill:last-child svg {
-    width: 14px;
-    height: 14px;
-    margin: 0;
-  }
-
-  /* landing hero */
-  .hero-section {
-    min-height: auto;
-    padding: 88px 12px 48px;
-  }
-
-  .hero-inner {
-    gap: 28px;
-  }
-
-  .hero-left {
-    max-width: 100%;
-  }
-
-  .hero-eyebrow {
-    margin-bottom: 18px;
-    padding: 5px 12px 5px 6px;
-    font-size: 11px;
-  }
-
-  .hero-h1 {
-    font-size: 31px;
-    line-height: 1.08;
-    letter-spacing: -1.2px;
-    margin-bottom: 14px;
-  }
-
-  .hero-desc {
-    font-size: 14px;
-    line-height: 1.75;
-    margin-bottom: 24px;
-    max-width: 100%;
-  }
-
-  .hero-cta-row {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 10px;
-    margin-bottom: 24px;
-  }
-
-  .hero-cta-row .btn,
-  .hero-cta-row .btn-lg {
-    width: 100%;
-    justify-content: center;
-    padding: 13px 18px;
-    font-size: 14px;
-    border-radius: 18px;
-  }
-
-  .hero-trust {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 10px;
-  }
-
-  .trust-item {
-    font-size: 12px;
-    line-height: 1.4;
-  }
-
-  /* 상단 통계 */
-  .stat-strip {
-    padding: 0 12px;
-  }
-
-  .stat-strip-inner {
-    grid-template-columns: 1fr 1fr;
-  }
-
-  .strip-item {
-    padding: 18px 12px;
-  }
-
-  .strip-val {
-    font-size: 26px;
-    line-height: 1.05;
-  }
-
-  .strip-label {
-    font-size: 11px;
-    line-height: 1.35;
-  }
-
-  /* 공통 section 패딩 */
-  .bento-section,
-  .process-section,
-  .pricing-section,
-  .cx-footer,
-  .page-body {
-    padding-left: 12px;
-    padding-right: 12px;
-  }
-
-  .section-header-wrap {
-    margin-bottom: 36px;
-  }
-
-  .section-h2,
-  .process-h2 {
-    font-size: 24px;
-    line-height: 1.2;
-    letter-spacing: -1px;
-  }
-
-  .section-p,
-  .process-desc {
-    font-size: 14px;
-    line-height: 1.7;
-  }
-
-  /* 카드 계열 */
-  .bento-card,
-  .pricing-card {
-    padding: 20px 16px;
-  }
-
-  .bento-h3 {
-    font-size: 15px;
-    line-height: 1.45;
-  }
-
-  .bento-p {
-    font-size: 13px;
-  }
-
-  /* 프로세스 */
-  .process-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .process-step {
-    padding: 24px 18px;
-  }
-
-  /* 푸터 */
-  .footer-top {
-    gap: 28px;
-    margin-bottom: 28px;
-  }
-
-  .footer-bottom {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .footer-bottom > div {
-    flex-wrap: wrap;
-    gap: 10px !important;
-  }
-}
-
-/* ============================================================
-   GLOBAL SMALL MOBILE SYSTEM — 392px 이하
+   MOBILE 01 — 392px 이하
    ============================================================ */
 @media (max-width: 392px) {
   html,
@@ -7332,7 +7114,6 @@ img {
     font-size: 14px;
   }
 
-  /* 공통 래퍼 */
   .page-shell,
   .report-shell,
   .landing-wrap {
@@ -7351,7 +7132,6 @@ img {
     padding-right: 12px !important;
   }
 
-  /* 공통 flex/grid 자식이 부모 밀어내는 거 방지 */
   .nav-inner,
   .page-hero-bar,
   .toolbar,
@@ -7367,7 +7147,24 @@ img {
   .chart-toolbar,
   .ca-list-toolbar,
   .ca-two-col,
-  .ca-expanded-inner {
+  .ca-expanded-inner,
+  .b2b-hero-bar,
+  .b2b-company-grid,
+  .b2b-comp-card,
+  .b2b-comp-header,
+  .b2b-comp-meta,
+  .b2b-comp-metrics,
+  .b2b-pill-row,
+  .b2b-company-banner,
+  .b2b-top-kpi,
+  .jp-summary-card,
+  .jp-summary-bars,
+  .jp-pros-cons,
+  .cdt-trend-wrap,
+  .cdt-trend-info,
+  .ci-kpi-bar,
+  .cdt-kpi-item,
+  .ci-kpi-item {
     min-width: 0;
   }
 
@@ -7375,26 +7172,25 @@ img {
      NAV
      ------------------------------------------------------------ */
   .cx-nav {
-    height: 56px;
+    min-height: 60px;
     padding: 0 10px;
   }
 
   .nav-inner {
-    gap: 8px;
+    gap: 5px;
   }
 
   .nav-logo {
-    gap: 8px;
+    flex: 0 1 auto;
     min-width: 0;
-    flex: 1;
   }
 
   .nav-logo-mark {
     width: 30px;
     height: 30px;
+    min-width: 30px;
     border-radius: 9px;
     font-size: 12px;
-    flex-shrink: 0;
   }
 
   .nav-logo-text {
@@ -7413,25 +7209,28 @@ img {
     flex-shrink: 0;
   }
 
-  .nav-pill {
-    padding: 6px 10px;
-    min-height: 34px;
-    font-size: 12px;
-    gap: 5px;
-    white-space: nowrap;
-  }
-
-  /* landing: 대시보드 텍스트만 유지, 로그아웃은 아이콘만 */
-  .nav-actions .nav-pill:last-child {
+  .nav-alert-btn {
     width: 34px;
     min-width: 34px;
-    padding: 0;
-    justify-content: center;
-    font-size: 0;
+    height: 34px;
   }
 
-  .nav-actions .nav-pill:last-child svg {
+  .nav-actions .nav-pill {
+    width: 34px;
+    min-width: 34px;
+    height: 34px;
+    padding: 0;
+    justify-content: center;
+    gap: 0;
+    font-size: 0;
+    border-radius: 999px;
+  }
+
+  .nav-actions .nav-pill svg {
+    width: 14px;
+    height: 14px;
     margin: 0;
+    flex-shrink: 0;
   }
 
   /* ------------------------------------------------------------
@@ -7453,8 +7252,8 @@ img {
 
   .hero-eyebrow {
     margin-bottom: 18px;
-    font-size: 11px;
     padding: 5px 12px 5px 6px;
+    font-size: 11px;
   }
 
   .hero-h1 {
@@ -7498,6 +7297,10 @@ img {
     line-height: 1.4;
   }
 
+  .stat-strip {
+    padding: 0 12px;
+  }
+
   .stat-strip-inner {
     grid-template-columns: 1fr 1fr;
   }
@@ -7514,6 +7317,60 @@ img {
   .strip-label {
     font-size: 11px;
     line-height: 1.35;
+  }
+
+  .section-header-wrap {
+    margin-bottom: 36px;
+  }
+
+  .section-h2,
+  .process-h2 {
+    font-size: 24px;
+    line-height: 1.2;
+    letter-spacing: -1px;
+  }
+
+  .section-p,
+  .process-desc {
+    font-size: 14px;
+    line-height: 1.7;
+  }
+
+  .bento-card,
+  .pricing-card {
+    padding: 20px 16px;
+  }
+
+  .bento-h3 {
+    font-size: 15px;
+    line-height: 1.45;
+  }
+
+  .bento-p {
+    font-size: 13px;
+  }
+
+  .process-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .process-step {
+    padding: 24px 18px;
+  }
+
+  .footer-top {
+    gap: 28px;
+    margin-bottom: 28px;
+  }
+
+  .footer-bottom {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .footer-bottom > div {
+    flex-wrap: wrap;
+    gap: 10px !important;
   }
 
   /* ------------------------------------------------------------
@@ -7539,11 +7396,6 @@ img {
   .page-hero-bar > .btn {
     width: 100%;
     justify-content: center;
-  }
-
-  .toolbar {
-    display: block;
-    margin-bottom: 18px;
   }
 
   .search-field {
@@ -7576,10 +7428,6 @@ img {
     width: 44px;
     height: 44px;
     min-width: 44px;
-  }
-
-  .sc-info {
-    min-width: 0;
   }
 
   .sc-name {
@@ -7629,8 +7477,10 @@ img {
      REPORT PAGE
      ------------------------------------------------------------ */
   .report-layout {
-    padding-top: 12px !important;
+    display: grid;
+    grid-template-columns: 1fr;
     gap: 14px;
+    padding: 68px 12px 20px !important;
   }
 
   .report-sidenav {
@@ -7712,23 +7562,25 @@ img {
   .r-card-hd {
     padding: 16px 16px 14px;
     flex-direction: column;
-    align-items: flex-start;
     gap: 10px;
+    align-items: stretch !important;
+  }
+
+  .r-card-hd > * {
+    min-width: 0;
   }
 
   .r-card-title {
     font-size: 15px;
-    line-height: 1.3;
+    line-height: 1.35;
   }
 
   .r-card-body {
     padding: 16px;
+    overflow: hidden;
   }
 
-  .chart-toolbar {
-    width: 100%;
-  }
-
+  .chart-toolbar,
   .chart-toggle {
     width: 100%;
   }
@@ -7818,6 +7670,7 @@ img {
   }
 
   .modal-box {
+    width: min(100%, 420px);
     padding: 20px 16px;
     border-radius: 20px;
   }
@@ -7846,16 +7699,564 @@ img {
     width: 100%;
     justify-content: center;
   }
+
+  /* ------------------------------------------------------------
+     B2B LIST PAGE
+     ------------------------------------------------------------ */
+  .page-body {
+    padding: 72px 12px 20px !important;
+  }
+
+  .b2b-hero-bar {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 18px;
+    padding: 22px 16px;
+    margin-bottom: 18px;
+    border-radius: 22px;
+  }
+
+  .b2b-hero-left {
+    min-width: 0;
+  }
+
+  .b2b-hero-eyebrow {
+    font-size: 11px;
+    padding: 5px 10px;
+    margin-bottom: 12px;
+    white-space: normal;
+    line-height: 1.35;
+  }
+
+  .b2b-hero-h1 {
+    font-size: 28px;
+    line-height: 1.15;
+    letter-spacing: -1px;
+    margin-bottom: 10px;
+    word-break: keep-all;
+  }
+
+  .b2b-hero-sub {
+    font-size: 13px;
+    line-height: 1.7;
+    word-break: keep-all;
+  }
+
+  .b2b-kpi-strip {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    border-radius: 18px;
+  }
+
+  .b2b-strip-item {
+    padding: 14px 8px;
+    min-width: 0;
+  }
+
+  .b2b-strip-num {
+    font-size: 18px;
+    line-height: 1.05;
+    word-break: keep-all;
+  }
+
+  .b2b-strip-lbl {
+    font-size: 10px;
+    line-height: 1.35;
+    margin-top: 6px;
+    word-break: keep-all;
+  }
+
+  .toolbar {
+    display: flex !important;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    margin-bottom: 18px !important;
+  }
+
+  .toolbar .search-field {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .toolbar > div:last-child {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px !important;
+    width: 100%;
+  }
+
+  .toolbar > div:last-child .btn {
+    width: 100%;
+    min-width: 0;
+    justify-content: center;
+    padding: 12px 10px;
+    font-size: 13px;
+    border-radius: 16px;
+  }
+
+  .b2b-company-grid {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  .b2b-comp-card,
+  .add-card {
+    padding: 18px 16px;
+    border-radius: 20px;
+  }
+
+  .b2b-comp-header {
+    display: grid;
+    grid-template-columns: 44px minmax(0, 1fr);
+    gap: 12px;
+    align-items: start;
+    margin-bottom: 10px;
+  }
+
+  .b2b-comp-logo {
+    width: 44px;
+    height: 44px;
+    font-size: 13px;
+  }
+
+  .b2b-comp-name {
+    font-size: 15px;
+    line-height: 1.35;
+    margin-bottom: 6px;
+    word-break: keep-all;
+    overflow-wrap: anywhere;
+  }
+
+  .b2b-comp-tags {
+    gap: 5px;
+  }
+
+  .b2b-tag {
+    font-size: 10px;
+    padding: 3px 8px;
+  }
+
+  .b2b-comp-header .status-pill {
+    grid-column: 2;
+    justify-self: start;
+    margin-top: 2px;
+  }
+
+  .b2b-comp-desc {
+    font-size: 12px;
+    line-height: 1.6;
+    margin-bottom: 14px;
+    word-break: keep-all;
+    overflow-wrap: anywhere;
+  }
+
+  .b2b-comp-metrics {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 10px;
+    padding: 10px 12px;
+    margin-bottom: 14px;
+    background: var(--n-50);
+    border: 1px solid var(--border-subtle);
+    border-radius: 14px;
+  }
+
+  .b2b-metric-divider {
+    display: none;
+  }
+
+  .b2b-metric {
+    flex-wrap: wrap;
+  }
+
+  .b2b-metric-val {
+    font-size: 13px;
+  }
+
+  .b2b-metric-lbl {
+    font-size: 12px;
+  }
+
+  .b2b-pill-row {
+    gap: 6px;
+    margin-bottom: 14px;
+  }
+
+  .b2b-dim-pill {
+    font-size: 10px;
+    padding: 5px 9px;
+    line-height: 1.3;
+  }
+
+  .b2b-comp-card .sc-cta {
+    width: 100%;
+    justify-content: center;
+    padding: 12px 14px;
+    font-size: 13px;
+    border-radius: 16px;
+  }
+
+  /* ------------------------------------------------------------
+     B2B REPORT PAGE
+     ------------------------------------------------------------ */
+  .b2b-company-banner.store-banner {
+    display: grid;
+    grid-template-columns: 48px minmax(0, 1fr) !important;
+    align-items: start !important;
+    gap: 12px;
+    padding: 18px 16px;
+    border-radius: 22px;
+  }
+
+  .b2b-banner-logo {
+    width: 48px;
+    height: 48px;
+    font-size: 14px;
+  }
+
+  .b2b-company-banner .sb-info {
+    min-width: 0;
+  }
+
+  .b2b-company-banner .sb-name {
+    font-size: 16px;
+    line-height: 1.35;
+    word-break: keep-all;
+    overflow-wrap: anywhere;
+  }
+
+  .b2b-company-banner .sb-meta {
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: wrap !important;
+    align-items: center !important;
+    gap: 6px !important;
+    margin-top: 8px;
+  }
+
+  .b2b-company-banner .sb-chip {
+    display: inline-flex;
+    width: auto !important;
+    max-width: 100%;
+    white-space: nowrap;
+    line-height: 1.25;
+  }
+
+  .b2b-company-banner .sb-actions {
+    grid-column: 1 / -1;
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 8px !important;
+    width: 100%;
+  }
+
+  .b2b-company-banner .sb-btn {
+    width: 100%;
+    min-width: 0;
+    justify-content: center;
+    padding: 10px 12px;
+  }
+
+  .b2b-top-kpi,
+  .b2b-top-kpi-external {
+    grid-template-columns: 1fr !important;
+    gap: 10px;
+  }
+
+  .b2b-tkpi,
+  .b2b-top-kpi-external .b2b-tkpi {
+    padding: 16px;
+    gap: 12px;
+    border-radius: 18px;
+  }
+
+  .b2b-tkpi-wide .b2b-tkpi-icon,
+  .b2b-tkpi-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+  }
+
+  .b2b-tkpi-wide .b2b-tkpi-val,
+  .b2b-tkpi-val {
+    font-size: 24px;
+  }
+
+  .cdt-kpi-lbl,
+  .ci-kpi-lbl {
+    white-space: normal;
+    line-height: 1.3;
+  }
+
+  .cdt-chart-toggle,
+  .ci-detail-tabs {
+    display: inline-flex !important;
+    width: auto !important;
+    max-width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+    white-space: nowrap;
+    flex-wrap: nowrap !important;
+    border-radius: 12px;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .cdt-chart-toggle::-webkit-scrollbar,
+  .ci-detail-tabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .cdt-toggle-btn,
+  .ci-dtab {
+    flex: 0 0 auto !important;
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    width: auto !important;
+    min-width: fit-content;
+    white-space: nowrap !important;
+    border-radius: 10px !important;
+    padding: 6px 14px !important;
+    font-size: 12px !important;
+    line-height: 1.2;
+  }
+
+  .ci-dtab-cnt {
+    flex: 0 0 auto;
+  }
+
+  .cdt-table-scroll,
+  .cdt-kw-scroll,
+  .ci-table-scroll,
+  .ci-detail-scroll,
+  .ci-hit-scroll,
+  .ci-detail-table-wrap,
+  .ci-hit-rate-wrap,
+  .ci-kw-table-wrap,
+  .r-card-body > .cdt-kw-table,
+  .ca-table-wrap,
+  .ca-cohort-table-wrap {
+    width: 100%;
+    overflow-x: auto !important;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .cdt-kw-table {
+    display: table !important;
+    min-width: 760px !important;
+    width: max-content;
+  }
+  .r-card:has(.cdt-kw-table) .r-card-body {
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 8px;
+  }
+
+  .r-card:has(.cdt-kw-table) .r-card-body::-webkit-scrollbar,
+  .cdt-table-scroll::-webkit-scrollbar,
+  .cdt-kw-scroll::-webkit-scrollbar,
+  .ci-table-scroll::-webkit-scrollbar,
+  .ci-detail-scroll::-webkit-scrollbar,
+  .ci-hit-scroll::-webkit-scrollbar,
+  .ci-detail-table-wrap::-webkit-scrollbar,
+  .ci-hit-rate-wrap::-webkit-scrollbar,
+  .ci-kw-table-wrap::-webkit-scrollbar {
+    height: 8px;
+  }
+
+  .r-card:has(.cdt-kw-table) .r-card-body::-webkit-scrollbar-thumb,
+  .cdt-table-scroll::-webkit-scrollbar-thumb,
+  .cdt-kw-scroll::-webkit-scrollbar-thumb,
+  .ci-table-scroll::-webkit-scrollbar-thumb,
+  .ci-detail-scroll::-webkit-scrollbar-thumb,
+  .ci-hit-scroll::-webkit-scrollbar-thumb,
+  .ci-detail-table-wrap::-webkit-scrollbar-thumb,
+  .ci-hit-rate-wrap::-webkit-scrollbar-thumb,
+  .ci-kw-table-wrap::-webkit-scrollbar-thumb {
+    background: rgba(148, 163, 184, 0.55);
+    border-radius: 999px;
+  }
+
+  .r-card:has(.cdt-kw-table) .r-card-body::-webkit-scrollbar-track,
+  .cdt-table-scroll::-webkit-scrollbar-track,
+  .cdt-kw-scroll::-webkit-scrollbar-track,
+  .ci-table-scroll::-webkit-scrollbar-track,
+  .ci-detail-scroll::-webkit-scrollbar-track,
+  .ci-hit-scroll::-webkit-scrollbar-track,
+  .ci-detail-table-wrap::-webkit-scrollbar-track,
+  .ci-hit-rate-wrap::-webkit-scrollbar-track,
+  .ci-kw-table-wrap::-webkit-scrollbar-track {
+    background: rgba(226, 232, 240, 0.6);
+    border-radius: 999px;
+  }
+
+  .ci-detail-thead,
+  .ci-detail-row,
+  .ci-kw-thead,
+  .ci-kw-row {
+    min-width: 760px !important;
+  }
+
+  .ci-hr-header,
+  .ci-hr-row {
+    min-width: 820px !important;
+  }
+
+  .ci-detail-col,
+  .ci-kw-col,
+  .ci-hr-col {
+    min-width: 0;
+  }
+
+  .ci-comp-name-tag,
+  .ci-detail-src-link,
+  .ci-hr-src-link,
+  .ci-kw-type-tag {
+    max-width: none !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+    white-space: nowrap;
+  }
+
+  .cdt-trend-wrap,
+  .ci-kpi-bar {
+    padding: 12px !important;
+  }
+
+  .cdt-trend-info {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start !important;
+    gap: 8px;
+  }
+
+  .cdt-trend-legend {
+    gap: 10px;
+  }
+
+  .cdt-trend-chart-area {
+    min-width: 0;
+    height: 190px !important;
+  }
+
+  .ci-kpi-bar {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .cdt-prospect-grid {
+    grid-template-columns: 1fr !important;
+    gap: 14px;
+  }
+
+  .cdt-pcard-hd {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .cdt-pcard-footer {
+    gap: 8px;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .cdt-opp-grade,
+  .cdt-status-chip {
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    width: auto !important;
+    max-width: 100%;
+    min-width: 0;
+    white-space: nowrap !important;
+    border-radius: 999px !important;
+    padding: 4px 10px !important;
+    line-height: 1.2;
+  }
+
+  .cdt-pcard-name {
+    word-break: keep-all;
+    overflow-wrap: anywhere;
+    line-height: 1.35;
+  }
+
+  .ci-kpi-badge,
+  .cdt-badge,
+  .cdt-alert-badge,
+  .cdt-high-badge,
+  .high-alert-badge {
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    width: auto !important;
+    max-width: 100%;
+    min-width: 0;
+    padding: 4px 12px !important;
+    white-space: normal;
+    line-height: 1.25;
+    border-radius: 999px !important;
+  }
+
+  .jp-summary-card {
+    padding: 20px 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 18px;
+    border-radius: 20px;
+  }
+
+  .jp-summary-score-wrap {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-end;
+    gap: 8px;
+  }
+
+  .jp-summary-score {
+    font-size: 42px;
+  }
+
+  .jp-summary-bars {
+    width: 100%;
+  }
+
+  .jp-detail-grid {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .jp-pros-cons {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .tab-status-screen {
+    padding: 36px 18px;
+    border-radius: 20px;
+  }
+
+  .tab-screen-title {
+    font-size: 18px;
+    line-height: 1.35;
+  }
+
+  .tab-screen-desc {
+    font-size: 13px;
+    line-height: 1.7;
+  }
 }
 
 /* ============================================================
-   MOBILE SYSTEM — 393px ~ 480px
-   392 이하 유지 + 그 위 첫 모바일 구간 안정화
-   ============================================================ */
-/* ============================================================
-   MOBILE SYSTEM — 393px ~ 480px
-   392px 이하 유지 / 393~480만 안정화
-   공통 시스템 먼저 맞추고 페이지별 최소 보정만 적용
+   MOBILE 02 — 393px ~ 480px
    ============================================================ */
 @media (min-width: 393px) and (max-width: 480px) {
   html,
@@ -7873,9 +8274,13 @@ img {
     box-sizing: border-box;
   }
 
-  /* ------------------------------------------------------------
-     공통 폭 밀림 방지
-     ------------------------------------------------------------ */
+  .landing-wrap,
+  .page-shell,
+  .report-shell {
+    width: 100%;
+    overflow-x: hidden;
+  }
+
   .landing-wrap,
   .page-shell,
   .report-shell,
@@ -7900,18 +8305,25 @@ img {
   .ca-kpi-row,
   .ca-two-col,
   .ca-list-toolbar,
-  .ca-expanded-inner {
+  .ca-expanded-inner,
+  .b2b-hero-bar,
+  .b2b-company-grid,
+  .b2b-comp-card,
+  .b2b-comp-header,
+  .b2b-comp-meta,
+  .b2b-comp-metrics,
+  .b2b-pill-row,
+  .b2b-company-banner,
+  .b2b-top-kpi,
+  .jp-summary-card,
+  .jp-summary-bars,
+  .jp-pros-cons,
+  .cdt-trend-wrap,
+  .cdt-trend-info,
+  .ci-kpi-bar {
     min-width: 0;
   }
 
-  .landing-wrap,
-  .page-shell,
-  .report-shell {
-    width: 100%;
-    overflow-x: hidden;
-  }
-
-  /* 너무 긴 요소가 부모 밀어내는 것 방지 */
   img,
   svg,
   canvas {
@@ -7919,38 +8331,30 @@ img {
   }
 
   /* ------------------------------------------------------------
-     NAV - 공통
-     기본은 "한 줄" 기준
-     랜딩만 아래에서 따로 2줄 구조로 보정
+     NAV
      ------------------------------------------------------------ */
   .cx-nav {
-    height: 60px;
-    padding: 0 14px;
+    min-height: 60px;
+    padding: 0 10px;
   }
 
   .nav-inner {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 10px;
+    gap: 5px;
     min-width: 0;
     height: 100%;
   }
 
   .nav-logo {
-    display: flex;
-    align-items: center;
-    gap: 9px;
+    flex: 0 1 auto;
     min-width: 0;
-    flex: 1 1 auto;
   }
 
   .nav-logo-mark {
-    width: 32px;
-    height: 32px;
+    width: 30px;
+    height: 30px;
+    min-width: 30px;
     border-radius: 9px;
     font-size: 12px;
-    flex-shrink: 0;
   }
 
   .nav-logo-text {
@@ -7965,45 +8369,36 @@ img {
   }
 
   .nav-actions {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    min-width: 0;
+    gap: 4px;
     flex-shrink: 0;
   }
 
-  .nav-pill {
-    min-height: 36px;
-    padding: 0 12px;
-    font-size: 12px;
-    gap: 6px;
-    white-space: nowrap;
-    border-radius: 999px;
-    flex-shrink: 0;
+  .nav-alert-btn {
+    width: 34px;
+    min-width: 34px;
+    height: 34px;
   }
 
-  .nav-pill svg {
-    flex-shrink: 0;
-  }
-
-  /* landing의 마지막 로그아웃 버튼만 아이콘형 유지 */
-  .landing-wrap .nav-actions .nav-pill:last-child {
-    width: 36px;
-    min-width: 36px;
+  .nav-actions .nav-pill {
+    width: 34px;
+    min-width: 34px;
+    height: 34px;
     padding: 0;
     justify-content: center;
+    gap: 0;
     font-size: 0;
+    border-radius: 999px;
   }
 
-  .landing-wrap .nav-actions .nav-pill:last-child svg {
+  .nav-actions .nav-pill svg {
     width: 14px;
     height: 14px;
     margin: 0;
+    flex-shrink: 0;
   }
 
   /* ------------------------------------------------------------
      LANDING
-     hero 상단 잘림 방지
      ------------------------------------------------------------ */
   .landing-wrap .hero-section {
     min-height: auto;
@@ -8137,13 +8532,7 @@ img {
 
   /* ------------------------------------------------------------
      STORE LIST
-     nav 고정/상단 점유로 인한 잘림 방지
      ------------------------------------------------------------ */
-  .page-shell {
-    width: 100%;
-    overflow-x: hidden;
-  }
-
   .page-body {
     padding: 84px 16px 24px;
   }
@@ -8171,11 +8560,6 @@ img {
     width: 100%;
     min-width: 0;
     justify-content: center;
-  }
-
-  .toolbar {
-    display: block;
-    margin-bottom: 18px;
   }
 
   .search-field {
@@ -8216,10 +8600,6 @@ img {
     height: 44px;
     min-width: 44px;
     flex-shrink: 0;
-  }
-
-  .sc-info {
-    min-width: 0;
   }
 
   .sc-name {
@@ -8275,13 +8655,7 @@ img {
 
   /* ------------------------------------------------------------
      REPORT PAGE
-     가장 중요: 상단 잘림 + 좌측 사이드 → 상단 탭화
      ------------------------------------------------------------ */
-  .report-shell {
-    width: 100%;
-    overflow-x: hidden;
-  }
-
   .report-layout {
     display: grid;
     grid-template-columns: 1fr;
@@ -8388,8 +8762,12 @@ img {
     padding: 16px 16px 14px;
     display: flex;
     flex-direction: column;
-    align-items: flex-start;
     gap: 10px;
+    align-items: stretch !important;
+  }
+
+  .r-card-hd > * {
+    min-width: 0;
   }
 
   .r-card-title {
@@ -8400,6 +8778,7 @@ img {
   .r-card-body {
     padding: 16px;
     min-width: 0;
+    overflow: hidden;
   }
 
   .chart-toolbar,
@@ -8449,7 +8828,6 @@ img {
 
   /* ------------------------------------------------------------
      CUSTOMER PAGE
-     report 내부 하위 탭/표 밀림 방지
      ------------------------------------------------------------ */
   .ca-tab-bar {
     flex-wrap: nowrap;
@@ -8518,7 +8896,6 @@ img {
     gap: 14px;
   }
 
-  /* 고객 목록 표는 이 구간에서 가로 스크롤 허용 */
   .ca-table-wrap,
   .ca-cohort-table-wrap {
     overflow-x: auto;
@@ -8566,584 +8943,6 @@ img {
   .modal-ft .btn {
     width: 100%;
     justify-content: center;
-  }
-}
-/* ============================================================
-   B2B MOBILE FIX — 392px 이하
-   기존 공통 모바일 유지 + B2B만 별도 보정
-   ============================================================ */
-@media (max-width: 392px) {
-  /* B2B 목록/리포트 공통 */
-  .page-body,
-  .report-layout,
-  .b2b-hero-bar,
-  .b2b-company-grid,
-  .b2b-comp-card,
-  .b2b-comp-header,
-  .b2b-comp-meta,
-  .b2b-comp-metrics,
-  .b2b-pill-row,
-  .b2b-company-banner,
-  .b2b-top-kpi,
-  .jp-summary-card,
-  .jp-summary-bars,
-  .jp-pros-cons,
-  .cdt-trend-wrap,
-  .cdt-trend-info,
-  .ci-kpi-bar {
-    min-width: 0;
-  }
-
-  /* ------------------------------------------------------------
-     B2B NAV
-     B2B는 landing처럼 2줄로 내리지 말고 한 줄 유지
-     대신 버튼 폭/간격만 줄임
-     ------------------------------------------------------------ */
-  .cx-nav {
-    height: 56px;
-    padding: 0 10px;
-  }
-
-  .nav-inner {
-    gap: 8px;
-    min-width: 0;
-  }
-
-  .nav-logo {
-    min-width: 0;
-    flex: 1 1 auto;
-  }
-
-  .nav-actions {
-    gap: 4px;
-    min-width: 0;
-    flex-shrink: 0;
-  }
-
-  .nav-pill {
-    min-height: 34px;
-    padding: 0 10px;
-    font-size: 12px;
-    gap: 5px;
-    white-space: nowrap;
-    flex-shrink: 0;
-  }
-
-  .nav-alert-btn {
-    width: 34px;
-    min-width: 34px;
-    height: 34px;
-  }
-
-  /* ------------------------------------------------------------
-     B2B LIST PAGE
-     ------------------------------------------------------------ */
-  .page-shell {
-    overflow-x: hidden;
-  }
-
-  .page-body {
-    padding: 72px 12px 20px !important;
-  }
-
-  .b2b-hero-bar {
-    display: flex;
-    flex-direction: column;
-    align-items: stretch;
-    gap: 18px;
-    padding: 22px 16px;
-    margin-bottom: 18px;
-    border-radius: 22px;
-  }
-
-  .b2b-hero-left {
-    min-width: 0;
-  }
-
-  .b2b-hero-eyebrow {
-    font-size: 11px;
-    padding: 5px 10px;
-    margin-bottom: 12px;
-    white-space: normal;
-    line-height: 1.35;
-  }
-
-  .b2b-hero-h1 {
-    font-size: 28px;
-    line-height: 1.15;
-    letter-spacing: -1px;
-    margin-bottom: 10px;
-    word-break: keep-all;
-  }
-
-  .b2b-hero-sub {
-    font-size: 13px;
-    line-height: 1.7;
-    word-break: keep-all;
-  }
-
-  .b2b-kpi-strip {
-    width: 100%;
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    border-radius: 18px;
-  }
-
-  .b2b-strip-item {
-    padding: 14px 8px;
-    min-width: 0;
-  }
-
-  .b2b-strip-num {
-    font-size: 18px;
-    line-height: 1.05;
-    word-break: keep-all;
-  }
-
-  .b2b-strip-lbl {
-    font-size: 10px;
-    line-height: 1.35;
-    margin-top: 6px;
-    word-break: keep-all;
-  }
-
-  .toolbar {
-    display: flex !important;
-    flex-direction: column;
-    align-items: stretch;
-    gap: 10px;
-    margin-bottom: 18px !important;
-  }
-
-  .toolbar .search-field {
-    width: 100%;
-    max-width: 100%;
-  }
-
-  .toolbar > div:last-child {
-    display: grid !important;
-    grid-template-columns: 1fr 1fr;
-    gap: 10px !important;
-    width: 100%;
-  }
-
-  .toolbar > div:last-child .btn {
-    width: 100%;
-    min-width: 0;
-    justify-content: center;
-    padding: 12px 10px;
-    font-size: 13px;
-    border-radius: 16px;
-  }
-
-  .b2b-company-grid {
-    grid-template-columns: 1fr;
-    gap: 14px;
-  }
-
-  .b2b-comp-card,
-  .add-card {
-    padding: 18px 16px;
-    border-radius: 20px;
-  }
-
-  .b2b-comp-header {
-    display: grid;
-    grid-template-columns: 44px minmax(0, 1fr);
-    gap: 12px;
-    align-items: start;
-    margin-bottom: 10px;
-  }
-
-  .b2b-comp-logo {
-    width: 44px;
-    height: 44px;
-    font-size: 13px;
-  }
-
-  .b2b-comp-meta {
-    min-width: 0;
-  }
-
-  .b2b-comp-name {
-    font-size: 15px;
-    line-height: 1.35;
-    margin-bottom: 6px;
-    word-break: keep-all;
-    overflow-wrap: anywhere;
-  }
-
-  .b2b-comp-tags {
-    gap: 5px;
-  }
-
-  .b2b-tag {
-    font-size: 10px;
-    padding: 3px 8px;
-  }
-
-  .b2b-comp-header .status-pill {
-    grid-column: 2;
-    justify-self: start;
-    margin-top: 2px;
-  }
-
-  .b2b-comp-desc {
-    font-size: 12px;
-    line-height: 1.6;
-    margin-bottom: 14px;
-    word-break: keep-all;
-    overflow-wrap: anywhere;
-  }
-
-  .b2b-comp-metrics {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px 10px;
-    padding: 10px 12px;
-    margin-bottom: 14px;
-    background: var(--n-50);
-    border: 1px solid var(--border-subtle);
-    border-radius: 14px;
-  }
-
-  .b2b-metric-divider {
-    display: none;
-  }
-
-  .b2b-metric {
-    flex-wrap: wrap;
-  }
-
-  .b2b-metric-val {
-    font-size: 13px;
-  }
-
-  .b2b-metric-lbl {
-    font-size: 12px;
-  }
-
-  .b2b-pill-row {
-    gap: 6px;
-    margin-bottom: 14px;
-  }
-
-  .b2b-dim-pill {
-    font-size: 10px;
-    padding: 5px 9px;
-    line-height: 1.3;
-  }
-
-  .b2b-comp-card .sc-cta {
-    width: 100%;
-    justify-content: center;
-    padding: 12px 14px;
-    font-size: 13px;
-    border-radius: 16px;
-  }
-
-  /* ------------------------------------------------------------
-     B2B REPORT PAGE
-     ------------------------------------------------------------ */
-  .report-shell {
-    overflow-x: hidden;
-  }
-
-  .report-layout {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 14px;
-    padding: 68px 12px 20px !important;
-  }
-
-  .report-sidenav {
-    display: flex;
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    overflow-y: hidden;
-    gap: 8px;
-    padding: 8px;
-    border-radius: 18px;
-  }
-
-  .report-sidenav::-webkit-scrollbar {
-    display: none;
-  }
-
-  .report-sidenav .sidenav-store-info,
-  .report-sidenav .sidenav-section-label,
-  .report-sidenav .sidenav-export {
-    display: none;
-  }
-
-  .report-sidenav .sidenav-item {
-    flex: 0 0 auto;
-    white-space: nowrap;
-    padding: 9px 12px;
-    font-size: 12px;
-  }
-
-  .b2b-company-banner.store-banner {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 12px;
-    padding: 18px 16px;
-    border-radius: 22px;
-  }
-
-  .b2b-banner-logo {
-    width: 48px;
-    height: 48px;
-    font-size: 14px;
-  }
-
-  .b2b-company-banner .sb-info {
-    min-width: 0;
-  }
-
-  .b2b-company-banner .sb-name {
-    font-size: 16px;
-    line-height: 1.35;
-    word-break: keep-all;
-    overflow-wrap: anywhere;
-  }
-
-  .b2b-company-banner .sb-meta {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 6px;
-    margin-top: 8px;
-  }
-
-  .b2b-company-banner .sb-chip {
-    max-width: 100%;
-    white-space: normal;
-    line-height: 1.4;
-  }
-
-  .b2b-company-banner .sb-actions {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 8px;
-    width: 100%;
-  }
-
-  .b2b-company-banner .sb-btn {
-    width: 100%;
-    min-width: 0;
-    justify-content: center;
-    padding: 10px 12px;
-  }
-
-  .b2b-top-kpi,
-  .b2b-top-kpi-external {
-    grid-template-columns: 1fr !important;
-    gap: 10px;
-  }
-
-  .b2b-tkpi,
-  .b2b-top-kpi-external .b2b-tkpi {
-    padding: 16px;
-    gap: 12px;
-    border-radius: 18px;
-  }
-
-  .b2b-tkpi-wide .b2b-tkpi-icon,
-  .b2b-tkpi-icon {
-    width: 40px;
-    height: 40px;
-    border-radius: 12px;
-  }
-
-  .b2b-tkpi-wide .b2b-tkpi-val,
-  .b2b-tkpi-val {
-    font-size: 24px;
-  }
-
-  /* 카드 헤더 공통 */
-  .r-card-hd {
-    padding: 16px 16px 14px;
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 10px;
-  }
-
-  .r-card-title {
-    font-size: 15px;
-    line-height: 1.35;
-  }
-
-  .r-card-body {
-    padding: 16px;
-    min-width: 0;
-  }
-
-  /* 고객동향 / 경쟁사 토글 */
-  .cdt-chart-toggle,
-  .ci-detail-tabs {
-    width: 100%;
-    overflow-x: auto;
-    white-space: nowrap;
-  }
-
-  .cdt-toggle-btn,
-  .ci-dtab {
-    flex: 0 0 auto;
-    white-space: nowrap;
-  }
-
-  /* 키워드/경쟁사 표는 내부 스크롤 허용 */
-  .cdt-kw-table,
-  .ci-kw-table-wrap,
-  .ci-detail-table-wrap,
-  .ci-hit-rate-wrap {
-    min-width: 0;
-  }
-
-  .r-card-body > .cdt-kw-table,
-  .ci-kw-table-wrap,
-  .ci-detail-table-wrap,
-  .ci-hit-rate-wrap,
-  .ca-table-wrap,
-  .ca-cohort-table-wrap {
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-  }
-
-  .cdt-kw-table {
-    min-width: 640px;
-  }
-
-  .ci-kw-thead,
-  .ci-kw-row {
-    min-width: 620px;
-  }
-
-  .ci-detail-thead,
-  .ci-detail-row {
-    min-width: 620px;
-  }
-
-  .ci-hr-header,
-  .ci-hr-row {
-    min-width: 660px;
-  }
-
-  /* 차트 */
-  .cdt-trend-wrap,
-  .ci-kpi-bar {
-    padding: 14px;
-  }
-
-  .cdt-trend-info {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 8px;
-  }
-
-  .cdt-trend-chart-area {
-    height: 200px;
-  }
-
-  .ci-kpi-bar {
-    grid-template-columns: 1fr;
-    gap: 10px;
-  }
-
-  /* 잠재고객 카드 */
-  .cdt-prospect-grid {
-    grid-template-columns: 1fr;
-    gap: 14px;
-  }
-
-  .cdt-pcard-hd,
-  .cdt-pcard-footer {
-    gap: 8px;
-  }
-
-  .cdt-pcard-footer {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  /* 직원감정 */
-  .jp-summary-card {
-    padding: 20px 16px;
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 18px;
-    border-radius: 20px;
-  }
-
-  .jp-summary-score-wrap {
-    display: flex;
-    flex-direction: row;
-    align-items: flex-end;
-    gap: 8px;
-  }
-
-  .jp-summary-score {
-    font-size: 42px;
-  }
-
-  .jp-summary-bars {
-    width: 100%;
-    min-width: 0;
-  }
-
-  .jp-detail-grid {
-    grid-template-columns: 1fr;
-    gap: 10px;
-  }
-
-  .jp-pros-cons {
-    grid-template-columns: 1fr;
-    gap: 12px;
-  }
-
-  .tab-status-screen {
-    padding: 36px 18px;
-    border-radius: 20px;
-  }
-
-  .tab-screen-title {
-    font-size: 18px;
-    line-height: 1.35;
-  }
-
-  .tab-screen-desc {
-    font-size: 13px;
-    line-height: 1.7;
-  }
-}
-
-/* ============================================================
-   B2B MOBILE FIX — 393px ~ 480px
-   392 이하 톤 유지 + 일반 모바일 구간 안정화
-   ============================================================ */
-@media (min-width: 393px) and (max-width: 480px) {
-  .page-body,
-  .report-layout,
-  .b2b-hero-bar,
-  .b2b-company-grid,
-  .b2b-comp-card,
-  .b2b-comp-header,
-  .b2b-comp-meta,
-  .b2b-comp-metrics,
-  .b2b-pill-row,
-  .b2b-company-banner,
-  .b2b-top-kpi,
-  .jp-summary-card,
-  .jp-summary-bars,
-  .jp-pros-cons,
-  .cdt-trend-wrap,
-  .cdt-trend-info,
-  .ci-kpi-bar {
-    min-width: 0;
   }
 
   /* ------------------------------------------------------------
@@ -9299,43 +9098,10 @@ img {
   /* ------------------------------------------------------------
      B2B REPORT PAGE
      ------------------------------------------------------------ */
-  .report-layout {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 14px;
-    padding: 76px 16px 20px !important;
-  }
-
-  .report-sidenav {
-    display: flex;
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    overflow-y: hidden;
-    gap: 8px;
-    padding: 8px;
-    border-radius: 18px;
-  }
-
-  .report-sidenav::-webkit-scrollbar {
-    display: none;
-  }
-
-  .report-sidenav .sidenav-store-info,
-  .report-sidenav .sidenav-section-label,
-  .report-sidenav .sidenav-export {
-    display: none;
-  }
-
-  .report-sidenav .sidenav-item {
-    flex: 0 0 auto;
-    white-space: nowrap;
-    padding: 9px 12px;
-    font-size: 12px;
-  }
-
   .b2b-company-banner.store-banner {
     display: grid;
-    grid-template-columns: 1fr;
+    grid-template-columns: 52px minmax(0, 1fr) !important;
+    align-items: start !important;
     gap: 12px;
     padding: 18px 16px;
   }
@@ -9346,6 +9112,10 @@ img {
     font-size: 14px;
   }
 
+  .b2b-company-banner .sb-info {
+    min-width: 0;
+  }
+
   .b2b-company-banner .sb-name {
     font-size: 16px;
     line-height: 1.35;
@@ -9354,28 +9124,33 @@ img {
   }
 
   .b2b-company-banner .sb-meta {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 6px;
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: wrap !important;
+    align-items: center !important;
+    gap: 6px !important;
     margin-top: 8px;
   }
 
   .b2b-company-banner .sb-chip {
+    display: inline-flex;
+    width: auto !important;
     max-width: 100%;
-    white-space: normal;
-    line-height: 1.4;
+    white-space: nowrap;
+    line-height: 1.25;
   }
 
   .b2b-company-banner .sb-actions {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 8px;
+    grid-column: 1 / -1;
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 8px !important;
     width: 100%;
   }
 
   .b2b-company-banner .sb-btn {
     width: 100%;
+    min-width: 0;
     justify-content: center;
   }
 
@@ -9395,48 +9170,135 @@ img {
     font-size: 26px;
   }
 
-  /* 표/차트 */
   .cdt-chart-toggle,
   .ci-detail-tabs {
-    width: 100%;
+    display: inline-flex !important;
+    width: auto !important;
+    max-width: 100%;
     overflow-x: auto;
+    overflow-y: hidden;
     white-space: nowrap;
+    flex-wrap: nowrap !important;
+    border-radius: 12px;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .cdt-chart-toggle::-webkit-scrollbar,
+  .ci-detail-tabs::-webkit-scrollbar {
+    display: none;
   }
 
   .cdt-toggle-btn,
   .ci-dtab {
-    flex: 0 0 auto;
+    flex: 0 0 auto !important;
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    width: auto !important;
+    min-width: fit-content;
+    white-space: nowrap !important;
+    border-radius: 10px !important;
+    padding: 7px 15px !important;
+    font-size: 12px !important;
+    line-height: 1.2;
   }
 
-  .r-card-body > .cdt-kw-table,
-  .ci-kw-table-wrap,
+  .cdt-table-scroll,
+  .cdt-kw-scroll,
+  .ci-table-scroll,
+  .ci-detail-scroll,
+  .ci-hit-scroll,
   .ci-detail-table-wrap,
-  .ci-hit-rate-wrap {
-    overflow-x: auto;
+  .ci-hit-rate-wrap,
+  .ci-kw-table-wrap,
+  .r-card-body > .cdt-kw-table {
+    width: 100%;
+    overflow-x: auto !important;
+    overflow-y: hidden;
     -webkit-overflow-scrolling: touch;
   }
 
   .cdt-kw-table {
-    min-width: 660px;
+    display: table !important;
+    min-width: 780px !important;
+    width: max-content;
+  }
+  .r-card:has(.cdt-kw-table) .r-card-body {
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 8px;
   }
 
-  .ci-kw-thead,
-  .ci-kw-row {
-    min-width: 640px;
+  .r-card:has(.cdt-kw-table) .r-card-body::-webkit-scrollbar,
+  .cdt-table-scroll::-webkit-scrollbar,
+  .cdt-kw-scroll::-webkit-scrollbar,
+  .ci-table-scroll::-webkit-scrollbar,
+  .ci-detail-scroll::-webkit-scrollbar,
+  .ci-hit-scroll::-webkit-scrollbar,
+  .ci-detail-table-wrap::-webkit-scrollbar,
+  .ci-hit-rate-wrap::-webkit-scrollbar,
+  .ci-kw-table-wrap::-webkit-scrollbar {
+    height: 8px;
+  }
+
+  .r-card:has(.cdt-kw-table) .r-card-body::-webkit-scrollbar-thumb,
+  .cdt-table-scroll::-webkit-scrollbar-thumb,
+  .cdt-kw-scroll::-webkit-scrollbar-thumb,
+  .ci-table-scroll::-webkit-scrollbar-thumb,
+  .ci-detail-scroll::-webkit-scrollbar-thumb,
+  .ci-hit-scroll::-webkit-scrollbar-thumb,
+  .ci-detail-table-wrap::-webkit-scrollbar-thumb,
+  .ci-hit-rate-wrap::-webkit-scrollbar-thumb,
+  .ci-kw-table-wrap::-webkit-scrollbar-thumb {
+    background: rgba(148, 163, 184, 0.55);
+    border-radius: 999px;
+  }
+
+  .r-card:has(.cdt-kw-table) .r-card-body::-webkit-scrollbar-track,
+  .cdt-table-scroll::-webkit-scrollbar-track,
+  .cdt-kw-scroll::-webkit-scrollbar-track,
+  .ci-table-scroll::-webkit-scrollbar-track,
+  .ci-detail-scroll::-webkit-scrollbar-track,
+  .ci-hit-scroll::-webkit-scrollbar-track,
+  .ci-detail-table-wrap::-webkit-scrollbar-track,
+  .ci-hit-rate-wrap::-webkit-scrollbar-track,
+  .ci-kw-table-wrap::-webkit-scrollbar-track {
+    background: rgba(226, 232, 240, 0.6);
+    border-radius: 999px;
   }
 
   .ci-detail-thead,
-  .ci-detail-row {
-    min-width: 640px;
+  .ci-detail-row,
+  .ci-kw-thead,
+  .ci-kw-row {
+    min-width: 780px !important;
   }
 
   .ci-hr-header,
   .ci-hr-row {
-    min-width: 700px;
+    min-width: 860px !important;
   }
 
-  .cdt-trend-wrap {
-    padding: 16px;
+  .ci-detail-col,
+  .ci-kw-col,
+  .ci-hr-col {
+    min-width: 0;
+  }
+
+  .ci-comp-name-tag,
+  .ci-detail-src-link,
+  .ci-hr-src-link,
+  .ci-kw-type-tag {
+    max-width: none !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+    white-space: nowrap;
+  }
+
+  .cdt-trend-wrap,
+  .ci-kpi-bar {
+    padding: 14px !important;
   }
 
   .cdt-trend-info {
@@ -9447,7 +9309,8 @@ img {
   }
 
   .cdt-trend-chart-area {
-    height: 220px;
+    min-width: 0;
+    height: 210px !important;
   }
 
   .ci-kpi-bar {
@@ -9460,12 +9323,56 @@ img {
     gap: 14px;
   }
 
+  .cdt-pcard-hd {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
   .cdt-pcard-footer {
     flex-direction: column;
     align-items: flex-start;
   }
 
-  /* 직원감정 */
+  .cdt-opp-grade,
+  .cdt-status-chip {
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    width: auto !important;
+    max-width: 100%;
+    min-width: 0;
+    white-space: nowrap !important;
+    border-radius: 999px !important;
+    padding: 4px 10px !important;
+    line-height: 1.2;
+  }
+
+  .cdt-pcard-name {
+    word-break: keep-all;
+    overflow-wrap: anywhere;
+    line-height: 1.35;
+  }
+
+  .ci-kpi-badge,
+  .cdt-badge,
+  .cdt-alert-badge,
+  .cdt-high-badge,
+  .high-alert-badge {
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    width: auto !important;
+    max-width: 100%;
+    min-width: 0;
+    padding: 4px 12px !important;
+    white-space: normal;
+    line-height: 1.25;
+    border-radius: 999px !important;
+  }
+
   .jp-summary-card {
     padding: 22px 18px;
     display: flex;
@@ -9503,65 +9410,134 @@ img {
 }
 
 /* ============================================================
-   NAV RESPONSIVE MODE
-   0~392  : 뒤로가기 / Admin / 로그아웃 아이콘만
-   393~480: 텍스트 복구
+   TABLET — 481px ~ 820px
    ============================================================ */
-
-/* ------------------------------------------------------------
-   0 ~ 392px
-   ------------------------------------------------------------ */
-@media (max-width: 392px) {
-  .cx-nav {
-    min-height: 60px;
-    padding: 0 10px;
+@media (min-width: 481px) and (max-width: 820px) {
+  html,
+  body {
+    overflow-x: hidden;
   }
 
-  .nav-inner {
-    gap: 5px;
+  body {
+    font-size: 15px;
+  }
+
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
+  .landing-wrap,
+  .page-shell,
+  .report-shell {
+    width: 100%;
+    overflow-x: hidden;
+  }
+
+  .landing-wrap,
+  .page-shell,
+  .report-shell,
+  .page-body,
+  .report-layout,
+  .report-content,
+  .hero-section,
+  .hero-inner,
+  .store-grid,
+  .store-banner,
+  .sb-info,
+  .sb-actions,
+  .toolbar,
+  .page-hero-bar,
+  .sc-header,
+  .sc-info,
+  .sc-metrics,
+  .r-card-hd,
+  .chart-toolbar,
+  .chart-toggle,
+  .ca-tab-bar,
+  .ca-kpi-row,
+  .ca-two-col,
+  .ca-list-toolbar,
+  .ca-expanded-inner,
+  .b2b-hero-bar,
+  .b2b-company-grid,
+  .b2b-comp-card,
+  .b2b-comp-header,
+  .b2b-comp-meta,
+  .b2b-comp-metrics,
+  .b2b-pill-row,
+  .b2b-company-banner,
+  .b2b-top-kpi,
+  .jp-summary-card,
+  .jp-summary-bars,
+  .jp-pros-cons,
+  .cdt-trend-wrap,
+  .cdt-trend-info,
+  .ci-kpi-bar {
     min-width: 0;
   }
 
+  img,
+  svg,
+  canvas {
+    max-width: 100%;
+  }
+
+  /* ------------------------------------------------------------
+     NAV
+     ------------------------------------------------------------ */
+  .cx-nav {
+    min-height: 64px;
+    padding: 0 16px;
+  }
+
+  .nav-inner {
+    gap: 10px;
+    min-width: 0;
+    height: 100%;
+  }
+
   .nav-logo {
-    flex: 0 1 auto;
     min-width: 0;
   }
 
   .nav-logo-mark {
-    width: 30px;
-    height: 30px;
-    min-width: 30px;
+    width: 34px;
+    height: 34px;
+    min-width: 34px;
+    border-radius: 10px;
+    font-size: 13px;
   }
 
   .nav-logo-text {
-    font-size: 15px;
+    font-size: 16px;
+    line-height: 1;
   }
 
   .nav-logo-sub {
-    font-size: 9px;
+    font-size: 10px;
+    line-height: 1.1;
+    margin-top: 0;
   }
 
   .nav-actions {
-    gap: 4px;
+    gap: 8px;
     flex-shrink: 0;
   }
 
   .nav-alert-btn {
-    width: 34px;
-    min-width: 34px;
-    height: 34px;
+    width: 38px;
+    min-width: 38px;
+    height: 38px;
   }
 
-  /* 뒤로가기 / Admin / 로그아웃 모두 아이콘만 */
   .nav-actions .nav-pill {
-    width: 34px;
-    min-width: 34px;
-    height: 34px;
-    padding: 0;
-    justify-content: center;
-    gap: 0;
-    font-size: 0;
+    min-height: 38px;
+    padding: 0 14px;
     border-radius: 999px;
+    font-size: 13px;
+    gap: 6px;
   }
 
   .nav-actions .nav-pill svg {
@@ -9570,69 +9546,1067 @@ img {
     margin: 0;
     flex-shrink: 0;
   }
-}
 
-/* ------------------------------------------------------------
-   393 ~ 480px
-   392 이하와 동일하게 아이콘 모드 유지
-   ------------------------------------------------------------ */
-@media (min-width: 393px) and (max-width: 480px) {
-  .cx-nav {
-    min-height: 60px;
-    padding: 0 10px;
+  @media (min-width: 481px) and (max-width: 600px) {
+    .cx-nav {
+      min-height: 60px;
+      padding: 0 10px;
+    }
+
+    .nav-inner {
+      gap: 5px;
+      min-width: 0;
+      height: 100%;
+    }
+
+    .nav-logo {
+      flex: 0 1 auto;
+      min-width: 0;
+    }
+
+    .nav-logo-mark {
+      width: 30px;
+      height: 30px;
+      min-width: 30px;
+      border-radius: 9px;
+      font-size: 12px;
+    }
+
+    .nav-logo-text {
+      font-size: 15px;
+      line-height: 1;
+    }
+
+    .nav-logo-sub {
+      font-size: 9px;
+      line-height: 1.1;
+      margin-top: 0;
+    }
+
+    .nav-actions {
+      gap: 4px;
+      flex-shrink: 0;
+    }
+
+    .nav-alert-btn {
+      width: 34px;
+      min-width: 34px;
+      height: 34px;
+    }
+
+    .nav-actions .nav-pill {
+      width: 34px;
+      min-width: 34px;
+      height: 34px;
+      padding: 0;
+      justify-content: center;
+      gap: 0;
+      font-size: 0;
+      border-radius: 999px;
+    }
+
+    .nav-actions .nav-pill svg {
+      width: 14px;
+      height: 14px;
+      margin: 0;
+      flex-shrink: 0;
+    }
+  }
+  /* ------------------------------------------------------------
+     LANDING
+     ------------------------------------------------------------ */
+  .landing-wrap .hero-section {
+    min-height: auto;
+    padding: 118px 24px 60px !important;
   }
 
-  .nav-inner {
-    gap: 5px;
+  .landing-wrap .hero-inner {
+    gap: 36px;
+  }
+
+  .landing-wrap .hero-left,
+  .landing-wrap .hero-right {
+    max-width: 100%;
     min-width: 0;
   }
 
-  .nav-logo {
-    flex: 0 1 auto;
-    min-width: 0;
+  .landing-wrap .hero-eyebrow {
+    margin-bottom: 18px;
+    padding: 6px 14px 6px 8px;
+    font-size: 12px;
   }
 
-  .nav-logo-mark {
-    width: 30px;
-    height: 30px;
-    min-width: 30px;
+  .landing-wrap .hero-h1 {
+    font-size: 42px;
+    line-height: 1.08;
+    letter-spacing: -1.4px;
+    margin-bottom: 16px;
   }
 
-  .nav-logo-text {
+  .landing-wrap .hero-desc {
     font-size: 15px;
+    line-height: 1.8;
+    margin-bottom: 26px;
+    max-width: 100%;
   }
 
-  .nav-logo-sub {
-    font-size: 9px;
+  .landing-wrap .hero-cta-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 24px;
   }
 
-  .nav-actions {
-    gap: 4px;
+  .landing-wrap .hero-cta-row .btn,
+  .landing-wrap .hero-cta-row .btn-lg {
+    min-width: 180px;
+    justify-content: center;
+    padding: 14px 18px;
+    font-size: 14px;
+    border-radius: 18px;
+  }
+
+  .landing-wrap .hero-trust {
+    flex-wrap: wrap;
+    gap: 12px 18px;
+    align-items: center;
+  }
+
+  .landing-wrap .trust-item {
+    font-size: 13px;
+    line-height: 1.4;
+  }
+
+  .landing-wrap .stat-strip {
+    padding: 0 24px;
+  }
+
+  .landing-wrap .stat-strip-inner {
+    grid-template-columns: repeat(4, 1fr);
+  }
+
+  .landing-wrap .strip-item {
+    padding: 20px 14px;
+  }
+
+  .landing-wrap .strip-val {
+    font-size: 30px;
+    line-height: 1.05;
+  }
+
+  .landing-wrap .strip-label {
+    font-size: 12px;
+    line-height: 1.35;
+  }
+
+  .landing-wrap .bento-section,
+  .landing-wrap .process-section,
+  .landing-wrap .pricing-section,
+  .landing-wrap .cx-footer {
+    padding-left: 24px !important;
+    padding-right: 24px !important;
+  }
+
+  .landing-wrap .section-h2,
+  .landing-wrap .process-h2 {
+    font-size: 30px;
+    line-height: 1.2;
+    letter-spacing: -1px;
+  }
+
+  .landing-wrap .section-p,
+  .landing-wrap .process-desc {
+    font-size: 15px;
+    line-height: 1.75;
+  }
+
+  .landing-wrap .bento-card,
+  .landing-wrap .pricing-card {
+    padding: 24px 20px;
+  }
+
+  .landing-wrap .process-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+  }
+
+  .landing-wrap .footer-top {
+    gap: 32px;
+    margin-bottom: 28px;
+  }
+
+  .landing-wrap .footer-bottom {
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  /* ------------------------------------------------------------
+     STORE LIST
+     ------------------------------------------------------------ */
+  .page-body {
+    padding: 92px 24px 28px !important;
+  }
+
+  .page-hero-bar {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 22px;
+  }
+
+  .page-h1 {
+    font-size: 28px;
+    line-height: 1.2;
+    margin-bottom: 6px;
+  }
+
+  .page-sub {
+    font-size: 14px;
+    line-height: 1.6;
+  }
+
+  .page-hero-bar > .btn {
+    flex-shrink: 0;
+    min-width: 180px;
+    justify-content: center;
+  }
+
+  .search-field {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  .search-field input {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .store-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+  }
+
+  .store-card,
+  .company-card,
+  .add-card {
+    padding: 20px 18px;
+    border-radius: 22px;
+    min-width: 0;
+  }
+
+  .sc-header {
+    display: grid;
+    grid-template-columns: 48px minmax(0, 1fr);
+    gap: 12px;
+    align-items: start;
+    margin-bottom: 14px;
+  }
+
+  .sc-avatar,
+  .company-logo-slot {
+    width: 48px;
+    height: 48px;
+    min-width: 48px;
     flex-shrink: 0;
   }
 
-  .nav-alert-btn {
-    width: 34px;
-    min-width: 34px;
-    height: 34px;
+  .sc-name {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: unset;
+    word-break: keep-all;
+    overflow-wrap: anywhere;
+    line-height: 1.35;
+    margin-bottom: 4px;
   }
 
-  /* 뒤로가기 / Admin / 로그아웃 모두 아이콘만 */
-  .nav-actions .nav-pill {
-    width: 34px;
-    min-width: 34px;
-    height: 34px;
-    padding: 0;
+  .company-desc,
+  .sc-addr {
+    font-size: 13px;
+    line-height: 1.6;
+    word-break: keep-all;
+    overflow-wrap: anywhere;
+  }
+
+  .status-pill {
+    grid-column: 2;
+    justify-self: start;
+    margin-top: 4px;
+    max-width: 100%;
+  }
+
+  .sc-metrics {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 12px;
+    padding: 12px 14px;
+    margin-bottom: 14px;
+  }
+
+  .sc-divider {
+    display: none;
+  }
+
+  .sc-count,
+  .sc-rating-num {
+    font-size: 13px;
+  }
+
+  .sc-cta {
+    width: 100%;
+    min-width: 0;
+    padding: 13px 14px;
+    font-size: 13px;
+    border-radius: 16px;
     justify-content: center;
-    gap: 0;
-    font-size: 0;
+  }
+
+  /* ------------------------------------------------------------
+     REPORT PAGE
+     ------------------------------------------------------------ */
+  .report-layout {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 18px;
+    padding: 88px 24px 28px !important;
+  }
+
+  .report-sidenav {
+    display: flex;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overflow-y: hidden;
+    gap: 8px;
+    padding: 8px;
+    border-radius: 18px;
+    min-width: 0;
+  }
+
+  .report-sidenav::-webkit-scrollbar {
+    display: none;
+  }
+
+  .sidenav-store-info,
+  .sidenav-section-label,
+  .sidenav-divider,
+  .sidenav-export {
+    display: none;
+  }
+
+  .sidenav-item {
+    white-space: nowrap;
+    flex: 0 0 auto;
+    padding: 10px 14px;
+    font-size: 13px;
+  }
+
+  .report-content {
+    min-width: 0;
+  }
+
+  .store-banner {
+    display: grid;
+    grid-template-columns: 56px minmax(0, 1fr);
+    gap: 14px;
+    padding: 20px 18px;
+    align-items: start;
+  }
+
+  .sb-avatar {
+    width: 56px;
+    height: 56px;
+    font-size: 22px;
+  }
+
+  .sb-name {
+    font-size: 18px;
+    line-height: 1.35;
+    word-break: keep-all;
+    overflow-wrap: anywhere;
+  }
+
+  .sb-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin-top: 8px;
+  }
+
+  .sb-chip {
+    max-width: 100%;
+    white-space: nowrap;
+    line-height: 1.35;
+  }
+
+  .sb-actions {
+    grid-column: 1 / -1;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    width: 100%;
+  }
+
+  .sb-btn {
+    min-width: 180px;
+    justify-content: center;
+    padding: 11px 14px;
+  }
+
+  .kpi-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .kpi-tile {
+    padding: 18px;
+  }
+
+  .kpi-val {
+    font-size: 28px;
+  }
+
+  .r-card-hd {
+    padding: 18px 18px 14px;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .r-card-hd > * {
+    min-width: 0;
+  }
+
+  .r-card-title {
+    font-size: 16px;
+    line-height: 1.3;
+  }
+
+  .r-card-body {
+    padding: 18px;
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  .chart-toolbar,
+  .chart-toggle {
+    width: auto;
+    min-width: 0;
+  }
+
+  .ct-btn {
+    min-width: 72px;
+    text-align: center;
+  }
+
+  .exec-quote {
+    padding: 20px 18px;
+    font-size: 15px;
+    line-height: 1.8;
+  }
+
+  .exec-pillars,
+  .rating-layout,
+  .sentiment-layout,
+  .nps-layout,
+  .segment-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+
+  .action-row,
+  .insight-row,
+  .improve-row,
+  .driver-row {
+    gap: 12px;
+  }
+
+  .wc-tabs {
+    width: auto;
+    max-width: 100%;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+  }
+
+  .wc-tab-btn {
+    flex: 0 0 auto;
+    white-space: nowrap;
+  }
+
+  /* ------------------------------------------------------------
+     CUSTOMER PAGE
+     ------------------------------------------------------------ */
+  .ca-tab-bar {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding-bottom: 2px;
+  }
+
+  .ca-tab-bar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .ca-tab-btn {
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+
+  .ca-kpi-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .ca-two-col {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .ca-risk-row,
+  .ca-freq-row {
+    gap: 8px;
+  }
+
+  .ca-list-toolbar {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .ca-list-search {
+    flex: 1 1 260px;
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  .ca-list-search input {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .ca-expanded-inner {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .ca-table-wrap,
+  .ca-cohort-table-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .ca-table,
+  .ca-cohort-table {
+    min-width: 760px;
+  }
+
+  /* ------------------------------------------------------------
+     DATE MODAL
+     ------------------------------------------------------------ */
+  .modal-backdrop {
+    padding: 18px;
+  }
+
+  .modal-box {
+    width: min(100%, 520px);
+    padding: 24px 20px;
+    border-radius: 22px;
+  }
+
+  .modal-hd {
+    margin-bottom: 20px;
+  }
+
+  .preset-row {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .preset-btn.wide {
+    grid-column: span 2;
+  }
+
+  .date-row {
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  .modal-ft {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+  }
+
+  .modal-ft .btn {
+    min-width: 140px;
+    justify-content: center;
+  }
+
+  /* ------------------------------------------------------------
+     B2B LIST PAGE
+     ------------------------------------------------------------ */
+  .page-body {
+    padding-top: 92px !important;
+  }
+
+  .b2b-hero-bar {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 22px;
+    padding: 28px 22px;
+    margin-bottom: 22px;
+    border-radius: 24px;
+  }
+
+  .b2b-hero-h1 {
+    font-size: 36px;
+    line-height: 1.12;
+    letter-spacing: -1.2px;
+    margin-bottom: 12px;
+  }
+
+  .b2b-hero-sub {
+    font-size: 14px;
+    line-height: 1.8;
+  }
+
+  .b2b-kpi-strip {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .b2b-strip-item {
+    padding: 18px 12px;
+    min-width: 0;
+  }
+
+  .b2b-strip-num {
+    font-size: 24px;
+  }
+
+  .b2b-strip-lbl {
+    font-size: 11px;
+    line-height: 1.4;
+    margin-top: 6px;
+  }
+
+  .toolbar {
+    display: flex !important;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 22px !important;
+  }
+
+  .toolbar .search-field {
+    flex: 1 1 280px;
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .toolbar > div:last-child {
+    display: flex !important;
+    flex-wrap: wrap;
+    gap: 10px !important;
+    width: auto;
+  }
+
+  .toolbar > div:last-child .btn {
+    min-width: 150px;
+    justify-content: center;
+    padding: 12px 14px;
+    font-size: 13px;
+  }
+
+  .b2b-company-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+  }
+
+  .b2b-comp-card,
+  .add-card {
+    padding: 22px 18px;
+    border-radius: 22px;
+  }
+
+  .b2b-comp-header {
+    display: grid;
+    grid-template-columns: 50px minmax(0, 1fr);
+    gap: 12px;
+    align-items: start;
+  }
+
+  .b2b-comp-logo {
+    width: 50px;
+    height: 50px;
+  }
+
+  .b2b-comp-name {
+    font-size: 16px;
+    line-height: 1.35;
+    word-break: keep-all;
+    overflow-wrap: anywhere;
+  }
+
+  .b2b-comp-header .status-pill {
+    grid-column: 2;
+    justify-self: start;
+    margin-top: 4px;
+  }
+
+  .b2b-comp-desc {
+    font-size: 13px;
+    line-height: 1.65;
+    margin-bottom: 14px;
+  }
+
+  .b2b-comp-metrics {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 12px;
+    padding: 12px 14px;
+    margin-bottom: 14px;
+    background: var(--n-50);
+    border: 1px solid var(--border-subtle);
+    border-radius: 14px;
+  }
+
+  .b2b-metric-divider {
+    display: none;
+  }
+
+  .b2b-pill-row {
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+
+  .b2b-dim-pill {
+    font-size: 11px;
+    padding: 6px 10px;
+    line-height: 1.3;
+  }
+
+  .b2b-comp-card .sc-cta {
+    width: 100%;
+    justify-content: center;
+  }
+
+  /* ------------------------------------------------------------
+     B2B REPORT PAGE
+     ------------------------------------------------------------ */
+  .b2b-company-banner.store-banner {
+    display: grid;
+    grid-template-columns: 60px minmax(0, 1fr);
+    align-items: start;
+    gap: 14px;
+    padding: 20px 18px;
+    border-radius: 24px;
+  }
+
+  .b2b-banner-logo {
+    width: 56px;
+    height: 56px;
+    font-size: 16px;
+  }
+
+  .b2b-company-banner .sb-info {
+    min-width: 0;
+  }
+
+  .b2b-company-banner .sb-name {
+    font-size: 18px;
+    line-height: 1.35;
+    word-break: keep-all;
+    overflow-wrap: anywhere;
+  }
+
+  .b2b-company-banner .sb-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin-top: 8px;
+  }
+
+  .b2b-company-banner .sb-chip {
+    display: inline-flex;
+    width: auto;
+    max-width: 100%;
+    white-space: nowrap;
+    line-height: 1.3;
+  }
+
+  .b2b-company-banner .sb-actions {
+    grid-column: 1 / -1;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    width: 100%;
+  }
+
+  .b2b-company-banner .sb-btn {
+    min-width: 180px;
+    justify-content: center;
+  }
+
+  .b2b-top-kpi,
+  .b2b-top-kpi-external {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 12px;
+  }
+
+  .b2b-tkpi,
+  .b2b-top-kpi-external .b2b-tkpi {
+    padding: 18px;
+  }
+
+  .b2b-tkpi-wide .b2b-tkpi-val,
+  .b2b-tkpi-val {
+    font-size: 28px;
+  }
+
+  .cdt-chart-toggle,
+  .ci-detail-tabs {
+    display: inline-flex;
+    width: auto;
+    max-width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+    white-space: nowrap;
+    flex-wrap: nowrap;
+    border-radius: 12px;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .cdt-chart-toggle::-webkit-scrollbar,
+  .ci-detail-tabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .cdt-toggle-btn,
+  .ci-dtab {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: auto;
+    min-width: fit-content;
+    white-space: nowrap;
+    border-radius: 10px;
+    padding: 8px 16px;
+    font-size: 13px;
+    line-height: 1.2;
+  }
+
+  .cdt-table-scroll,
+  .cdt-kw-scroll,
+  .ci-table-scroll,
+  .ci-detail-scroll,
+  .ci-hit-scroll,
+  .ci-detail-table-wrap,
+  .ci-hit-rate-wrap,
+  .ci-kw-table-wrap,
+  .r-card-body > .cdt-kw-table {
+    width: 100%;
+    overflow-x: auto !important;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .r-card:has(.cdt-kw-table) .r-card-body {
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 10px;
+  }
+
+  .r-card:has(.cdt-kw-table) .r-card-body::-webkit-scrollbar,
+  .cdt-table-scroll::-webkit-scrollbar,
+  .cdt-kw-scroll::-webkit-scrollbar,
+  .ci-table-scroll::-webkit-scrollbar,
+  .ci-detail-scroll::-webkit-scrollbar,
+  .ci-hit-scroll::-webkit-scrollbar,
+  .ci-detail-table-wrap::-webkit-scrollbar,
+  .ci-hit-rate-wrap::-webkit-scrollbar,
+  .ci-kw-table-wrap::-webkit-scrollbar {
+    height: 8px;
+  }
+
+  .r-card:has(.cdt-kw-table) .r-card-body::-webkit-scrollbar-thumb,
+  .cdt-table-scroll::-webkit-scrollbar-thumb,
+  .cdt-kw-scroll::-webkit-scrollbar-thumb,
+  .ci-table-scroll::-webkit-scrollbar-thumb,
+  .ci-detail-scroll::-webkit-scrollbar-thumb,
+  .ci-hit-scroll::-webkit-scrollbar-thumb,
+  .ci-detail-table-wrap::-webkit-scrollbar-thumb,
+  .ci-hit-rate-wrap::-webkit-scrollbar-thumb,
+  .ci-kw-table-wrap::-webkit-scrollbar-thumb {
+    background: rgba(148, 163, 184, 0.55);
     border-radius: 999px;
   }
 
-  .nav-actions .nav-pill svg {
-    width: 14px;
-    height: 14px;
-    margin: 0;
-    flex-shrink: 0;
+  .r-card:has(.cdt-kw-table) .r-card-body::-webkit-scrollbar-track,
+  .cdt-table-scroll::-webkit-scrollbar-track,
+  .cdt-kw-scroll::-webkit-scrollbar-track,
+  .ci-table-scroll::-webkit-scrollbar-track,
+  .ci-detail-scroll::-webkit-scrollbar-track,
+  .ci-hit-scroll::-webkit-scrollbar-track,
+  .ci-detail-table-wrap::-webkit-scrollbar-track,
+  .ci-hit-rate-wrap::-webkit-scrollbar-track,
+  .ci-kw-table-wrap::-webkit-scrollbar-track {
+    background: rgba(226, 232, 240, 0.6);
+    border-radius: 999px;
+  }
+
+  .cdt-kw-table {
+    display: table;
+    min-width: 860px;
+    width: max-content;
+  }
+
+  .ci-detail-thead,
+  .ci-detail-row,
+  .ci-kw-thead,
+  .ci-kw-row {
+    min-width: 860px;
+  }
+
+  .ci-hr-header,
+  .ci-hr-row {
+    min-width: 940px;
+  }
+
+  .ci-detail-col,
+  .ci-kw-col,
+  .ci-hr-col {
+    min-width: 0;
+  }
+
+  .ci-comp-name-tag,
+  .ci-detail-src-link,
+  .ci-hr-src-link,
+  .ci-kw-type-tag {
+    max-width: none;
+    overflow: visible;
+    text-overflow: clip;
+    white-space: nowrap;
+  }
+
+  .cdt-trend-wrap,
+  .ci-kpi-bar {
+    padding: 16px;
+  }
+
+  .cdt-trend-info {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .cdt-trend-chart-area {
+    min-width: 0;
+    height: 240px;
+  }
+
+  .ci-kpi-bar {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .cdt-prospect-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+  }
+
+  .cdt-pcard-hd {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .cdt-pcard-footer {
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+  }
+
+  .cdt-opp-grade,
+  .cdt-status-chip,
+  .ci-kpi-badge,
+  .cdt-badge,
+  .cdt-alert-badge,
+  .cdt-high-badge,
+  .high-alert-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: auto;
+    max-width: 100%;
+    min-width: 0;
+    padding: 5px 12px;
+    white-space: nowrap;
+    line-height: 1.25;
+    border-radius: 999px;
+  }
+
+  .cdt-pcard-name {
+    word-break: keep-all;
+    overflow-wrap: anywhere;
+    line-height: 1.35;
+  }
+
+  .jp-summary-card {
+    padding: 24px 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 20px;
+  }
+
+  .jp-summary-score {
+    font-size: 52px;
+  }
+
+  .jp-summary-bars {
+    width: 100%;
+  }
+
+  .jp-detail-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .jp-pros-cons {
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+  }
+
+  .tab-status-screen {
+    padding: 48px 24px;
+    border-radius: 22px;
+  }
+
+  .tab-screen-title {
+    font-size: 21px;
+    line-height: 1.35;
+  }
+
+  .tab-screen-desc {
+    font-size: 14px;
+    line-height: 1.75;
   }
 }
