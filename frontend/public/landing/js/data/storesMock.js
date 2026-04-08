@@ -81,6 +81,23 @@ export const STORES = [
   },
 
   {
+    id: "store_6",
+    type: "company",
+    name: "Sahabat",
+    address:
+      "Global Lounge Sahabat, Jl. Ki Hajar Dewantara, RT.2/RW.4, Mekarmukti, Kec. Cikarang Utara,",
+    country: "인도네시아",
+    category: "카페",
+    status: "active",
+    rating: 5.0,
+    reviewCount: 207,
+    description: "커피숍/커피 전문점",
+    logoSrc: "/사하밧.png",
+    badge: "",
+    statusText: "",
+  },
+
+  {
     id: "store_7",
     type: "company",
     name: "신일팜글래스",
@@ -141,22 +158,5 @@ export const STORES = [
     logoSrc: "/구다이글로벌.png",
     badge: "",
     statusText: "운영중",
-  },
-
-  {
-    id: "store_6",
-    type: "company",
-    name: "Sahabat",
-    address:
-      "Global Lounge Sahabat, Jl. Ki Hajar Dewantara, RT.2/RW.4, Mekarmukti, Kec. Cikarang Utara,",
-    country: "인도네시아",
-    category: "카페",
-    status: "active",
-    rating: 5.0,
-    reviewCount: 207,
-    description: "커피숍/커피 전문점",
-    logoSrc: "/사하밧.png",
-    badge: "",
-    statusText: "",
   },
 ];

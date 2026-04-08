@@ -1,19 +1,15 @@
-const {
-  defineComponent,
-  ref,
-  computed
-} = Vue;
+const { defineComponent, ref, computed } = Vue;
 
-import { fmtDate } from '../utils/helpers.js';
+import { fmtDate } from "../utils/helpers.js";
 
 export const CustomerPage = defineComponent({
-  name: 'CustomerPage',
+  name: "CustomerPage",
 
   props: {
     store: { type: Object, required: true },
     period: {
       type: Object,
-      default: () => ({ from: '', to: '' }),
+      default: () => ({ from: "", to: "" }),
     },
     customers: {
       type: Object,
@@ -25,51 +21,59 @@ export const CustomerPage = defineComponent({
     },
     error: {
       type: String,
-      default: '',
+      default: "",
     },
   },
 
   setup(props) {
-    const custSubTab = ref('overview');
-    const custSearch = ref('');
-    const custRiskFilter = ref('ALL');
-    const custSortBy = ref('churnPct');
+    const custSubTab = ref("overview");
+    const custSearch = ref("");
+    const custRiskFilter = ref("ALL");
+    const custSortBy = ref("churnPct");
     const expandedCustomer = ref(null);
 
-    function formatDeltaText(value, suffix = '%') {
+    function formatDeltaText(value, suffix = "%") {
       const n = Number(value ?? 0);
       const abs = Math.abs(n).toFixed(1);
-      return `${n >= 0 ? '+' : '-'}${abs}${suffix} 전월 대비`;
+      return `${n >= 0 ? "+" : "-"}${abs}${suffix} 전월 대비`;
     }
 
-    function formatDeltaValueText(value, digits = 1, suffix = '') {
+    function formatDeltaValueText(value, digits = 1, suffix = "") {
       const n = Number(value ?? 0);
       const abs = Math.abs(n).toFixed(digits);
-      return `${n >= 0 ? '+' : '-'}${abs}${suffix} 전월 대비`;
+      return `${n >= 0 ? "+" : "-"}${abs}${suffix} 전월 대비`;
     }
 
     function deltaTrendClass(value, invert = false) {
       const n = Number(value ?? 0);
-      if (n === 0) return 'ca-trend-up';
-      if (!invert) return n > 0 ? 'ca-trend-up' : 'ca-trend-down';
-      return n < 0 ? 'ca-trend-up' : 'ca-trend-down';
+      if (n === 0) return "ca-trend-up";
+      if (!invert) return n > 0 ? "ca-trend-up" : "ca-trend-down";
+      return n < 0 ? "ca-trend-up" : "ca-trend-down";
     }
 
     function deltaArrowPath(value, invert = false) {
       const n = Number(value ?? 0);
-      if (n === 0) return 'M5 15l7-7 7 7';
-      if (!invert) return n > 0 ? 'M5 15l7-7 7 7' : 'M19 9l-7 7-7-7';
-      return n < 0 ? 'M5 15l7-7 7 7' : 'M19 9l-7 7-7-7';
+      if (n === 0) return "M5 15l7-7 7 7";
+      if (!invert) return n > 0 ? "M5 15l7-7 7 7" : "M19 9l-7 7-7-7";
+      return n < 0 ? "M5 15l7-7 7 7" : "M19 9l-7 7-7-7";
     }
 
     const visitFrequencyRows = computed(() => {
       const dist = props.customers?.visitFrequencyDistribution || {};
       return [
-        { label: '주 1회+', pct: Number(dist.weekly_plus ?? 0), color: '#6366f1' },
-        { label: '월 2회', pct: Number(dist.monthly_2 ?? 0), color: '#8b5cf6' },
-        { label: '월 1회', pct: Number(dist.monthly_1 ?? 0), color: '#06b6d4' },
-        { label: '가끔', pct: Number(dist.occasional ?? 0), color: '#f59e0b' },
-        { label: '첫 방문', pct: Number(dist.first_visit ?? 0), color: '#f43f5e' },
+        {
+          label: "주 1회+",
+          pct: Number(dist.weekly_plus ?? 0),
+          color: "#6366f1",
+        },
+        { label: "월 2회", pct: Number(dist.monthly_2 ?? 0), color: "#8b5cf6" },
+        { label: "월 1회", pct: Number(dist.monthly_1 ?? 0), color: "#06b6d4" },
+        { label: "가끔", pct: Number(dist.occasional ?? 0), color: "#f59e0b" },
+        {
+          label: "첫 방문",
+          pct: Number(dist.first_visit ?? 0),
+          color: "#f43f5e",
+        },
       ];
     });
 
@@ -78,17 +82,20 @@ export const CustomerPage = defineComponent({
 
       if (custSearch.value) {
         const q = custSearch.value.toLowerCase();
-        list = list.filter(c => (c.name || '').toLowerCase().includes(q));
+        list = list.filter((c) => (c.name || "").toLowerCase().includes(q));
       }
 
-      if (custRiskFilter.value !== 'ALL') {
-        list = list.filter(c => c.risk === custRiskFilter.value);
+      if (custRiskFilter.value !== "ALL") {
+        list = list.filter((c) => c.risk === custRiskFilter.value);
       }
 
       return [...list].sort((a, b) => {
-        if (custSortBy.value === 'churnPct') return Number(b.churnPct || 0) - Number(a.churnPct || 0);
-        if (custSortBy.value === 'rating') return Number(a.rating || 0) - Number(b.rating || 0);
-        if (custSortBy.value === 'lastActivity') return new Date(b.lastActivity || 0) - new Date(a.lastActivity || 0);
+        if (custSortBy.value === "churnPct")
+          return Number(b.churnPct || 0) - Number(a.churnPct || 0);
+        if (custSortBy.value === "rating")
+          return Number(a.rating || 0) - Number(b.rating || 0);
+        if (custSortBy.value === "lastActivity")
+          return new Date(b.lastActivity || 0) - new Date(a.lastActivity || 0);
         return 0;
       });
     });
@@ -235,7 +242,7 @@ export const CustomerPage = defineComponent({
                 </div>
                 <div class="ca-churn-insight">
                   <div class="ca-churn-icon"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg></div>
-                  이번 달 이탈 위험 고객은 <strong>{{ customers.riskDistribution.high?.count || 0 }}명</strong>명이고, 평균 이탈 확률은 <strong>{{ customers.riskDistribution.high?.avg_churn_pct || 0 }}%</strong>입니다.
+                  이번 달 이탈 위험 고객은 <strong>{{ customers.riskDistribution.high?.count || 0 }}</strong>명이고, 평균 이탈 확률은 <strong>{{ customers.riskDistribution.high?.avg_churn_pct || 0 }}%</strong>입니다.
                 </div>
               </div>
             </div>
@@ -468,5 +475,5 @@ export const CustomerPage = defineComponent({
         </div>
       </template>
     </div>
-  `
+  `,
 });

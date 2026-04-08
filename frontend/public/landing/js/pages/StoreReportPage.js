@@ -39,6 +39,18 @@ export const StoreReportPage = defineComponent({
     const activeTab = ref("summary");
     const chartMode = ref("daily");
 
+    // 모바일 392px 이하에서만 상위 탭을 스택 모드로 전환
+    const viewportWidth = ref(window.innerWidth);
+    const isMobileStackMode = computed(() => viewportWidth.value <= 392);
+
+    function handleResize() {
+      viewportWidth.value = window.innerWidth;
+    }
+
+    function isVisible(tabId) {
+      return isMobileStackMode.value || activeTab.value === tabId;
+    }
+
     // 보고서 / 고객 분석 데이터 상태
     const report = ref(null);
     const customers = ref({
@@ -121,9 +133,6 @@ export const StoreReportPage = defineComponent({
       },
     ];
 
-    /**
-     * 감성 분석 데이터를 숫자형 비율 구조로 정규화
-     */
     function normalizeSentiment(sentiment = {}) {
       return {
         positive: Number(sentiment.positive ?? sentiment.positive_pct ?? 0),
@@ -132,9 +141,6 @@ export const StoreReportPage = defineComponent({
       };
     }
 
-    /**
-     * 평점 분포 데이터가 없을 때 대체용 분포 생성
-     */
     function buildRatingDist(overallRating = 0, reviewCount = 0) {
       const safeCount = Number(reviewCount || 0);
 
@@ -166,9 +172,6 @@ export const StoreReportPage = defineComponent({
       ];
     }
 
-    /**
-     * 키워드 데이터를 워드클라우드 렌더링용으로 정규화
-     */
     function normalizeKeywords(json = {}) {
       const pos = json.positive_keywords || json.positive || [];
       const neg = json.negative_keywords || json.negative || [];
@@ -247,9 +250,6 @@ export const StoreReportPage = defineComponent({
       };
     }
 
-    /**
-     * 만족 요인 상위 5개 정규화
-     */
     function normalizeDrivers(list = []) {
       return (list || []).slice(0, 5).map((item, idx) => ({
         name: item.name || item.label || `강점 ${idx + 1}`,
@@ -258,9 +258,6 @@ export const StoreReportPage = defineComponent({
       }));
     }
 
-    /**
-     * 개선 필요 항목 상위 5개 정규화
-     */
     function normalizeImprovements(list = []) {
       return (list || []).slice(0, 5).map((item, idx) => ({
         name: item.name || item.label || `개선항목 ${idx + 1}`,
@@ -271,9 +268,6 @@ export const StoreReportPage = defineComponent({
       }));
     }
 
-    /**
-     * AI 인사이트 데이터 정규화
-     */
     function normalizeInsights(json = {}) {
       const raw = json.strategic_insights || json.insights || [];
 
@@ -297,9 +291,6 @@ export const StoreReportPage = defineComponent({
       ];
     }
 
-    /**
-     * 액션 플랜 데이터 정규화
-     */
     function normalizeActions(json = {}) {
       const raw = json.action_plan || json.action_plans || json.actions || [];
 
@@ -314,14 +305,12 @@ export const StoreReportPage = defineComponent({
               : priority === "MEDIUM"
                 ? "Med"
                 : "Low",
-
           cls:
             priority === "HIGH"
               ? "high"
               : priority === "MEDIUM"
                 ? "medium"
                 : "low",
-
           title: item.title || `실행 과제 ${idx + 1}`,
           desc: item.desc || item.description || "",
           tags:
@@ -331,9 +320,6 @@ export const StoreReportPage = defineComponent({
       });
     }
 
-    /**
-     * 세그먼트 요약 카드 데이터 정규화
-     */
     function normalizeSegments(json = {}) {
       const seg = json.segments || [];
       if (seg.length) {
@@ -348,9 +334,6 @@ export const StoreReportPage = defineComponent({
       return [{ label: "평균 객단가", val: "₩42,000", delta: "", trend: "up" }];
     }
 
-    /**
-     * NPS 관련 값 구성
-     */
     function buildNps(cxJson = {}) {
       const score = Number(
         cxJson.kpi?.nps ?? cxJson.nps?.score ?? cxJson.nps ?? 0,
@@ -368,9 +351,6 @@ export const StoreReportPage = defineComponent({
       return { score, promoters, passives, detractors };
     }
 
-    /**
-     * CX API 응답을 화면용 report 구조로 변환
-     */
     function adaptCxReport(
       cxJson,
       trendDaily,
@@ -447,18 +427,12 @@ export const StoreReportPage = defineComponent({
       };
     }
 
-    /**
-     * 리스크 레벨을 방문 빈도 라벨로 변환
-     */
     function riskToVisitFreq(risk) {
       if (risk === "HIGH") return "월 1회";
       if (risk === "MEDIUM") return "월 2회";
       return "월 3회+";
     }
 
-    /**
-     * 고객 태그 보조 생성
-     */
     function sentimentTags(customer) {
       const tags = [];
       if (customer.sentiment) {
@@ -476,9 +450,6 @@ export const StoreReportPage = defineComponent({
       return tags.length ? tags : ["리뷰 고객"];
     }
 
-    /**
-     * 고객 분석 API 응답을 CustomerPage용 구조로 변환
-     */
     function adaptCustomers(customerJson) {
       const summary = customerJson.summary || {};
       const riskDistribution = customerJson.risk_distribution || {};
@@ -590,27 +561,12 @@ export const StoreReportPage = defineComponent({
       };
     }
 
-    /**
-     * 고객 상세 토글
-     * 원본에 있던 함수 유지
-     */
-    function toggleCustomer(id) {
-      expandedCustomer.value = expandedCustomer.value === id ? null : id;
-    }
-
-    /**
-     * 평점 분포 막대 최대값 계산
-     */
     const maxDistCount = computed(() => {
       const dist = report.value?.ratingDist || [];
       if (!dist.length) return 1;
       return Math.max(...dist.map((d) => d.count), 1);
     });
 
-    /**
-     * 평점 추이 라인차트 생성
-     * target: trend | summary
-     */
     async function buildLineChart(
       canvasId = "ratingTrendChart",
       target = "trend",
@@ -703,9 +659,6 @@ export const StoreReportPage = defineComponent({
       }
     }
 
-    /**
-     * 감성 분석 도넛차트 생성
-     */
     async function buildDonutChart() {
       await nextTick();
       const canvas = document.getElementById("sentimentDonutChart");
@@ -748,9 +701,6 @@ export const StoreReportPage = defineComponent({
       });
     }
 
-    /**
-     * Date 객체를 YYYY-MM-DD 형식 문자열로 변환
-     */
     function formatDateLocal(date) {
       const y = date.getFullYear();
       const m = String(date.getMonth() + 1).padStart(2, "0");
@@ -758,10 +708,6 @@ export const StoreReportPage = defineComponent({
       return `${y}-${m}-${d}`;
     }
 
-    /**
-     * 기본 조회 기간 생성
-     * 최근 3개월
-     */
     function getDefaultDateRange() {
       const end = new Date();
       const start = new Date();
@@ -773,9 +719,6 @@ export const StoreReportPage = defineComponent({
       };
     }
 
-    /**
-     * 보고서 / 고객 분석 데이터 로드
-     */
     async function loadReport() {
       loading.value = true;
       error.value = "";
@@ -785,7 +728,6 @@ export const StoreReportPage = defineComponent({
         const from = route.query.from || route.query.start || defaults.from;
         const to = route.query.to || route.query.end || defaults.to;
 
-        //API 4개 병렬호출
         const [cxJson, trendDaily, trendMonthly, customerJson] =
           await Promise.all([
             analyzeCx(storeId, from, to),
@@ -807,12 +749,18 @@ export const StoreReportPage = defineComponent({
         loading.value = false;
         await nextTick();
 
-        if (activeTab.value === "rating") await buildDonutChart();
-        if (activeTab.value === "summary") {
+        if (isMobileStackMode.value) {
           await buildLineChart("summaryRatingTrendChart", "summary");
-        }
-        if (activeTab.value === "trend") {
+          await buildDonutChart();
           await buildLineChart("ratingTrendChart", "trend");
+        } else {
+          if (activeTab.value === "rating") await buildDonutChart();
+          if (activeTab.value === "summary") {
+            await buildLineChart("summaryRatingTrendChart", "summary");
+          }
+          if (activeTab.value === "trend") {
+            await buildLineChart("ratingTrendChart", "trend");
+          }
         }
       } catch (e) {
         console.error(e);
@@ -821,46 +769,65 @@ export const StoreReportPage = defineComponent({
       }
     }
 
-    /**
-     * 탭 변경 시 필요한 차트만 다시 그림
-     */
     watch(activeTab, async (tab) => {
-      if (!report.value) return;
+      if (!report.value || isMobileStackMode.value) return;
+
       if (tab === "trend") await buildLineChart("ratingTrendChart", "trend");
       if (tab === "rating") await buildDonutChart();
+      if (tab === "summary") {
+        await buildLineChart("summaryRatingTrendChart", "summary");
+      }
     });
 
-    /**
-     * 차트 모드 변경 시 요약/추이 차트 재렌더링
-     */
     watch(chartMode, async () => {
       if (!report.value) return;
 
       await buildLineChart("summaryRatingTrendChart", "summary");
 
-      if (activeTab.value === "trend") {
+      if (isMobileStackMode.value || activeTab.value === "trend") {
         await buildLineChart("ratingTrendChart", "trend");
       }
     });
 
-    onMounted(loadReport);
+    watch(isMobileStackMode, async (isMobile) => {
+      if (!report.value) return;
+
+      await nextTick();
+
+      if (isMobile) {
+        await buildLineChart("summaryRatingTrendChart", "summary");
+        await buildDonutChart();
+        await buildLineChart("ratingTrendChart", "trend");
+      } else {
+        if (activeTab.value === "summary") {
+          await buildLineChart("summaryRatingTrendChart", "summary");
+        }
+        if (activeTab.value === "rating") {
+          await buildDonutChart();
+        }
+        if (activeTab.value === "trend") {
+          await buildLineChart("ratingTrendChart", "trend");
+        }
+      }
+    });
+
+    onMounted(() => {
+      window.addEventListener("resize", handleResize);
+      handleResize();
+      loadReport();
+    });
 
     onUnmounted(() => {
+      window.removeEventListener("resize", handleResize);
       destroyChart(lineChart);
       destroyChart(summaryLineChart);
       destroyChart(donutChart);
     });
 
-    /**
-     * 현재 보고서 인쇄
-     */
     function printReport() {
       window.print();
     }
 
-    /**
-     * 순위별 스타일 클래스 반환
-     */
     function rankClass(i) {
       return i === 0
         ? "rank-gold"
@@ -887,6 +854,9 @@ export const StoreReportPage = defineComponent({
       router,
       customers,
       keywordTab,
+      viewportWidth,
+      isMobileStackMode,
+      isVisible,
     };
   },
 
@@ -897,7 +867,7 @@ export const StoreReportPage = defineComponent({
         <div class="report-layout">
 
           <!-- 좌측 사이드바 -->
-          <aside class="report-sidenav">
+          <aside v-if="!isMobileStackMode" class="report-sidenav">
             <div class="sidenav-store-info">
               <div class="sidenav-store-name">{{store.name}}</div>
               <div class="sidenav-period" v-if="report">{{fmtDate(report.period.start)}} ~ {{fmtDate(report.period.end)}}</div>
@@ -1039,7 +1009,7 @@ export const StoreReportPage = defineComponent({
             </div>
 
             <!-- Executive Summary 상단 평점 추이 카드 -->
-            <div v-show="activeTab==='summary'" class="r-card summary-trend-card">
+            <div v-show="isVisible('summary')" class="r-card summary-trend-card">
               <div class="r-card-hd">
                 <div class="r-card-title">
                   <div class="r-title-icon ic-sky">
@@ -1077,7 +1047,7 @@ export const StoreReportPage = defineComponent({
             </div>
 
             <!-- Executive Summary -->
-            <div v-show="activeTab==='summary'" class="r-card">
+            <div v-show="isVisible('summary')" class="r-card">
               <div class="r-card-hd">
                 <div class="r-card-title">
                   <div class="r-title-icon ic-brand">
@@ -1108,7 +1078,7 @@ export const StoreReportPage = defineComponent({
             </div>
 
             <!-- Overall Rating -->
-            <div v-show="activeTab==='rating'" class="r-card">
+            <div v-show="isVisible('rating')" class="r-card">
               <div class="r-card-hd">
                 <div class="r-card-title">
                   <div class="r-title-icon ic-amber">
@@ -1181,7 +1151,7 @@ export const StoreReportPage = defineComponent({
             </div>
 
             <!-- 키워드 워드클라우드 -->
-            <div v-show="activeTab==='keyword'" class="r-card">
+            <div v-show="isVisible('keyword')" class="r-card">
               <div class="r-card-hd">
                 <div class="r-card-title">
                   <div class="r-title-icon ic-violet">
@@ -1238,7 +1208,7 @@ export const StoreReportPage = defineComponent({
             </div>
 
             <!-- Segment Analysis -->
-            <div v-show="activeTab==='segment'" class="r-card">
+            <div v-show="isVisible('segment')" class="r-card">
               <div class="r-card-hd">
                 <div class="r-card-title">
                   <div class="r-title-icon ic-violet">
@@ -1289,7 +1259,7 @@ export const StoreReportPage = defineComponent({
             </div>
 
             <!-- NPS -->
-            <div v-show="activeTab==='nps'" class="r-card">
+            <div v-show="isVisible('nps')" class="r-card">
               <div class="r-card-hd">
                 <div class="r-card-title">
                   <div class="r-title-icon ic-rose">
@@ -1350,7 +1320,7 @@ export const StoreReportPage = defineComponent({
             </div>
 
             <!-- 평점 추이 -->
-            <div v-show="activeTab==='trend'" class="r-card">
+            <div v-show="isVisible('trend')" class="r-card">
               <div class="r-card-hd">
                 <div class="r-card-title">
                   <div class="r-title-icon ic-sky">
@@ -1388,7 +1358,7 @@ export const StoreReportPage = defineComponent({
             </div>
 
             <!-- Key Drivers -->
-            <div v-show="activeTab==='drivers'" class="r-card">
+            <div v-show="isVisible('drivers')" class="r-card">
               <div class="r-card-hd">
                 <div class="r-card-title">
                   <div class="r-title-icon ic-emerald">
@@ -1422,7 +1392,7 @@ export const StoreReportPage = defineComponent({
             </div>
 
             <!-- Improvements -->
-            <div v-show="activeTab==='improve'" class="r-card">
+            <div v-show="isVisible('improve')" class="r-card">
               <div class="r-card-hd">
                 <div class="r-card-title">
                   <div class="r-title-icon ic-amber">
@@ -1453,7 +1423,7 @@ export const StoreReportPage = defineComponent({
             </div>
 
             <!-- AI Insights -->
-            <div v-show="activeTab==='insights'" class="r-card">
+            <div v-show="isVisible('insights')" class="r-card">
               <div class="r-card-hd">
                 <div class="r-card-title">
                   <div class="r-title-icon ic-brand">
@@ -1487,7 +1457,7 @@ export const StoreReportPage = defineComponent({
             </div>
 
             <!-- Action Plan -->
-            <div v-show="activeTab==='action'" class="r-card">
+            <div v-show="isVisible('action')" class="r-card">
               <div class="r-card-hd">
                 <div class="r-card-title">
                   <div class="r-title-icon ic-sky">
@@ -1530,7 +1500,7 @@ export const StoreReportPage = defineComponent({
             </div>
 
             <!-- Customer Analysis -->
-            <div v-show="activeTab==='customers'">
+            <div v-show="isVisible('customers')">
               <CustomerPage
                 :store="store"
                 :period="report?.period || {}"
