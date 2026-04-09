@@ -43,16 +43,16 @@ export const StoreReportPage = defineComponent({
     const selectedPeriodType = ref(route.query.period_type || "30D");
 
     const CX_PERIOD_OPTIONS = [
-      { label: "1일", value: "1D" },
-      { label: "7일", value: "7D" },
-      { label: "30일", value: "30D" },
-      { label: "90일", value: "90D" },
-      { label: "180일", value: "180D" },
+      { label: "일간", value: "1D" },
+      { label: "주간", value: "7D" },
+      { label: "월간", value: "30D" },
+      { label: "분기", value: "90D" },
+      { label: "연간", value: "365D" },
     ];
 
     // 모바일 392px 이하에서만 상위 탭을 스택 모드로 전환
     const viewportWidth = ref(window.innerWidth);
-    const isMobileStackMode = computed(() => viewportWidth.value <= 392);
+    const isMobileStackMode = computed(() => viewportWidth.value <= 600);
 
     function handleResize() {
       viewportWidth.value = window.innerWidth;

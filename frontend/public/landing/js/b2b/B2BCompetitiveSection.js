@@ -17,7 +17,7 @@ export const B2BCompetitiveSection = defineComponent({
   props: {
     tenantId: { type: [String, Number], required: true },
     compId: { type: String, required: true },
-    analysisPeriod: { type: Object, required: true },
+    periodType: { type: String, default: '30D' },
   },
 
   setup(props) {
@@ -151,9 +151,7 @@ export const B2BCompetitiveSection = defineComponent({
 
       const rows = sortedKeywords.value.slice(0, 5);
 
-      const endDate = props.analysisPeriod?.end
-        ? new Date(props.analysisPeriod.end)
-        : new Date();
+      const endDate = new Date();
 
       const labels = [];
       const labelKeys = [];
@@ -210,9 +208,7 @@ export const B2BCompetitiveSection = defineComponent({
 
       const rows = activeKeywords.value;
 
-      const endDate = props.analysisPeriod?.end
-        ? new Date(props.analysisPeriod.end)
-        : new Date();
+      const endDate = new Date();
 
       const labels = [];
       const monthKeys = [];
@@ -277,8 +273,7 @@ export const B2BCompetitiveSection = defineComponent({
       try {
         const result = await fetchDashboardCompetitorAnalysis(
           props.tenantId,
-          props.analysisPeriod?.start,
-          props.analysisPeriod?.end,
+          props.periodType,
         );
 
         issueSources.value = Array.isArray(result?.issueSources)
@@ -314,8 +309,7 @@ export const B2BCompetitiveSection = defineComponent({
       () => [
         props.tenantId,
         props.compId,
-        props.analysisPeriod?.start,
-        props.analysisPeriod?.end,
+        props.periodType,
       ],
       async () => {
         await loadCompetitorAnalysis();

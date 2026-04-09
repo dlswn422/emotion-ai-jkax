@@ -1,41 +1,22 @@
 import { apiFetch } from "./client.js";
 
 /**
- * B2B 경쟁사 분석 데이터 조회
- * 지원 shape:
+ * B2B 경쟁사 분석 데이터 조회 (period_type 기반 캐시 조회)
  *
- * 1) 신형(캐시 조회형, 백엔드 최종 JSON 그대로)
- * {
- *   issueSources: [],
- *   issueKeywords: []
- * }
- *
- * 2) 구형(예전 raw 응답)
- * {
- *   tenant_id,
- *   kpis: {},
- *   keyword_hits: [],
- *   competitor_details: []
- * }
+ * @param {number} tenantId
+ * @param {string} periodType - "1D" | "7D" | "30D" | "90D" | "180D"
  */
-export async function fetchDashboardCompetitorAnalysis(tenantId, from, to) {
+export async function fetchDashboardCompetitorAnalysis(tenantId, periodType = "30D") {
   const params = new URLSearchParams();
 
   if (tenantId !== undefined && tenantId !== null && tenantId !== "") {
     params.append("tenant_id", tenantId);
   }
+  params.append("period_type", periodType);
 
-  if (from) params.append("from", from);
-  if (to) params.append("to", to);
+  const json = await apiFetch(`/dashboard/competitor-analysis?${params.toString()}`);
 
-  const query = params.toString();
-  const url = query
-    ? `/dashboard/competitor-analysis?${query}`
-    : `/dashboard/competitor-analysis`;
-
-  const json = await apiFetch(url);
-
-  // 신형: 이미 최종 구조면 그대로 반환
+  // 신형: 캐시 조회형 최종 구조
   if (Array.isArray(json?.issueSources) || Array.isArray(json?.issueKeywords)) {
     return {
       issueSources: Array.isArray(json?.issueSources) ? json.issueSources : [],
@@ -46,66 +27,31 @@ export async function fetchDashboardCompetitorAnalysis(tenantId, from, to) {
 
   // 구형 fallback
   const sourceMap = new Map();
-
   if (Array.isArray(json?.competitor_details)) {
-    json.competitor_details.forEach((row) => {
-      const siteName = row?.source_label ?? "";
-      const sourceUrl = row?.source_url ?? "";
-
-      if (!siteName) return;
-
-      if (!sourceMap.has(siteName)) {
-        sourceMap.set(siteName, {
-          site_name: siteName,
-          url: sourceUrl,
-          active: true,
+    json.competitor_details.forEach((d) => {
+      if (d?.source_url) {
+        sourceMap.set(d.source_url, {
+          site_name: d.source_name || d.source_url,
+          url: d.source_url,
         });
       }
     });
   }
 
-  const keywordMetaMap = new Map();
-
-  if (Array.isArray(json?.keyword_hits)) {
-    json.keyword_hits.forEach((row) => {
-      const keyword = row?.keyword ?? "";
-      if (!keyword) return;
-
-      keywordMetaMap.set(keyword, {
-        hit_count: Number(row?.hit_count ?? 0),
-        last_hit: row?.last_detected_at ?? "",
-        signal_level:
-          String(row?.level ?? "MEDIUM").toUpperCase() === "HIGH"
-            ? "high"
-            : String(row?.level ?? "MEDIUM").toUpperCase() === "LOW"
-            ? "low"
-            : "medium",
-      });
-    });
-  }
-
-  const mappedIssueSources = Array.from(sourceMap.values());
-
-  const mappedIssueKeywords = Array.isArray(json?.competitor_details)
-    ? json.competitor_details.map((row, idx) => {
-        const meta = keywordMetaMap.get(row?.keyword ?? "") || {};
-
-        return {
-          _id: `${row?.keyword ?? "kw"}-${row?.company_name ?? "comp"}-${idx}`,
-          keyword: row?.keyword ?? "",
-          signal_level: meta.signal_level ?? "medium",
-          hit_count: Number(meta.hit_count ?? 0),
-          last_hit: meta.last_hit ?? row?.detected_at ?? "",
-          active: true,
-          source_name: row?.source_label ?? "",
-          competitor_name: row?.company_name ?? "",
-          opportunity: row?.summary ?? "",
-        };
-      })
-    : [];
-
   return {
-    issueSources: mappedIssueSources,
-    issueKeywords: mappedIssueKeywords,
+    issueKeywords: Array.isArray(json?.keyword_hits)
+      ? json.keyword_hits.map((row, idx) => ({
+          _id: `${row?.keyword ?? "kw"}-${idx}`,
+          keyword: row?.keyword ?? "",
+          signal_level: String(row?.level ?? "medium").toLowerCase(),
+          hit_count: Number(row?.hit_count ?? 0),
+          last_hit: row?.last_detected_at ?? "",
+          competitor_name: row?.company_name ?? "",
+          source_name: row?.source ?? "",
+          opportunity: row?.summary ?? "",
+          active: true,
+        }))
+      : [],
+    issueSources: Array.from(sourceMap.values()),
   };
 }

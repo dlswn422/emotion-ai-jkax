@@ -18,7 +18,7 @@ export const B2BCustomerTrendSection = defineComponent({
   props: {
     tenantId: { type: [String, Number], required: true },
     compId: { type: String, required: true },
-    analysisPeriod: { type: Object, required: true },
+    periodType: { type: String, default: '30D' },
   },
 
   setup(props) {
@@ -67,7 +67,7 @@ export const B2BCustomerTrendSection = defineComponent({
           kw_type: row.kw_type || "이벤트",
           signal_level: row.signal_level || "medium",
           hit_count: Number(row.hit_count || 0),
-          last_hit: row.last_hit || props.analysisPeriod.end,
+          last_hit: row.last_hit || '',
           active: row.active,
         })),
     );
@@ -245,7 +245,7 @@ export const B2BCustomerTrendSection = defineComponent({
     // API 호출부
     async function loadCustomerTrend() {
       try {
-        const result = await fetchDashboardCustomerTrend(props.tenantId);
+        const result = await fetchDashboardCustomerTrend(props.tenantId, props.periodType);
 
         signalKeywords.value = Array.isArray(result?.signalKeywords)
           ? result.signalKeywords
@@ -272,8 +272,6 @@ export const B2BCustomerTrendSection = defineComponent({
       () => [
         props.tenantId,
         props.compId,
-        props.analysisPeriod?.start,
-        props.analysisPeriod?.end,
       ],
       async () => {
         await loadCustomerTrend();

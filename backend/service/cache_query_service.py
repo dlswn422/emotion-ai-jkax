@@ -59,7 +59,7 @@ def resolve_fixed_period_type(
                 detail="현재는 오늘 포함 고정 기간(1D/7D/30D/90D/180D)만 지원합니다.",
             )
 
-    days = (end - start).days + 1
+    days = (end - start).days  # +1 제거: 프론트 from/to 날짜 차이 기준으로 매핑
 
     mapping = {
         1: "1D",

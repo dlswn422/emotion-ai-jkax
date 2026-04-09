@@ -1,38 +1,22 @@
 import { apiFetch } from "./client.js";
 
 /**
- * B2B 고객 동향 분석 데이터 조회
- * 지원 shape:
+ * B2B 고객 동향 분석 데이터 조회 (period_type 기반 캐시 조회)
  *
- * 1) 신형(캐시 조회형, 백엔드 최종 JSON 그대로)
- * {
- *   signalKeywords: [],
- *   prospects: []
- * }
- *
- * 2) 구형(예전 raw 응답)
- * {
- *   tenant_id,
- *   kpis: {},
- *   keyword_hits: [],
- *   opportunity_cards: []
- * }
+ * @param {number} tenantId
+ * @param {string} periodType - "1D" | "7D" | "30D" | "90D" | "180D"
  */
-export async function fetchDashboardCustomerTrend(tenantId) {
+export async function fetchDashboardCustomerTrend(tenantId, periodType = "30D") {
   const params = new URLSearchParams();
 
   if (tenantId !== undefined && tenantId !== null && tenantId !== "") {
     params.append("tenant_id", tenantId);
   }
+  params.append("period_type", periodType);
 
-  const query = params.toString();
-  const url = query
-    ? `/dashboard/customer-trend?${query}`
-    : `/dashboard/customer-trend`;
+  const json = await apiFetch(`/dashboard/customer-trend?${params.toString()}`);
 
-  const json = await apiFetch(url);
-
-  // 신형: 이미 최종 구조면 그대로 반환
+  // 신형: 캐시 조회형 최종 구조
   if (Array.isArray(json?.signalKeywords) || Array.isArray(json?.prospects)) {
     return {
       signalKeywords: Array.isArray(json?.signalKeywords) ? json.signalKeywords : [],
@@ -54,7 +38,6 @@ export async function fetchDashboardCustomerTrend(tenantId) {
           active: true,
         }))
       : [],
-
     prospects: Array.isArray(json?.opportunity_cards)
       ? json.opportunity_cards.map((row, idx) => ({
           _id: `${row?.corp_code ?? row?.company_name ?? "prospect"}-${idx}`,
