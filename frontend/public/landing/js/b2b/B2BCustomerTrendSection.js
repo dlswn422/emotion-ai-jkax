@@ -272,6 +272,7 @@ export const B2BCustomerTrendSection = defineComponent({
       () => [
         props.tenantId,
         props.compId,
+        props.periodType,
       ],
       async () => {
         await loadCustomerTrend();

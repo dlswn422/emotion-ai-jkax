@@ -39,12 +39,21 @@ export const B2BPage = defineComponent({
       showModal.value = true;
     }
 
-    function onConfirm(dates) {
+    const SNAPSHOT_TO_PERIOD = {
+      daily:     "1D",
+      weekly:    "7D",
+      monthly:   "30D",
+      quarterly: "90D",
+      yearly:    "180D",
+      all:       "180D",
+    };
+
+    function onConfirm({ snapshotKey }) {
       showModal.value = false;
       if (selectedComp.value) {
         router.push({
           path: `/B2B-report/${selectedComp.value.id}`,
-          query: { start: dates.start, end: dates.end },
+          query: { snapshot: snapshotKey, period_type: SNAPSHOT_TO_PERIOD[snapshotKey] || "30D" },
         });
       }
     }

@@ -21,8 +21,8 @@ const SNAPSHOT_TO_PERIOD = {
   weekly:    "7D",
   monthly:   "30D",
   quarterly: "90D",
-  yearly:    "180D",
-  all:       "180D",
+  yearly:    "365D",
+  all:       "9999999999D",
 };
 
 // snapshotKey → 표시 라벨

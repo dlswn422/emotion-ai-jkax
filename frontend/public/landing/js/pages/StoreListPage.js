@@ -64,11 +64,21 @@ export const StoreListPage = defineComponent({
     /**
      * 날짜 선택 완료 시 리포트 페이지로 이동
      */
-    function onConfirm(dates) {
+    // snapshotKey → period_type 매핑
+    const SNAPSHOT_TO_PERIOD = {
+      daily:     "1D",
+      weekly:    "7D",
+      monthly:   "30D",
+      quarterly: "90D",
+      yearly:    "180D",
+      all:       "180D",
+    };
+
+    function onConfirm({ snapshotKey }) {
       if (selectedStore.value) {
         router.push({
           path: `/report/${selectedStore.value.id}`,
-          query: dates,
+          query: { period_type: SNAPSHOT_TO_PERIOD[snapshotKey] || "30D" },
         });
       }
     }
