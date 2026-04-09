@@ -40,13 +40,15 @@ def analyze_store_cx_by_period(
         .all()
     )
 
-    print(f"reviews: {reviews}")
+    print(f"reviews count: {len(reviews)}")
 
     review_texts = [
         r.comment
         for r in reviews
         if r.comment and len(r.comment.strip()) > 3
     ]
+
+    print(f"review_texts count: {len(review_texts)}")
 
     if not review_texts:
         return {
@@ -62,13 +64,12 @@ def analyze_store_cx_by_period(
             ],
         }
 
-    # 1) LLM 분석 결과
+    print("before analyze_cx_dashboard")
     llm_result = analyze_cx_dashboard(review_texts)
+    print("after analyze_cx_dashboard")
 
-    # 2) 기간 내 전체 리뷰 수
     review_count = len(reviews)
 
-    # 3) 별점 분포 계산
     rating_counter = {1: 0, 2: 0, 3: 0, 4: 0, 5: 0}
 
     for r in reviews:
@@ -83,7 +84,6 @@ def analyze_store_cx_by_period(
         {"stars": 1, "count": rating_counter[1]},
     ]
 
-    # 4) LLM 결과 + DB 집계값 합쳐서 반환
     return {
         **llm_result,
         "review_count": review_count,

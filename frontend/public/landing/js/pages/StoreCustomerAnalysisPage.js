@@ -476,4 +476,8 @@ export const CustomerPage = defineComponent({
       </template>
     </div>
   `,
+<<<<<<< Updated upstream
 });
+=======
+});
+>>>>>>> Stashed changes

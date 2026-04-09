@@ -10466,6 +10466,151 @@ img {
   .ci-kw-table-wrap::-webkit-scrollbar-track {
     background: rgba(226, 232, 240, 0.6);
     border-radius: 999px;
+<<<<<<< Updated upstream
+  }
+
+  .cdt-kw-table {
+    display: table;
+    min-width: 860px;
+    width: max-content;
+  }
+
+  .ci-detail-thead,
+  .ci-detail-row,
+  .ci-kw-thead,
+  .ci-kw-row {
+    min-width: 860px;
+  }
+
+  .ci-hr-header,
+  .ci-hr-row {
+    min-width: 940px;
+  }
+
+  .ci-detail-col,
+  .ci-kw-col,
+  .ci-hr-col {
+    min-width: 0;
+  }
+
+  .ci-comp-name-tag,
+  .ci-detail-src-link,
+  .ci-hr-src-link,
+  .ci-kw-type-tag {
+    max-width: none;
+    overflow: visible;
+    text-overflow: clip;
+    white-space: nowrap;
+  }
+
+  .cdt-trend-wrap,
+  .ci-kpi-bar {
+    padding: 16px;
+  }
+
+  .cdt-trend-info {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .cdt-trend-chart-area {
+    min-width: 0;
+    height: 240px;
+  }
+
+  .ci-kpi-bar {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .cdt-prospect-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+  }
+
+  .cdt-pcard-hd {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .cdt-pcard-footer {
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+  }
+
+  .cdt-opp-grade,
+  .cdt-status-chip,
+  .ci-kpi-badge,
+  .cdt-badge,
+  .cdt-alert-badge,
+  .cdt-high-badge,
+  .high-alert-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: auto;
+    max-width: 100%;
+    min-width: 0;
+    padding: 5px 12px;
+    white-space: nowrap;
+    line-height: 1.25;
+    border-radius: 999px;
+  }
+
+  .cdt-pcard-name {
+    word-break: keep-all;
+    overflow-wrap: anywhere;
+    line-height: 1.35;
+  }
+
+  .jp-summary-card {
+    padding: 24px 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 20px;
+  }
+
+  .jp-summary-score {
+    font-size: 52px;
+  }
+
+  .jp-summary-bars {
+    width: 100%;
+  }
+
+  .jp-detail-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .jp-pros-cons {
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+  }
+
+  .tab-status-screen {
+    padding: 48px 24px;
+    border-radius: 22px;
+  }
+
+  .tab-screen-title {
+    font-size: 21px;
+    line-height: 1.35;
+  }
+
+  .tab-screen-desc {
+    font-size: 14px;
+    line-height: 1.75;
+=======
+>>>>>>> Stashed changes
   }
 
   .cdt-kw-table {
