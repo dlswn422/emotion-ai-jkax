@@ -3,7 +3,7 @@ from __future__ import annotations
 import os
 import uuid
 from pathlib import Path
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import Any
 
 from dotenv import load_dotenv

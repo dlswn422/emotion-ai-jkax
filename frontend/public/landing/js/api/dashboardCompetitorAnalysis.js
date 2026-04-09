@@ -2,14 +2,21 @@ import { apiFetch } from "./client.js";
 
 /**
  * B2B 경쟁사 분석 데이터 조회
- * - 백엔드 응답 shape:
- *   {
- *     tenant_id,
- *     kpis: {},
- *     keyword_hits: [],
- *     competitor_details: []
- *   }
- * - B2BCompetitiveSection.js가 기대하는 형태로 변환해서 반환
+ * 지원 shape:
+ *
+ * 1) 신형(캐시 조회형, 백엔드 최종 JSON 그대로)
+ * {
+ *   issueSources: [],
+ *   issueKeywords: []
+ * }
+ *
+ * 2) 구형(예전 raw 응답)
+ * {
+ *   tenant_id,
+ *   kpis: {},
+ *   keyword_hits: [],
+ *   competitor_details: []
+ * }
  */
 export async function fetchDashboardCompetitorAnalysis(tenantId, from, to) {
   const params = new URLSearchParams();
@@ -28,6 +35,16 @@ export async function fetchDashboardCompetitorAnalysis(tenantId, from, to) {
 
   const json = await apiFetch(url);
 
+  // 신형: 이미 최종 구조면 그대로 반환
+  if (Array.isArray(json?.issueSources) || Array.isArray(json?.issueKeywords)) {
+    return {
+      issueSources: Array.isArray(json?.issueSources) ? json.issueSources : [],
+      issueKeywords: Array.isArray(json?.issueKeywords) ? json.issueKeywords : [],
+      ...(json?.message ? { message: json.message } : {}),
+    };
+  }
+
+  // 구형 fallback
   const sourceMap = new Map();
 
   if (Array.isArray(json?.competitor_details)) {
@@ -47,7 +64,6 @@ export async function fetchDashboardCompetitorAnalysis(tenantId, from, to) {
     });
   }
 
-  // keyword_hits 기준 실제 집계값 맵
   const keywordMetaMap = new Map();
 
   if (Array.isArray(json?.keyword_hits)) {

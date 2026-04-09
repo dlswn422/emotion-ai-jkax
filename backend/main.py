@@ -11,9 +11,8 @@ import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.sessions import SessionMiddleware
+
 from backend.api.disclosure_candidates import router as disclosure_candidates_router
-from backend.api.disclosure_signals import router as disclosure_signals_router
-from backend.api.disclosure_signals import router as disclosure_signals_router
 from backend.api.dashboard_customer_trend import router as dashboard_customer_trend_router
 from backend.api.dashboard_competitor_analysis import router as dashboard_competitor_analysis_router
 from backend.api.news_signals import router as news_signals_router
@@ -47,7 +46,7 @@ app.add_middleware(
         "http://localhost:3000",
         "https://cxnexus.ai",
         "https://www.cxnexus.ai",
-        "https://emotion-ai-jkax-wqsd.vercel.app"
+        "https://emotion-ai-jkax-wqsd.vercel.app",
     ],
     allow_credentials=True,
     allow_methods=["*"],
@@ -79,8 +78,6 @@ app.include_router(tenant_disclosures.router)
 app.include_router(monitoring_targets.router)
 app.include_router(industry_targets.router)
 app.include_router(disclosure_candidates_router)
-app.include_router(disclosure_signals_router)
-app.include_router(disclosure_signals_router)
 app.include_router(dashboard_customer_trend_router)
 app.include_router(dashboard_competitor_analysis_router)
 app.include_router(news_signals_router)

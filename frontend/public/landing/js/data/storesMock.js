@@ -159,8 +159,4 @@ export const STORES = [
     badge: "",
     statusText: "운영중",
   },
-<<<<<<< Updated upstream
 ];
-=======
-];
->>>>>>> Stashed changes

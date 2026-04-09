@@ -39,6 +39,17 @@ export const StoreReportPage = defineComponent({
     const activeTab = ref("summary");
     const chartMode = ref("daily");
 
+    // CX 조회형용 고정 기간 상태
+    const selectedPeriodType = ref(route.query.period_type || "30D");
+
+    const CX_PERIOD_OPTIONS = [
+      { label: "1일", value: "1D" },
+      { label: "7일", value: "7D" },
+      { label: "30일", value: "30D" },
+      { label: "90일", value: "90D" },
+      { label: "180일", value: "180D" },
+    ];
+
     // 모바일 392px 이하에서만 상위 탭을 스택 모드로 전환
     const viewportWidth = ref(window.innerWidth);
     const isMobileStackMode = computed(() => viewportWidth.value <= 392);
@@ -708,10 +719,30 @@ export const StoreReportPage = defineComponent({
       return `${y}-${m}-${d}`;
     }
 
-    function getDefaultDateRange() {
+    function getDateRangeByPeriodType(periodType) {
       const end = new Date();
-      const start = new Date();
-      start.setMonth(start.getMonth() - 3);
+      const start = new Date(end);
+
+      switch (periodType) {
+        case "1D":
+          start.setDate(end.getDate());
+          break;
+        case "7D":
+          start.setDate(end.getDate() - 6);
+          break;
+        case "30D":
+          start.setDate(end.getDate() - 29);
+          break;
+        case "90D":
+          start.setDate(end.getDate() - 89);
+          break;
+        case "180D":
+          start.setDate(end.getDate() - 179);
+          break;
+        default:
+          start.setDate(end.getDate() - 29);
+          break;
+      }
 
       return {
         from: formatDateLocal(start),
@@ -724,13 +755,12 @@ export const StoreReportPage = defineComponent({
       error.value = "";
 
       try {
-        const defaults = getDefaultDateRange();
-        const from = route.query.from || route.query.start || defaults.from;
-        const to = route.query.to || route.query.end || defaults.to;
+        const periodType = selectedPeriodType.value || "30D";
+        const { from, to } = getDateRangeByPeriodType(periodType);
 
         const [cxJson, trendDaily, trendMonthly, customerJson] =
           await Promise.all([
-            analyzeCx(storeId, from, to),
+            analyzeCx(storeId, periodType),
             getRatingTrend(storeId, "day", from, to),
             getRatingTrend(storeId, "month", from, to),
             getCustomers(storeId, from, to),
@@ -768,7 +798,6 @@ export const StoreReportPage = defineComponent({
         loading.value = false;
       }
     }
-
     watch(activeTab, async (tab) => {
       if (!report.value || isMobileStackMode.value) return;
 
@@ -787,6 +816,21 @@ export const StoreReportPage = defineComponent({
       if (isMobileStackMode.value || activeTab.value === "trend") {
         await buildLineChart("ratingTrendChart", "trend");
       }
+    });
+
+    watch(selectedPeriodType, async (value) => {
+      try {
+        await router.replace({
+          query: {
+            ...route.query,
+            period_type: value,
+          },
+        });
+      } catch (_) {
+        // no-op
+      }
+
+      await loadReport();
     });
 
     watch(isMobileStackMode, async (isMobile) => {
@@ -845,6 +889,8 @@ export const StoreReportPage = defineComponent({
       error,
       activeTab,
       chartMode,
+      selectedPeriodType,
+      CX_PERIOD_OPTIONS,
       NAV_ITEMS,
       maxDistCount,
       starsStr,
@@ -939,6 +985,17 @@ export const StoreReportPage = defineComponent({
               </div>
 
               <div class="sb-actions">
+                <div class="chart-toggle" style="margin-right:12px">
+                  <button
+                    v-for="opt in CX_PERIOD_OPTIONS"
+                    :key="opt.value"
+                    :class="['ct-btn', selectedPeriodType===opt.value ? 'active' : '']"
+                    @click="selectedPeriodType = opt.value"
+                  >
+                    {{ opt.label }}
+                  </button>
+                </div>
+
                 <button class="sb-btn sb-btn-glass" @click="router.push('/stores')">
                   <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                     <path d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/>

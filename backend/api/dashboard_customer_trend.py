@@ -1,8 +1,10 @@
-from fastapi import APIRouter, Depends, Query
-from sqlalchemy import text
-from sqlalchemy.orm import Session
+from fastapi import APIRouter, Query
 
-from backend.db.session import get_db
+from backend.service.b2b_cache_service import get_b2b_cache_current
+from backend.service.cache_query_service import (
+    b2b_customer_trend_cache_miss_response,
+    b2b_customer_trend_error_response,
+)
 
 router = APIRouter(prefix="/dashboard", tags=["dashboard"])
 
@@ -10,94 +12,23 @@ router = APIRouter(prefix="/dashboard", tags=["dashboard"])
 @router.get("/customer-trend")
 def get_customer_trend_dashboard(
     tenant_id: int = Query(...),
-    db: Session = Depends(get_db),
 ):
-    # KPI
-    kpi_row = db.execute(
-        text("""
-            select
-                count(*) as signal_hit_count,
-                count(*) filter (where signal_type = 'OPPORTUNITY') as new_opportunity_count,
-                count(*) filter (
-                    where signal_type = 'OPPORTUNITY'
-                      and signal_level = 'HIGH'
-                ) as high_opportunity_count
-            from public.signals
-            where tenant_id = :tenant_id
-        """),
-        {"tenant_id": tenant_id},
-    ).mappings().first()
+    row = get_b2b_cache_current(
+        tenant_id=tenant_id,
+        analysis_type="CUSTOMER_TREND",
+        period_type="ALL",
+    )
 
-    # 키워드 히트 현황
-    keyword_hits = db.execute(
-        text("""
-            select
-                signal_keyword as keyword,
-                signal_category as category,
-                signal_level as level,
-                count(*) as hit_count,
-                max(detected_at) as last_detected_at
-            from public.signals
-            where tenant_id = :tenant_id
-            group by signal_keyword, signal_category, signal_level
-            order by hit_count desc, last_detected_at desc nulls last
-            limit 20
-        """),
-        {"tenant_id": tenant_id},
-    ).mappings().all()
+    if not row:
+        return b2b_customer_trend_cache_miss_response()
 
-    # 기회 카드
-    opportunity_cards = db.execute(
-        text("""
-            select
-                company_name,
-                corp_code,
-                industry_label,
-                signal_keyword,
-                source,
-                source_url,
-                detected_at,
-                summary,
-                signal_level,
-                event_type
-            from public.signals
-            where tenant_id = :tenant_id
-            and signal_type = 'OPPORTUNITY'
-            order by
-                case signal_level
-                    when 'HIGH' then 1
-                    when 'MEDIUM' then 2
-                    when 'LOW' then 3
-                    else 4
-                end,
-                detected_at desc nulls last,
-                id desc
-            limit 20
-        """),
-        {"tenant_id": tenant_id},
-    ).mappings().all()
+    if row["status"] == "ERROR":
+        return b2b_customer_trend_error_response()
 
-    return {
-        "tenant_id": tenant_id,
-        "kpis": {
-            "signal_hit_count": int(kpi_row["signal_hit_count"] or 0),
-            "new_opportunity_count": int(kpi_row["new_opportunity_count"] or 0),
-            "high_opportunity_count": int(kpi_row["high_opportunity_count"] or 0),
-        },
-        "keyword_hits": [dict(row) for row in keyword_hits],
-        "opportunity_cards": [
-            {
-                "company_name": row["company_name"],
-                "corp_code": row["corp_code"],
-                "industry_label": row["industry_label"] or "-",
-                "signal_keyword": row["signal_keyword"],
-                "source_label": "DART 공시" if row["source"] == "dart" else "뉴스",
-                "detected_at": row["detected_at"],
-                "summary": row["summary"],
-                "source_url": row["source_url"],
-                "signal_level": row["signal_level"],
-                "event_type": row["event_type"],
-            }
-            for row in opportunity_cards
-        ],
-    }
+    # SUCCESS, NO_DATA는 캐시에 저장된 최종 JSON 그대로 반환
+    # shape:
+    # {
+    #   "signalKeywords": [...],
+    #   "prospects": [...]
+    # }
+    return row["response_json"]
