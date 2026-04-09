@@ -1,7 +1,7 @@
 export const API_BASE =
   window.location.hostname === "localhost"
     ? "http://localhost:8000"
-    : "https://emotion-ai-backend-bfdc.onrender.com";
+    : "https://emotion-ai-jkax.onrender.com";
 
 export async function apiFetch(path, options = {}) {
   const res = await fetch(`${API_BASE}${path}`, {
