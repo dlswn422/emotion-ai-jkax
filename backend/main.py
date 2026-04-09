@@ -47,6 +47,7 @@ app.add_middleware(
         "https://cxnexus.ai",
         "https://www.cxnexus.ai",
         "https://emotion-ai-jkax-wqsd.vercel.app",
+        "https://emotion-ai-jkax-b2b-on-main.vercel.app",
     ],
     allow_credentials=True,
     allow_methods=["*"],
