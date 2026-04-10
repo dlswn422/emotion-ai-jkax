@@ -47,7 +47,13 @@ ALLOWED_ORIGINS = [o.strip() for o in os.getenv("ALLOWED_ORIGINS", _default_orig
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=ALLOWED_ORIGINS,
+    allow_origins=[
+        "http://localhost:3000",
+        "https://cxnexus.ai",
+        "https://www.cxnexus.ai",
+        "https://emotion-ai-jkax-wqsd.vercel.app",
+        "https://emotion-ai-jkax-b2b-on-main.vercel.app",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
