@@ -20,7 +20,7 @@ from backend.service.cx_cache_service import (
 from backend.batch.batch_utils import resolve_window, utc_now, make_batch_run_id
 
 
-DEFAULT_PERIODS = ["1D", "7D", "30D", "90D", "180D"]
+DEFAULT_PERIODS = ["1D", "7D", "30D", "90D", "180D", "365D"]
 
 
 def list_store_ids(db: Session) -> list[str]:

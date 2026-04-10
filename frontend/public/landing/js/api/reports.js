@@ -19,7 +19,7 @@ export async function analyzeCx(storeId, periodType = "30D") {
   });
 
   const res = await fetch(`${API_BASE}/analysis/cx-analysis?${params.toString()}`, {
-    method: "POST",
+    method: "GET",
     credentials: "include",
   });
 

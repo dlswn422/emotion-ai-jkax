@@ -44,7 +44,7 @@ export const B2BPage = defineComponent({
       weekly:    "7D",
       monthly:   "30D",
       quarterly: "90D",
-      yearly:    "180D",
+      yearly:    "365D",
       all:       "180D",
     };
 

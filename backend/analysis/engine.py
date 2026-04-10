@@ -1,5 +1,4 @@
 import json
-import re
 from openai import OpenAI
 
 client = OpenAI()
@@ -7,20 +6,20 @@ client = OpenAI()
 
 def call_llm(prompt: str) -> dict:
     """
-    🔥 LLM 단일 호출 엔진 (최종본)
-    - JSON 강제
-    - 파싱 안정성 확보
+    LLM 단일 호출 엔진
+    - response_format json_object로 JSON 강제 (regex 파싱 불필요)
     """
-
     try:
         response = client.chat.completions.create(
             model="gpt-4o-mini",
+            response_format={"type": "json_object"},
             messages=[
                 {
                     "role": "system",
                     "content": (
                         "너는 고객 리뷰 데이터를 분석하는 CX 분석 전문가다. "
-                        "모든 응답은 반드시 한국어로 작성한다."
+                        "모든 응답은 반드시 한국어로 작성한다. "
+                        "반드시 JSON 형식으로만 응답한다."
                     ),
                 },
                 {
@@ -32,13 +31,7 @@ def call_llm(prompt: str) -> dict:
         )
 
         content = response.choices[0].message.content
-
-        # 🔒 JSON만 안전하게 추출
-        match = re.search(r"\{.*\}", content, re.DOTALL)
-        if not match:
-            raise ValueError("LLM JSON 응답 파싱 실패")
-
-        return json.loads(match.group())
+        return json.loads(content)
 
     except Exception as e:
         return {

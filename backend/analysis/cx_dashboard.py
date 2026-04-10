@@ -1,3 +1,4 @@
+import os
 from backend.analysis.engine import call_llm
 
 
@@ -10,7 +11,11 @@ def analyze_cx_dashboard(reviews: list[str]) -> dict:
     if not reviews:
         return {}
 
-    sample_reviews = reviews[:80]
+    # 최대 80개 리뷰만 분석 (GPT 컨텍스트 토큰 비용 제어)
+    # 리뷰가 많은 매장은 최신 80개 기준으로 분석됨
+    # 늘리려면 토큰 비용 증가를 고려할 것 (80개 기준 약 8k~15k tokens)
+    MAX_REVIEWS = int(os.getenv("CX_MAX_REVIEWS", "80"))
+    sample_reviews = reviews[:MAX_REVIEWS]
 
     prompt = f"""
 너는 음식점 고객경험(CX) 분석 전문 컨설턴트다.

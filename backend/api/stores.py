@@ -47,111 +47,7 @@ def list_stores(
     로그인한 Google 계정에 연결된 모든 매장 목록 조회
     """
 
-    print("\n===== [STORES] LIST STORES CALLED =====")
-    print("SESSION USER_ID:", current_user.id)
-    print("SESSION USER EMAIL:", current_user.email)
-    print("======================================\n")
-
-    creds = load_credentials(
-        user_id=current_user.id,
-        db=db,
-    )
-
-    print("✔ Credentials loaded successfully\n")
-
-    account_service = build(
-        "mybusinessaccountmanagement",
-        "v1",
-        credentials=creds,
-    )
-
-    accounts = (
-        account_service.accounts()
-        .list()
-        .execute()
-        .get("accounts", [])
-    )
-
-    print("GOOGLE BUSINESS ACCOUNTS COUNT:", len(accounts))
-
-    if not accounts:
-        print("❌ NO GOOGLE BUSINESS ACCOUNTS FOUND\n")
-        raise HTTPException(
-            status_code=404,
-            detail="연결된 Google Business 계정이 없습니다.",
-        )
-
-    location_service = build(
-        "mybusinessbusinessinformation",
-        "v1",
-        credentials=creds,
-    )
-
-    results: list[dict] = []
-
-    for account in accounts:
-        account_name = account["name"]  # accounts/{accountId}
-        print("→ ACCOUNT:", account_name)
-
-        locations = (
-            location_service.accounts()
-            .locations()
-            .list(parent=account_name)
-            .execute()
-            .get("locations", [])
-        )
-
-        print("  LOCATIONS FOUND:", len(locations))
-
-        for loc in locations:
-            store_id = loc["name"]
-            address = loc.get("storefrontAddress", {})
-            categories = loc.get("categories", {})
-
-            agg = (
-                db.query(
-                    func.avg(GoogleReview.rating).label("avg_rating"),
-                    func.count(GoogleReview.id).label("review_count"),
-                )
-                .filter(GoogleReview.store_id == store_id)
-                .one()
-            )
-
-            avg_rating = (
-                round(float(agg.avg_rating), 2)
-                if agg.avg_rating is not None
-                else None
-            )
-
-            review_count = agg.review_count or 0
-
-            results.append({
-                "store_key": encode_store_key(store_id),
-                "store_id": store_id,
-                "name": loc.get("title"),
-                "address": " ".join(
-                    filter(
-                        None,
-                        [
-                            address.get("locality"),
-                            address.get("administrativeArea"),
-                        ],
-                    )
-                ),
-                "category": (
-                    categories
-                    .get("primaryCategory", {})
-                    .get("displayName")
-                ),
-                "status": loc.get("openInfo", {}).get("status", "UNKNOWN"),
-                "rating": avg_rating,
-                "review_count": review_count,
-            })
-
-    print("✅ FINAL STORE COUNT:", len(results))
-    print("======================================\n")
-
-    return results
+    raise HTTPException(status_code=501, detail="Google Business 연동 준비 중입니다.")
 
 
 # ----------------------------
@@ -163,101 +59,7 @@ def get_store_detail(
     db: Session = Depends(get_db),
     # current_user: User = Depends(get_current_user),
 ):
-    print("\n===== [STORES] STORE DETAIL =====")
-    print("SESSION USER_ID:", current_user.id)
-    print("STORE_KEY:", store_key)
-    print("================================\n")
-
-    store_id = decode_store_key(store_key)
-
-    creds = load_credentials(
-        user_id=current_user.id,
-        db=db,
-    )
-
-    service = build(
-        "mybusinessbusinessinformation",
-        "v1",
-        credentials=creds,
-    )
-
-    try:
-        location = (
-            service.locations()
-            .get(name=store_id)
-            .execute()
-        )
-    except Exception:
-        raise HTTPException(
-            status_code=404,
-            detail="매장 정보를 찾을 수 없습니다.",
-        )
-
-    address = location.get("storefrontAddress", {})
-    categories = location.get("categories", {})
-
-    address_text = " ".join(
-        filter(
-            None,
-            [
-                address.get("locality"),
-                address.get("administrativeArea"),
-            ],
-        )
-    )
-
-    category_name = (
-        categories
-        .get("primaryCategory", {})
-        .get("displayName")
-    )
-
-    status = location.get("openInfo", {}).get("status", "UNKNOWN")
-
-    agg = (
-        db.query(
-            func.avg(GoogleReview.rating).label("avg_rating"),
-            func.count(GoogleReview.id).label("review_count"),
-            func.max(GoogleReview.created_at).label("last_review_at"),
-        )
-        .filter(GoogleReview.store_id == store_id)
-        .one()
-    )
-
-    avg_rating = (
-        round(float(agg.avg_rating), 2)
-        if agg.avg_rating is not None
-        else None
-    )
-
-    review_count = agg.review_count or 0
-
-    last_synced_at = (
-        agg.last_review_at.isoformat()
-        if agg.last_review_at
-        else None
-    )
-
-    description = None
-    if category_name and address_text:
-        description = (
-            f"{address_text}에서 운영 중인 "
-            f"{category_name} 매장입니다."
-        )
-
-    return {
-        "store_id": store_id,
-        "store_key": store_key,
-        "name": location.get("title"),
-        "address": address_text,
-        "category": category_name,
-        "status": status,
-        "avg_rating": avg_rating,
-        "review_count": review_count,
-        "last_synced_at": last_synced_at,
-        "description": description,
-        "source": "google_business_profile",
-    }
+    raise HTTPException(status_code=501, detail="Google Business 연동 준비 중입니다.")
 
 
 @router.post("/sync-reviews")
@@ -265,19 +67,7 @@ def sync_reviews(
     db: Session = Depends(get_db),
     # current_user: User = Depends(get_current_user),
 ):
-    print("\n===== [STORES] SYNC REVIEWS =====")
-    print("SESSION USER_ID:", current_user.id)
-    print("================================\n")
-
-    result = sync_all_reviews_for_user(
-        user_id=current_user.id,
-        db=db,
-    )
-
-    return {
-        "message": "리뷰 동기화 완료",
-        **result,
-    }
+    raise HTTPException(status_code=501, detail="Google Business 연동 준비 중입니다.")
 
 
 @router.get("/{store_id}/customers")

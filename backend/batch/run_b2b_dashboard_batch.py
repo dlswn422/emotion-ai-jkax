@@ -19,7 +19,7 @@ env_path = Path(__file__).resolve().parents[1] / ".env"
 load_dotenv(env_path)
 
 DEFAULT_REAL_TENANT_IDS = "1"
-DEFAULT_PERIODS = ["1D", "7D", "30D", "90D", "180D"]
+DEFAULT_PERIODS = ["1D", "7D", "30D", "90D", "180D", "365D"]
 
 
 # ──────────────────────────────────────────
@@ -39,7 +39,7 @@ def parse_tenant_ids(raw: str) -> list[int]:
 
 
 def resolve_window(period_type: str, now: datetime) -> tuple[datetime, datetime]:
-    days_map = {"1D": 1, "7D": 7, "30D": 30, "90D": 90, "180D": 180}
+    days_map = {"1D": 1, "7D": 7, "30D": 30, "90D": 90, "180D": 180, "365D": 365}
     if period_type not in days_map:
         raise ValueError(f"지원하지 않는 period_type: {period_type}")
     days = days_map[period_type]

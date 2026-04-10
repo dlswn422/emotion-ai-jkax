@@ -48,7 +48,7 @@ def _get_client() -> Optional[OpenAI]:
 def classify_signal_with_llm(
     source: str,
     text: str,
-    model: str = "gpt-4.1-mini",
+    model: str = "gpt-4o-mini",
 ) -> Optional[Dict[str, str]]:
     client = _get_client()
     if client is None:

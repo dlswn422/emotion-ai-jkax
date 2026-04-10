@@ -14,14 +14,22 @@ env_path = Path(__file__).resolve().parents[1] / ".env"
 load_dotenv(env_path)
 
 
+_supabase_client: Client | None = None
+
+
 def get_supabase_client() -> Client:
+    global _supabase_client
+    if _supabase_client is not None:
+        return _supabase_client
+
     supabase_url = os.getenv("SUPABASE_URL", "").strip()
     supabase_service_role_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY", "").strip()
 
     if not supabase_url or not supabase_service_role_key:
         raise RuntimeError("SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY 확인 필요")
 
-    return create_client(supabase_url, supabase_service_role_key)
+    _supabase_client = create_client(supabase_url, supabase_service_role_key)
+    return _supabase_client
 
 
 def resolve_cx_status(response_json: dict[str, Any]) -> str:

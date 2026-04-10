@@ -27,3 +27,4 @@ requests
 
 # ===== DB (지금 or 향후 대비) =====
 sqlalchemy
+supabase

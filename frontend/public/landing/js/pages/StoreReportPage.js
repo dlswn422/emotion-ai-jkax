@@ -725,7 +725,7 @@ export const StoreReportPage = defineComponent({
 
       switch (periodType) {
         case "1D":
-          start.setDate(end.getDate());
+          start.setDate(end.getDate() - 0);
           break;
         case "7D":
           start.setDate(end.getDate() - 6);
@@ -738,6 +738,9 @@ export const StoreReportPage = defineComponent({
           break;
         case "180D":
           start.setDate(end.getDate() - 179);
+          break;
+        case "365D":
+          start.setDate(end.getDate() - 364);
           break;
         default:
           start.setDate(end.getDate() - 29);

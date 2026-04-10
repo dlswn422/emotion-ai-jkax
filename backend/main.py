@@ -40,14 +40,14 @@ ENV = os.getenv("ENV", "local")
 # =========================
 # CORS 설정
 # =========================
+# ALLOWED_ORIGINS 환경변수: 쉼표로 구분된 URL 목록
+# 예) ALLOWED_ORIGINS=https://cxnexus.ai,https://emotion-ai-jkax.vercel.app
+_default_origins = "http://localhost:3000,https://cxnexus.ai,https://www.cxnexus.ai,https://emotion-ai-jkax-wqsd.vercel.app,https://emotion-ai-jkax-b2b-on-main.vercel.app"
+ALLOWED_ORIGINS = [o.strip() for o in os.getenv("ALLOWED_ORIGINS", _default_origins).split(",") if o.strip()]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",
-        "https://cxnexus.ai",
-        "https://www.cxnexus.ai",
-        "https://emotion-ai-jkax-wqsd.vercel.app",
-    ],
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -72,7 +72,6 @@ app.include_router(stores.router)
 app.include_router(analysis.router)
 app.include_router(dashboard.router)
 app.include_router(google_business.router)
-app.include_router(customers.router)
 app.include_router(tenant_news.router)
 app.include_router(tenant_disclosures.router)
 app.include_router(monitoring_targets.router)

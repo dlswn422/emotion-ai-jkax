@@ -23,7 +23,7 @@ async def analyze_file(
     return await analyze_file_sentiment(file)
 
 
-@router.post("/cx-analysis")
+@router.get("/cx-analysis")
 def analyze_cx_dashboard_api(
     store_id: str = Query(..., description="store_id"),
     period_type: str | None = Query(None, description="1D/7D/30D/90D/180D"),
