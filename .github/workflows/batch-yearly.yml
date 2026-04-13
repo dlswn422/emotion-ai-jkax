@@ -2,21 +2,37 @@ name: Batch - Yearly (180D, 365D)
 
 on:
   schedule:
-    - cron: '0 17 31 12 *'   # 12/31 UTC 17:00 = KST 02:00
+    - cron: '0 17 31 12 *'
   workflow_dispatch:
 
 jobs:
   trigger:
     runs-on: ubuntu-latest
     steps:
+      - name: Wake up server # 서버 깨우기 (슬립 방지)
+        run: |
+          echo "서버 웜업 시작..."
+          for i in {1..6}; do
+            status=$(curl -s -o /dev/null -w "%{http_code}" \
+              "${{ secrets.BACKEND_URL }}/batch/status?secret=${{ secrets.BATCH_SECRET }}")
+            echo "Attempt $i: HTTP $status"
+            if [ "$status" = "200" ]; then
+              echo "서버 준비 완료"
+              break
+            fi
+            echo "대기 중... (15초)"
+            sleep 15
+          done
+
       - name: Trigger yearly batch
         run: |
           response=$(curl -s -w "\n%{http_code}" -X POST \
             "${{ secrets.BACKEND_URL }}/batch/trigger/yearly?secret=${{ secrets.BATCH_SECRET }}")
           body=$(echo "$response" | head -n -1)
           status=$(echo "$response" | tail -n 1)
-          echo "Status: $status, Body: $body"
+          echo "Status: $status"
+          echo "Body: $body"
           if [ "$status" != "200" ]; then
-            echo "Batch trigger failed with status $status"
+            echo "배치 트리거 실패: $status"
             exit 1
           fi
