@@ -52,6 +52,84 @@ export const StoreListPage = defineComponent({
       );
     });
 
+    function getCompanyCardMeta(company) {
+      if (company.id === "store_7") {
+        return {
+          name: "신일팜글래스(주)",
+          logoMode: "text",
+          logoText: "SG",
+          logoBg: "#dbeafe",
+          logoColor: "#1a5fa8",
+          tags: ["의료용 유리용기 제조", "중견기업", "대한민국"],
+          desc: "의료용 유리 앰플·바이알 전문 제조 · 월 3천만개 생산 · KRX 상장 (001380) · ISO 15378 인증 · 수출 40개국+",
+          rating: "3.8",
+          reviewCount: "124",
+          ownReview: "자사리뷰 미설정",
+          ownReviewColor: "#94a3b8",
+          statusText: "Active",
+          buttonText: "전체 대시보드 분석하기",
+          pillExternal: "#3b82f6",
+          pillOwnreview: "#f59e0b",
+          pillCompetitive: "#f59e0b",
+          pillInternal: "#8b5cf6",
+        };
+      }
+
+      if (company.id === "store_6") {
+        return {
+          name: company.name,
+          logoMode: "image",
+          tags: [company.category, "소상공인", company.country].filter(Boolean),
+          desc: company.description || "",
+          rating:
+            company.rating !== null && company.rating !== undefined
+              ? String(company.rating)
+              : "",
+          reviewCount:
+            typeof company.reviewCount === "number"
+              ? company.reviewCount.toLocaleString()
+              : "",
+          ownReview:
+            typeof company.reviewCount === "number" ? "자사리뷰 ✓" : "",
+          ownReviewColor: "#10b981",
+          statusText: "Active",
+          buttonText: "매장 분석하기",
+          pillExternal: "#3b82f6",
+          pillOwnreview: "#10b981",
+          pillCompetitive: "#f59e0b",
+          pillInternal: "#94a3b8",
+        };
+      }
+
+      return {
+        name: company.name,
+        logoMode: "image",
+        tags: [],
+        desc: company.description || "",
+        rating: "",
+        reviewCount: "",
+        ownReview: "",
+        ownReviewColor: "#94a3b8",
+        statusText: company.status === "active" ? "운영중" : "설정중",
+        buttonText: "전체 대시보드 분석하기",
+        pillExternal: "#3b82f6",
+        pillOwnreview: "#f59e0b",
+        pillCompetitive: "#f59e0b",
+        pillInternal: "#8b5cf6",
+      };
+    }
+
+    function logoImageClass(companyId) {
+      return [
+        "company-logo-img",
+        companyId === "store_6" ? "company-logo-img-up-sahabat" : "",
+        companyId === "store_7" ? "company-logo-img-up-sinill" : "",
+        companyId === "store_8" ? "company-logo-img-up-etoday" : "",
+        companyId === "store_9" ? "company-logo-img-up-ck" : "",
+        companyId === "store_10" ? "company-logo-img-up-goodai" : "",
+      ];
+    }
+
     /**
      * 분석 시작 버튼 클릭
      * 선택한 기업/매장을 모달 대상으로 저장하고 날짜 모달 오픈
@@ -65,12 +143,25 @@ export const StoreListPage = defineComponent({
      * 날짜 선택 완료 시 리포트 페이지로 이동
      */
     function onConfirm(dates) {
-      if (selectedStore.value) {
+      if (!selectedStore.value) return;
+
+      // 신일팜글래스만 B2B 리포트로 보냄
+      if (selectedStore.value.id === "store_7") {
         router.push({
-          path: `/report/${selectedStore.value.id}`,
-          query: dates,
+          path: "/B2B-report/shinilpharm",
+          query: {
+            start: dates.start,
+            end: dates.end,
+          },
         });
+        return;
       }
+
+      // 나머지는 기존 매장/기업 리포트 흐름 유지
+      router.push({
+        path: `/report/${selectedStore.value.id}`,
+        query: dates,
+      });
     }
 
     return {
@@ -83,6 +174,8 @@ export const StoreListPage = defineComponent({
       selectedStore,
       openAnalysis,
       onConfirm,
+      getCompanyCardMeta,
+      logoImageClass,
     };
   },
 
@@ -93,9 +186,6 @@ export const StoreListPage = defineComponent({
 
       <div class="page-shell">
         <div class="page-body">
-          <!-- 데모 데이터 안내 배너 -->
-       
-
           <!-- 페이지 헤더 -->
           <div class="page-hero-bar">
             <div>
@@ -142,38 +232,127 @@ export const StoreListPage = defineComponent({
                 class="store-card company-card"
                 @click="openAnalysis(company)"
               >
-                <div class="sc-header">
-                  <div class="company-logo-slot">
-                    <img
-                      v-if="company.logoSrc"
-                      :src="company.logoSrc"
-                      :alt="company.name"
-                      :class="[
-                        company.id === 'store_6' ? 'company-logo-img-up-sahabat' : '',
-                        company.id === 'store_7' ? 'company-logo-img-up-sinill' : '',
-                        company.id === 'store_8' ? 'company-logo-img-up-etoday' : '',
-                        company.id === 'store_9' ? 'company-logo-img-up-ck' : '',
-                        company.id === 'store_10' ? 'company-logo-img-up-goodai' : ''
+                <div class="b2b-comp-header">
+                  <template v-if="getCompanyCardMeta(company).logoMode === 'text'">
+                    <div
+                      class="b2b-comp-logo"
+                      :style="{
+                        background: getCompanyCardMeta(company).logoBg,
+                        color: getCompanyCardMeta(company).logoColor
+                      }"
+                    >
+                      {{ getCompanyCardMeta(company).logoText }}
+                    </div>
+                  </template>
 
-                      ]"
-                    />
+                  <template v-else>
+                    <div class="company-logo-slot">
+                      <img
+                        v-if="company.logoSrc"
+                        :src="company.logoSrc"
+                        :alt="company.name"
+                        :class="logoImageClass(company.id)"
+                      />
+                    </div>
+                  </template>
+
+                  <div class="b2b-comp-meta">
+                    <div class="b2b-comp-name">{{ getCompanyCardMeta(company).name }}</div>
+
+                    <div
+                      v-if="getCompanyCardMeta(company).tags.length"
+                      class="b2b-comp-tags"
+                    >
+                      <span
+                        v-for="(tag, idx) in getCompanyCardMeta(company).tags"
+                        :key="idx"
+                        class="b2b-tag"
+                      >
+                        {{ tag }}
+                      </span>
+                    </div>
                   </div>
 
-                  <div class="sc-info">
-                    <div class="sc-name">{{ company.name }}</div>
-                    <div class="company-desc">{{ company.description }}</div>
-                  </div>
-
-                  <span :class="['status-pill', company.status === 'active' ? 'status-active' : 'status-pending']">
+                  <span class="status-pill status-active">
                     <svg width="6" height="6" viewBox="0 0 6 6" fill="currentColor">
-                      <circle cx="3" cy="3" r="3" />
+                      <circle cx="3" cy="3" r="3"/>
                     </svg>
-                    {{ company.status === 'active' ? '운영중' : '설정중' }}
+                    {{ getCompanyCardMeta(company).statusText }}
                   </span>
                 </div>
 
+                <p class="b2b-comp-desc">{{ getCompanyCardMeta(company).desc }}</p>
+
+                <div
+                  v-if="getCompanyCardMeta(company).rating || getCompanyCardMeta(company).reviewCount || getCompanyCardMeta(company).ownReview"
+                  class="b2b-comp-metrics"
+                >
+                  <div v-if="getCompanyCardMeta(company).rating" class="b2b-metric">
+                    <span class="b2b-metric-icon" style="color:#f59e0b">★</span>
+                    <span class="b2b-metric-val">{{ getCompanyCardMeta(company).rating }}</span>
+                    <span class="b2b-metric-lbl">Google</span>
+                  </div>
+
+                  <div
+                    v-if="getCompanyCardMeta(company).rating && (getCompanyCardMeta(company).reviewCount || getCompanyCardMeta(company).ownReview)"
+                    class="b2b-metric-divider"
+                  ></div>
+
+                  <div v-if="getCompanyCardMeta(company).reviewCount" class="b2b-metric">
+                    <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                      <path d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+                    </svg>
+                    <span class="b2b-metric-val">{{ getCompanyCardMeta(company).reviewCount }}</span>
+                    <span class="b2b-metric-lbl">리뷰</span>
+                  </div>
+
+                  <div
+                    v-if="getCompanyCardMeta(company).reviewCount && getCompanyCardMeta(company).ownReview"
+                    class="b2b-metric-divider"
+                  ></div>
+
+                  <div v-if="getCompanyCardMeta(company).ownReview" class="b2b-metric">
+                    <span
+                      class="b2b-metric-lbl"
+                      :style="{ color: getCompanyCardMeta(company).ownReviewColor, fontWeight: '600' }"
+                    >
+                      {{ getCompanyCardMeta(company).ownReview }}
+                    </span>
+                  </div>
+                </div>
+
+                <div class="b2b-pill-row">
+                  <div class="b2b-dim-pill" :style="'--dc:' + getCompanyCardMeta(company).pillExternal">
+                    <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                      <path d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    고객동향
+                  </div>
+
+                  <div class="b2b-dim-pill" :style="'--dc:' + getCompanyCardMeta(company).pillOwnreview">
+                    <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                      <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
+                    </svg>
+                    리뷰감정
+                  </div>
+
+                  <div class="b2b-dim-pill" :style="'--dc:' + getCompanyCardMeta(company).pillCompetitive">
+                    <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                      <path d="M12 20V10M18 20V4M6 20v-6"/>
+                    </svg>
+                    경쟁사
+                  </div>
+
+                  <div class="b2b-dim-pill" :style="'--dc:' + getCompanyCardMeta(company).pillInternal">
+                    <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                      <path d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0"/>
+                    </svg>
+                    직원감정
+                  </div>
+                </div>
+
                 <button class="sc-cta company-btn" @click.stop="openAnalysis(company)">
-                  {{ company.name }} {{ company.id === 'store_6' ? '매장 분석하기' : '기업 분석하기' }}
+                  {{ getCompanyCardMeta(company).buttonText }}
                   <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
                     <path d="M5 12h14M12 5l7 7-7 7" />
                   </svg>

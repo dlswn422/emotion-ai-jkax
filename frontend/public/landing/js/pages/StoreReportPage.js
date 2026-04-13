@@ -727,7 +727,6 @@ export const StoreReportPage = defineComponent({
         const defaults = getDefaultDateRange();
         const from = route.query.from || route.query.start || defaults.from;
         const to = route.query.to || route.query.end || defaults.to;
-
         const [cxJson, trendDaily, trendMonthly, customerJson] =
           await Promise.all([
             analyzeCx(storeId, from, to),
