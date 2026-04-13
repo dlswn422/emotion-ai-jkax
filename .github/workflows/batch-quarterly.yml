@@ -1,0 +1,22 @@
+name: Batch - Quarterly (90D)
+
+on:
+  schedule:
+    - cron: '0 17 28-31 3,6,9,12 *'  # 분기 말월(3,6,9,12) 28~31일 UTC 17:00
+  workflow_dispatch:
+
+jobs:
+  trigger:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger quarterly batch
+        run: |
+          response=$(curl -s -w "\n%{http_code}" -X POST \
+            "${{ secrets.BACKEND_URL }}/batch/trigger/quarterly?secret=${{ secrets.BATCH_SECRET }}")
+          body=$(echo "$response" | head -n -1)
+          status=$(echo "$response" | tail -n 1)
+          echo "Status: $status, Body: $body"
+          if [ "$status" != "200" ]; then
+            echo "Batch trigger failed with status $status"
+            exit 1
+          fi
