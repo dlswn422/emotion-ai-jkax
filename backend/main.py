@@ -28,6 +28,7 @@ from backend.api import (
     tenant_disclosures,
     monitoring_targets,
     industry_targets,
+    batch_trigger,
 )
 
 # =========================

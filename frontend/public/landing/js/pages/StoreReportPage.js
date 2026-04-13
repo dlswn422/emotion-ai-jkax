@@ -746,9 +746,6 @@ export const StoreReportPage = defineComponent({
         case "90D":
           start.setDate(end.getDate() - 89);
           break;
-        case "180D":
-          start.setDate(end.getDate() - 179);
-          break;
         case "365D":
           start.setDate(end.getDate() - 364);
           break;

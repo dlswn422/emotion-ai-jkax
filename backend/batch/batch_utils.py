@@ -4,7 +4,7 @@ import uuid
 from datetime import datetime, timedelta, timezone
 
 
-VALID_PERIOD_TYPES = {"1D", "7D", "30D", "90D", "180D", "365D"}
+VALID_PERIOD_TYPES = {"1D", "7D", "30D", "90D", "365D"}
 
 
 def utc_now() -> datetime:
@@ -26,7 +26,6 @@ def resolve_window(period_type: str, now: datetime | None = None) -> tuple[datet
         "7D": 7,
         "30D": 30,
         "90D": 90,
-        "180D": 180,
         "365D": 365,
     }
 

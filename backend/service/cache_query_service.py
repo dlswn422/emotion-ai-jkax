@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 from fastapi import HTTPException
 
 
-VALID_PERIOD_TYPES = {"1D", "7D", "30D", "90D", "180D", "365D"}
+VALID_PERIOD_TYPES = {"1D", "7D", "30D", "90D", "365D"}
 
 
 def _parse_iso_to_date(value: str):
@@ -66,14 +66,13 @@ def resolve_fixed_period_type(
         7: "7D",
         30: "30D",
         90: "90D",
-        180: "180D",
         365: "365D",
     }
 
     if days not in mapping:
         raise HTTPException(
             status_code=400,
-            detail="고정 기간(1D/7D/30D/90D/180D)만 지원합니다.",
+            detail="고정 기간(1D/7D/30D/90D/365D)만 지원합니다.",
         )
 
     return mapping[days]
