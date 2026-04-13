@@ -1,0 +1,20 @@
+name: Batch - Weekly (7D)
+
+on:
+  schedule:
+    - cron: '0 17 * * 6'   # 매주 토 UTC 17:00 = 일 KST 02:00
+  workflow_dispatch:
+
+jobs:
+  trigger:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger weekly batch
+        run: |
+          response=$(curl -s -o /dev/null -w "%{http_code}" -X POST \
+            "${{ secrets.BACKEND_URL }}/batch/trigger/weekly?secret=${{ secrets.BATCH_SECRET }}")
+          echo "Response: $response"
+          if [ "$response" != "200" ]; then
+            echo "Batch trigger failed with status $response"
+            exit 1
+          fi
