@@ -1,0 +1,20 @@
+name: Batch - Daily (1D)
+
+on:
+  schedule:
+    - cron: '0 17 * * *'   # 매일 UTC 17:00 = KST 02:00
+  workflow_dispatch:        # 수동 실행 가능
+
+jobs:
+  trigger:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger daily batch
+        run: |
+          response=$(curl -s -o /dev/null -w "%{http_code}" -X POST \
+            "${{ secrets.BACKEND_URL }}/batch/trigger/daily?secret=${{ secrets.BATCH_SECRET }}")
+          echo "Response: $response"
+          if [ "$response" != "200" ]; then
+            echo "Batch trigger failed with status $response"
+            exit 1
+          fi
