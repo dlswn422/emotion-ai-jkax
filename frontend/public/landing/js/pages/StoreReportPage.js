@@ -650,13 +650,23 @@ export const StoreReportPage = defineComponent({
             },
             y: {
               min: 1,
-              max: 5,
-              grid: { color: "#f1f5f9" },
+              max: 5.3,
+              grid: {
+                color: (ctx) => {
+                  const value = ctx.tick?.value;
+                  if (value > 5) return "transparent";
+                  return "#f1f5f9";
+                },
+              },
               border: { display: false },
               ticks: {
                 stepSize: 1,
                 font: { size: 11, family: "Inter" },
                 color: "#94a3b8",
+                callback: (value) => {
+                  if (value > 5) return "";
+                  return value;
+                },
               },
             },
           },

@@ -1,4 +1,4 @@
-const { defineComponent, ref, computed } = Vue;
+const { defineComponent, ref, computed, onMounted, onUnmounted } = Vue;
 const { useRouter, useRoute } = VueRouter;
 
 import { NavBar } from "../components/NavBar.js";
@@ -17,22 +17,22 @@ import {
 
 // snapshotKey → backend period_type 매핑
 const SNAPSHOT_TO_PERIOD = {
-  daily:     "1D",
-  weekly:    "7D",
-  monthly:   "30D",
+  daily: "1D",
+  weekly: "7D",
+  monthly: "30D",
   quarterly: "90D",
-  yearly:    "365D",
-  all:       "9999999999D",
+  yearly: "365D",
+  all: "9999999999D",
 };
 
 // snapshotKey → 표시 라벨
 const SNAPSHOT_LABELS = {
-  daily:     "일간 분석",
-  weekly:    "주간 분석",
-  monthly:   "월간 분석",
+  daily: "일간 분석",
+  weekly: "주간 분석",
+  monthly: "월간 분석",
   quarterly: "분기 분석",
-  yearly:    "연간 분석",
-  all:       "전체 누적",
+  yearly: "연간 분석",
+  all: "전체 누적",
 };
 
 export const B2BReportPage = defineComponent({
@@ -51,23 +51,36 @@ export const B2BReportPage = defineComponent({
     const router = useRouter();
 
     const compId = route.params.id;
-    const company = B2B_COMPANIES.find((c) => c.id === compId) || B2B_COMPANIES[0];
-    const report  = B2B_REPORTS[compId] || B2B_REPORTS[B2B_COMPANIES[0].id];
+    const company =
+      B2B_COMPANIES.find((c) => c.id === compId) || B2B_COMPANIES[0];
+    const report = B2B_REPORTS[compId] || B2B_REPORTS[B2B_COMPANIES[0].id];
 
     // URL query 또는 기본값(monthly=30D)으로 초기화
     const selectedSnapshot = ref(route.query.snapshot || "monthly");
 
     const periodType = computed(
-      () => SNAPSHOT_TO_PERIOD[selectedSnapshot.value] || "30D"
+      () => SNAPSHOT_TO_PERIOD[selectedSnapshot.value] || "30D",
     );
 
     const periodLabel = computed(
-      () => SNAPSHOT_LABELS[selectedSnapshot.value] || "월간 분석"
+      () => SNAPSHOT_LABELS[selectedSnapshot.value] || "월간 분석",
     );
 
     const loading = ref(false);
     const activeTab = ref("external");
     const showPeriodModal = ref(false);
+
+    // 600px 이하에서는 상위 탭 대신 세로 스택 모드
+    const viewportWidth = ref(window.innerWidth);
+    const isMobileStackMode = computed(() => viewportWidth.value <= 600);
+
+    function handleResize() {
+      viewportWidth.value = window.innerWidth;
+    }
+
+    function isVisibleTab(tabId) {
+      return isMobileStackMode.value || activeTab.value === tabId;
+    }
 
     const internalTopKpis = computed(() => {
       if (company.id === "shinilpharm") {
@@ -121,7 +134,7 @@ export const B2BReportPage = defineComponent({
       TAB_DEFS.map((t) => ({
         ...t,
         status: (GLOBAL_TAB_STATUSES[compId] || {})[t.id] || "ready",
-      }))
+      })),
     );
 
     function selectTab(tab) {
@@ -144,6 +157,15 @@ export const B2BReportPage = defineComponent({
 
     detectAndCreateAlerts(report, company.name, compId);
 
+    onMounted(() => {
+      window.addEventListener("resize", handleResize);
+      handleResize();
+    });
+
+    onUnmounted(() => {
+      window.removeEventListener("resize", handleResize);
+    });
+
     return {
       router,
       company,
@@ -159,6 +181,9 @@ export const B2BReportPage = defineComponent({
       printReport,
       fmtDate,
       internalTopKpis,
+      viewportWidth,
+      isMobileStackMode,
+      isVisibleTab,
     };
   },
 
@@ -171,7 +196,7 @@ export const B2BReportPage = defineComponent({
     <div class="report-shell">
       <div class="report-layout">
 
-        <aside class="report-sidenav">
+        <aside v-if="!isMobileStackMode" class="report-sidenav">
           <div class="sidenav-store-info">
             <div class="b2b-sidenav-header">
               <div class="b2b-sidenav-logo" :style="{background:company.logoBg,color:company.logoColor}">
@@ -278,20 +303,47 @@ export const B2BReportPage = defineComponent({
               :comp-id="company.id"
               :period-type="periodType"
             />
-          </div>
+          </template>
 
-          <div v-show="activeTab==='ownreview'" class="tab-status-screen wip" style="margin-top:18px">
-            <div class="tab-screen-badge wip">작업중</div>
-            <h2 class="tab-screen-title">리뷰 감정 분석 탭은 다음 단계에서 맞출 예정</h2>
-          </div>
+          <template v-if="isVisibleTab('ownreview')">
+            <div v-if="isMobileStackMode" class="b2b-mobile-section-marker">
+              <div class="b2b-mobile-section-marker-icon">
+                <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <circle cx="12" cy="12" r="10"/>
+                  <path d="M12 6v6l4 2"/>
+                </svg>
+              </div>
+              <div class="b2b-mobile-section-marker-text">
+                <div class="b2b-mobile-section-marker-title">리뷰 감정 분석</div>
+                <div class="b2b-mobile-section-marker-sub">현재 작업중인 섹션</div>
+              </div>
+            </div>
 
-          <div v-show="activeTab==='competitive'">
+            <div class="tab-status-screen wip" :style="isMobileStackMode ? 'margin-top:0' : 'margin-top:18px'">
+              <div class="tab-screen-badge wip">작업중</div>
+              <h2 class="tab-screen-title">리뷰 감정 분석 탭은 다음 단계에서 맞출 예정</h2>
+            </div>
+          </template>
+
+          <template v-if="isVisibleTab('competitive')">
+            <div v-if="isMobileStackMode" class="b2b-mobile-section-marker">
+              <div class="b2b-mobile-section-marker-icon">
+                <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                </svg>
+              </div>
+              <div class="b2b-mobile-section-marker-text">
+                <div class="b2b-mobile-section-marker-title">경쟁사 분석</div>
+                <div class="b2b-mobile-section-marker-sub">이슈 히트 · 감지 키워드 · 상세 현황</div>
+              </div>
+            </div>
+
             <B2BCompetitiveSection
               :tenant-id="company.tenant_id"
               :comp-id="company.id"
               :period-type="periodType"
             />
-          </div>
+          </template>
 
           <div v-show="activeTab==='internal'">
             <div class="b2b-top-kpi" style="margin-bottom:20px">
