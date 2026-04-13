@@ -241,8 +241,18 @@ export const CustomerPage = defineComponent({
                   </div>
                 </div>
                 <div class="ca-churn-insight">
-                  <div class="ca-churn-icon"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg></div>
-                  이번 달 이탈 위험 고객은 <strong>{{ customers.riskDistribution.high?.count || 0 }}</strong>명이고, 평균 이탈 확률은 <strong>{{ customers.riskDistribution.high?.avg_churn_pct || 0 }}%</strong>입니다.
+                  <div class="ca-churn-icon">
+                    <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                      <path d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                    </svg>
+                  </div>
+
+                  <div class="ca-churn-text">
+                    이번 달 이탈 위험 고객은
+                    <strong>{{ customers.riskDistribution.high?.count || 0 }}</strong>명이고,
+                    평균 이탈 확률은
+                    <strong>{{ customers.riskDistribution.high?.avg_churn_pct || 0 }}%</strong>입니다.
+                  </div>
                 </div>
               </div>
             </div>

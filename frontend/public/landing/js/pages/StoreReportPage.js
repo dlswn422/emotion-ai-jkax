@@ -41,7 +41,7 @@ export const StoreReportPage = defineComponent({
 
     // 모바일 392px 이하에서만 상위 탭을 스택 모드로 전환
     const viewportWidth = ref(window.innerWidth);
-    const isMobileStackMode = computed(() => viewportWidth.value <= 392);
+    const isMobileStackMode = computed(() => viewportWidth.value <= 600);
 
     function handleResize() {
       viewportWidth.value = window.innerWidth;

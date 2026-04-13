@@ -49,7 +49,7 @@ def get_rating_trend(
     prev_rating = None
 
     for r in rows:
-        avg_rating = round(float(r.avg_rating), 2)
+        avg_rating = round(float(r.avg_rating or 0), 2)
 
         highlight = False
         if prev_rating is not None and abs(avg_rating - prev_rating) >= 0.3:
