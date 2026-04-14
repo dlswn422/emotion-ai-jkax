@@ -20,6 +20,10 @@ export const StoreListPage = defineComponent({
     const showModal = ref(false);
     const selectedStore = ref(null);
 
+    // 안드로이드 기기 여부
+    function isAndroidDevice() {
+      return /Android/i.test(navigator.userAgent || "");
+    }
     // 기업 목록만 추출
     const companies = computed(() =>
       STORES.filter((item) => item.type === "company"),
@@ -28,9 +32,14 @@ export const StoreListPage = defineComponent({
     // 기업 검색 필터링
     const filteredCompanies = computed(() => {
       const q = companySearchQ.value.trim().toLowerCase();
-      if (!q) return companies.value;
 
-      return companies.value.filter((company) =>
+      const baseCompanies = isAndroidDevice()
+        ? companies.value.filter((company) => company.id === "store_7")
+        : companies.value;
+
+      if (!q) return baseCompanies;
+
+      return baseCompanies.filter((company) =>
         company.name.toLowerCase().includes(q),
       );
     });
