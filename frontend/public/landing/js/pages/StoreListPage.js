@@ -24,6 +24,9 @@ export const StoreListPage = defineComponent({
     function isAndroidDevice() {
       return /Android/i.test(navigator.userAgent || "");
     }
+    console.log("UA:", navigator.userAgent);
+    console.log("isAndroidDevice:", isAndroidDevice());
+
     // 기업 목록만 추출
     const companies = computed(() =>
       STORES.filter((item) => item.type === "company"),
@@ -36,7 +39,11 @@ export const StoreListPage = defineComponent({
       const baseCompanies = isAndroidDevice()
         ? companies.value.filter((company) => company.id === "store_7")
         : companies.value;
-
+      console.log(
+        "baseCompanies:",
+        baseCompanies.map((company) => company.id),
+      );
+      console.log("searchQ:", q);
       if (!q) return baseCompanies;
 
       return baseCompanies.filter((company) =>
