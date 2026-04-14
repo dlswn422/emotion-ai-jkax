@@ -4,10 +4,11 @@ on:
   schedule:
     - cron: '0 17 * * 6'
   workflow_dispatch:
-# 서버 깨우기(슬립 방지)
+
 jobs:
   trigger:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - name: Wake up server
         run: |
@@ -26,13 +27,21 @@ jobs:
 
       - name: Trigger weekly batch
         run: |
-          response=$(curl -s -w "\n%{http_code}" -X POST \
+          echo "배치 실행 시작..."
+          response=$(curl -s -w "\n%{http_code}" \
+            --max-time 1200 \
+            -X POST \
             "${{ secrets.BACKEND_URL }}/batch/trigger/weekly?secret=${{ secrets.BATCH_SECRET }}")
           body=$(echo "$response" | head -n -1)
           status=$(echo "$response" | tail -n 1)
-          echo "Status: $status"
+          echo "HTTP Status: $status"
           echo "Body: $body"
-          if [ "$status" != "200" ]; then
-            echo "배치 트리거 실패: $status"
+          if [ "$status" = "500" ]; then
+            echo "❌ 배치 실행 실패"
             exit 1
           fi
+          if [ "$status" != "200" ]; then
+            echo "❌ 예상치 못한 응답: $status"
+            exit 1
+          fi
+          echo "✅ 배치 완료"
