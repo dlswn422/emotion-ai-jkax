@@ -11,7 +11,6 @@ import {
   B2B_COMPANIES,
   B2B_REPORTS,
   GLOBAL_TAB_STATUSES,
-  detectAndCreateAlerts,
   fmtDate,
 } from "../b2b/shared.js";
 
@@ -155,7 +154,6 @@ export const B2BReportPage = defineComponent({
       });
     }
 
-    detectAndCreateAlerts(report, company.name, compId);
 
     onMounted(() => {
       window.addEventListener("resize", handleResize);
