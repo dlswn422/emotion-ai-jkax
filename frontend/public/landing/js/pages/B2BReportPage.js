@@ -11,7 +11,6 @@ import {
   B2B_COMPANIES,
   B2B_REPORTS,
   GLOBAL_TAB_STATUSES,
-  detectAndCreateAlerts,
   fmtDate,
 } from "../b2b/shared.js";
 
@@ -65,6 +64,18 @@ export const B2BReportPage = defineComponent({
     const periodLabel = computed(
       () => SNAPSHOT_LABELS[selectedSnapshot.value] || "월간 분석",
     );
+
+    // analysisPeriod: B2BCustomerTrendSection / B2BCompetitiveSection에 전달
+    const analysisPeriod = computed(() => {
+      const end = new Date();
+      const start = new Date();
+      const days = parseInt(periodType.value) || 30;
+      start.setDate(end.getDate() - days);
+      return {
+        start: start.toISOString().slice(0, 10),
+        end: end.toISOString().slice(0, 10),
+      };
+    });
 
     const loading = ref(false);
     const activeTab = ref("external");
@@ -155,7 +166,6 @@ export const B2BReportPage = defineComponent({
       });
     }
 
-    detectAndCreateAlerts(report, company.name, compId);
 
     onMounted(() => {
       window.addEventListener("resize", handleResize);
@@ -184,6 +194,7 @@ export const B2BReportPage = defineComponent({
       viewportWidth,
       isMobileStackMode,
       isVisibleTab,
+      analysisPeriod,
     };
   },
 
@@ -313,7 +324,7 @@ export const B2BReportPage = defineComponent({
             <B2BCustomerTrendSection
               :tenant-id="company.tenant_id"
               :comp-id="company.id"
-              :period-type="periodType"
+              :analysis-period="analysisPeriod"
             />
           </template>
 

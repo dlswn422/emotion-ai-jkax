@@ -67,7 +67,7 @@ export const B2BCustomerTrendSection = defineComponent({
           kw_type: row.kw_type || "이벤트",
           signal_level: row.signal_level || "medium",
           hit_count: Number(row.hit_count || 0),
-          last_hit: row.last_hit || props.analysisPeriod.end,
+          last_hit: row.last_hit || props.analysisPeriod?.end || "",
           active: row.active,
         })),
     );
