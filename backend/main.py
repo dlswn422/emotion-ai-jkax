@@ -18,6 +18,8 @@ from backend.api.dashboard_customer_trend import router as dashboard_customer_tr
 from backend.api.dashboard_competitor_analysis import router as dashboard_competitor_analysis_router
 from backend.api.news_signals import router as news_signals_router
 from backend.api.batch import router as batch_router
+from backend.api.devices import router as devices_router
+from backend.core.socket_manager import sio
 
 from backend.api import (
     analysis,
@@ -35,7 +37,18 @@ from backend.api import (
 # =========================
 # FastAPI App
 # =========================
-app = FastAPI(title="CX Nexus Backend")
+from contextlib import asynccontextmanager
+from backend.api.socket_events import redis_listener
+import asyncio
+
+@asynccontextmanager
+async def lifespan(app):
+    # 서버 시작 시 Redis 리스너 백그라운드 실행
+    task = asyncio.create_task(redis_listener())
+    yield
+    task.cancel()
+
+app = FastAPI(title="CX Nexus Backend", lifespan=lifespan)
 
 ENV = os.getenv("ENV", "local")
 
@@ -86,3 +99,10 @@ app.include_router(dashboard_customer_trend_router)
 app.include_router(dashboard_competitor_analysis_router)
 app.include_router(news_signals_router)
 app.include_router(batch_router)
+app.include_router(devices_router)
+
+# =========================
+# Socket.io 마운트
+# =========================
+import socketio
+socket_app = socketio.ASGIApp(sio, app)

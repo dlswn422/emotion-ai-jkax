@@ -6,6 +6,8 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from backend.service.review_signal_classifier import classify_review_signal
+from backend.core.redis_client import publish
+from backend.core.fcm_client import send_fcm_to_devices
 
 
 # ──────────────────────────────────────────────
@@ -199,8 +201,13 @@ def _process_review(db: Session, row: Dict[str, Any], tenant_id: int) -> str:
     반환값: 'inserted' | 'skipped' | 'failed'
     """
     google_review_id = row["google_review_id"]
-    source           = row["source_type"] or "unknown"
+    source           = row["source_type"]
     raw_comment      = row["raw_comment"]
+
+    # ── source_type 없으면 skip ──
+    if not source:
+        print(f"[WARN] source_type 없음 — google_review_id={google_review_id}")
+        return "failed"
 
     # ── 중복 체크 ──
     if _signal_exists(db, source, google_review_id):
@@ -242,7 +249,12 @@ def _process_review(db: Session, row: Dict[str, Any], tenant_id: int) -> str:
         print(f"[ERROR] signals INSERT 실패 — google_review_id={google_review_id}: {e}")
         return "failed"
 
-    # ── notifications INSERT ──
+    # ── notifications INSERT (signal_level HIGH만) ──
+    if llm["signal_level"] != "HIGH":
+        _mark_as_analyzed(db, google_review_id)
+        db.commit()
+        return "inserted"
+
     notification_data = {
         "tenant_id":         tenant_id,
         "signal_id":         signal_id,
@@ -302,4 +314,48 @@ def run_analyze_reviews_batch(
         f"skipped={stats['skipped']} failed={stats['failed']}"
     )
 
+    # ── 알림 발송 (inserted > 0 일 때만 한 번에 발송) ──
+    if stats["inserted"] > 0:
+        _send_alerts(db, stats["inserted"])
+
     return stats
+
+
+def _send_alerts(db: Session, inserted_count: int) -> None:
+    """
+    배치 완료 후 Redis Publish + FCM 일괄 발송.
+    """
+    import json
+
+    message = f"오늘 긴급 알림 {inserted_count}건이 감지되었습니다."
+
+    # ── Redis Publish ──
+    try:
+        payload = json.dumps({
+            "tenant_id": 7,
+            "message": message,
+            "inserted_count": inserted_count,
+        })
+        publish("alert_channel", payload)
+        print(f"[Redis] alert_channel 발송 완료")
+    except Exception as e:
+        print(f"[ERROR] Redis Publish 실패: {e}")
+
+    # ── FCM 발송 ──
+    try:
+        rows = db.execute(
+            text("""
+                SELECT fcm_token
+                FROM registered_devices
+                WHERE is_active = true
+            """)
+        ).mappings().all()
+
+        tokens = [r["fcm_token"] for r in rows]
+        send_fcm_to_devices(
+            tokens=tokens,
+            title="경영진 Alert",
+            body=message,
+        )
+    except Exception as e:
+        print(f"[ERROR] FCM 발송 실패: {e}")
