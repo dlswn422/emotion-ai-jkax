@@ -75,7 +75,7 @@ export const AlertPanel = defineComponent({
           tabLabel: data.signal_type_label || "",
           keyword: data.keyword || "",
           desc: data.message || "",
-          dupKey: `socket-${Date.now()}`,
+          dupKey: `notification-${data.db_id || data.message || Date.now()}`,
         });
 
         // open_panel = true 인 경우에만 패널 자동 오픈 (요약 메시지)
