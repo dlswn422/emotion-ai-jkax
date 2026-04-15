@@ -42,11 +42,14 @@ export const AlertPanel = defineComponent({
     const editMsg = ref("");
     const sending = ref(false);
 
-    // ── Socket.io 실시간 알림 연결 ──
+    // ── Socket.io 실시간 알림 연결 (싱글톤) ──
     const BACKEND_URL = "https://emotion-ai-backend-bfdc.onrender.com";
 
-    if (typeof io !== "undefined") {
+    if (typeof io !== "undefined" && !window._cxSocketInitialized) {
+      window._cxSocketInitialized = true;
+
       const socket = io(BACKEND_URL, { transports: ["websocket"] });
+      window._cxSocket = socket;
 
       socket.on("connect", () => {
         console.log("[Socket.io] AlertPanel 연결 완료:", socket.id);
@@ -60,6 +63,7 @@ export const AlertPanel = defineComponent({
           "긴급": "critical",
           "주의": "warning",
           "일반": "info",
+          "정보": "info",
         };
         const severity = severityMap[data.category] || "info";
 
@@ -73,13 +77,17 @@ export const AlertPanel = defineComponent({
           dupKey: `socket-${Date.now()}`,
         });
 
-        store.showPanel = true;
+        // open_panel = true 인 경우에만 패널 자동 오픈 (요약 메시지)
+        if (data.open_panel) {
+          store.showPanel = true;
+        }
       });
 
       socket.on("disconnect", () => {
         console.log("[Socket.io] AlertPanel 연결 해제");
+        window._cxSocketInitialized = false;
       });
-    } else {
+    } else if (!window._cxSocketInitialized) {
       console.warn("[Socket.io] io 라이브러리를 찾을 수 없습니다.");
     }
 
