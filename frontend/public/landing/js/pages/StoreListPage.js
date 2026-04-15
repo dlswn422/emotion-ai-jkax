@@ -4,10 +4,11 @@ const { useRouter } = VueRouter;
 import { STORES } from "../data/storesMock.js";
 import { NavBar } from "../components/NavBar.js";
 import { DateModal } from "../components/DateModal.js";
+import { AlertPanel } from "../components/AlertPanel.js";
 
 export const StoreListPage = defineComponent({
   name: "StoreListPage",
-  components: { NavBar, DateModal },
+  components: { NavBar, AlertPanel, DateModal },
 
   setup() {
     const router = useRouter();
@@ -20,6 +21,11 @@ export const StoreListPage = defineComponent({
     const showModal = ref(false);
     const selectedStore = ref(null);
 
+    // 안드로이드 기기 여부
+    function isAndroidDevice() {
+      return /Android/i.test(navigator.userAgent || "");
+    }
+
     // 기업 목록만 추출
     const companies = computed(() =>
       STORES.filter((item) => item.type === "company"),
@@ -28,9 +34,12 @@ export const StoreListPage = defineComponent({
     // 기업 검색 필터링
     const filteredCompanies = computed(() => {
       const q = companySearchQ.value.trim().toLowerCase();
-      if (!q) return companies.value;
 
-      return companies.value.filter((company) =>
+      const baseCompanies = isAndroidDevice()
+        ? companies.value.filter((company) => company.id === "store_7")
+        : companies.value;
+
+      return baseCompanies.filter((company) =>
         company.name.toLowerCase().includes(q),
       );
     });
@@ -51,6 +60,8 @@ export const StoreListPage = defineComponent({
           store.address.toLowerCase().includes(q),
       );
     });
+
+    const shouldShowStoreSection = computed(() => !isAndroidDevice());
 
     function getCompanyCardMeta(company) {
       if (company.id === "store_7") {
@@ -176,6 +187,7 @@ export const StoreListPage = defineComponent({
       onConfirm,
       getCompanyCardMeta,
       logoImageClass,
+      shouldShowStoreSection,
     };
   },
 
@@ -183,6 +195,7 @@ export const StoreListPage = defineComponent({
     <div>
       <!-- 상단 네비게이션 -->
       <NavBar page="stores" />
+      <AlertPanel />
 
       <div class="page-shell">
         <div class="page-body">
@@ -362,7 +375,7 @@ export const StoreListPage = defineComponent({
           </section>
 
           <!-- 매장 섹션 -->
-          <section class="page-section">
+          <section v-if="shouldShowStoreSection" class="page-section">
             <div class="section-head">
               <h2 class="section-title">매장</h2>
               <p class="section-sub">현재 아래 매장 데이터는 데모용 목데이터입니다.</p>
