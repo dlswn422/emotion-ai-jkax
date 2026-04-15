@@ -24,8 +24,6 @@ export const StoreListPage = defineComponent({
     function isAndroidDevice() {
       return /Android/i.test(navigator.userAgent || "");
     }
-    console.log("UA:", navigator.userAgent);
-    console.log("isAndroidDevice:", isAndroidDevice());
 
     // 기업 목록만 추출
     const companies = computed(() =>
@@ -39,12 +37,6 @@ export const StoreListPage = defineComponent({
       const baseCompanies = isAndroidDevice()
         ? companies.value.filter((company) => company.id === "store_7")
         : companies.value;
-      console.log(
-        "baseCompanies:",
-        baseCompanies.map((company) => company.id),
-      );
-      console.log("searchQ:", q);
-      if (!q) return baseCompanies;
 
       return baseCompanies.filter((company) =>
         company.name.toLowerCase().includes(q),
@@ -67,6 +59,8 @@ export const StoreListPage = defineComponent({
           store.address.toLowerCase().includes(q),
       );
     });
+
+    const shouldShowStoreSection = computed(() => !isAndroidDevice());
 
     function getCompanyCardMeta(company) {
       if (company.id === "store_7") {
@@ -192,6 +186,7 @@ export const StoreListPage = defineComponent({
       onConfirm,
       getCompanyCardMeta,
       logoImageClass,
+      shouldShowStoreSection,
     };
   },
 
@@ -378,7 +373,7 @@ export const StoreListPage = defineComponent({
           </section>
 
           <!-- 매장 섹션 -->
-          <section class="page-section">
+          <section v-if="shouldShowStoreSection" class="page-section">
             <div class="section-head">
               <h2 class="section-title">매장</h2>
               <p class="section-sub">현재 아래 매장 데이터는 데모용 목데이터입니다.</p>
