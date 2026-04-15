@@ -2,11 +2,12 @@ const { defineComponent } = Vue;
 const { useRouter } = VueRouter;
 
 import { NavBar } from "../components/NavBar.js";
+import { AlertPanel } from "../components/AlertPanel.js";
 import { buildSparklinePath } from "../utils/charts.js";
 
 export const LandingPage = defineComponent({
   name: "LandingPage",
-  components: { NavBar },
+  components: { NavBar, AlertPanel },
 
   setup() {
     const router = useRouter();
@@ -48,6 +49,7 @@ export const LandingPage = defineComponent({
         </div>
 
         <NavBar page="landing"/>
+        <AlertPanel />
 
         <section class="hero-section">
       <div class="hero-noise"></div>

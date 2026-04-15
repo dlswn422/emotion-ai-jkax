@@ -219,6 +219,7 @@ ${a.desc}
                   :class="{ sent: !!alert.sentAt }"
                   @click.stop="openSend(alert)"
                   :title="alert.sentAt ? '재발송' : 'Alert 발송'"
+                  style="display:none;"
                 >
                   <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                     <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/>

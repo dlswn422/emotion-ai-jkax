@@ -4,10 +4,11 @@ const { useRouter } = VueRouter;
 import { STORES } from "../data/storesMock.js";
 import { NavBar } from "../components/NavBar.js";
 import { DateModal } from "../components/DateModal.js";
+import { AlertPanel } from "../components/AlertPanel.js";
 
 export const StoreListPage = defineComponent({
   name: "StoreListPage",
-  components: { NavBar, DateModal },
+  components: { NavBar, AlertPanel, DateModal },
 
   setup() {
     const router = useRouter();
@@ -194,6 +195,7 @@ export const StoreListPage = defineComponent({
     <div>
       <!-- 상단 네비게이션 -->
       <NavBar page="stores" />
+      <AlertPanel />
 
       <div class="page-shell">
         <div class="page-body">
