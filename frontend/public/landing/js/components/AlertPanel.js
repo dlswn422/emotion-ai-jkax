@@ -42,6 +42,47 @@ export const AlertPanel = defineComponent({
     const editMsg = ref("");
     const sending = ref(false);
 
+    // ── Socket.io 실시간 알림 연결 ──
+    const BACKEND_URL = "https://emotion-ai-backend-bfdc.onrender.com";
+
+    if (typeof io !== "undefined") {
+      const socket = io(BACKEND_URL, { transports: ["websocket"] });
+
+      socket.on("connect", () => {
+        console.log("[Socket.io] AlertPanel 연결 완료:", socket.id);
+        socket.emit("join_room", { tenant_id: 7 });
+      });
+
+      socket.on("new_alert", (data) => {
+        console.log("[Socket.io] 새 알림 수신:", data);
+
+        const severityMap = {
+          "긴급": "critical",
+          "주의": "warning",
+          "일반": "info",
+        };
+        const severity = severityMap[data.category] || "info";
+
+        store.add({
+          severity,
+          title: data.message || "새 알림이 감지되었습니다.",
+          companyName: data.company_name || "",
+          tabLabel: data.signal_type_label || "",
+          keyword: data.keyword || "",
+          desc: data.message || "",
+          dupKey: `socket-${Date.now()}`,
+        });
+
+        store.showPanel = true;
+      });
+
+      socket.on("disconnect", () => {
+        console.log("[Socket.io] AlertPanel 연결 해제");
+      });
+    } else {
+      console.warn("[Socket.io] io 라이브러리를 찾을 수 없습니다.");
+    }
+
     function openSend(alert) {
       store.pendingAlert = alert;
       editMsg.value = buildDefaultMsg(alert);
@@ -219,7 +260,6 @@ ${a.desc}
                   :class="{ sent: !!alert.sentAt }"
                   @click.stop="openSend(alert)"
                   :title="alert.sentAt ? '재발송' : 'Alert 발송'"
-                  style="display:none;"
                 >
                   <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                     <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/>

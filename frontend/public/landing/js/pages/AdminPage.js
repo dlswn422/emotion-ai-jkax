@@ -918,51 +918,6 @@ export const AdminPage = defineComponent({
       if (route.query.tab && VALID_ADMIN_TABS.includes(route.query.tab)) {
         adminTab.value = route.query.tab;
       }
-
-      // ── Socket.io 실시간 알림 연결 ──
-      const BACKEND_URL = "https://emotion-ai-backend-bfdc.onrender.com";
-
-      if (typeof io !== "undefined") {
-        const socket = io(BACKEND_URL, { transports: ["websocket"] });
-
-        socket.on("connect", () => {
-          console.log("[Socket.io] 연결 완료:", socket.id);
-          // tenant_id 기반 room 입장
-          socket.emit("join_room", { tenant_id: 7 });
-        });
-
-        socket.on("new_alert", (data) => {
-          console.log("[Socket.io] 새 알림 수신:", data);
-
-          // category → severity 변환
-          const severityMap = {
-            "긴급": "critical",
-            "주의": "warning",
-            "일반": "info",
-          };
-          const severity = severityMap[data.category] || "info";
-
-          // ALERT_STORE에 추가 → AlertPanel 자동 업데이트
-          ALERT_STORE.add({
-            severity,
-            title: data.message || "새 알림이 감지되었습니다.",
-            companyName: data.company_name || "",
-            tabLabel: data.signal_type_label || "",
-            keyword: data.keyword || "",
-            desc: data.message || "",
-            dupKey: `socket-${Date.now()}`,
-          });
-
-          // 패널 자동으로 열기
-          ALERT_STORE.showPanel = true;
-        });
-
-        socket.on("disconnect", () => {
-          console.log("[Socket.io] 연결 해제");
-        });
-      } else {
-        console.warn("[Socket.io] io 라이브러리를 찾을 수 없습니다.");
-      }
     });
 
     watch(
