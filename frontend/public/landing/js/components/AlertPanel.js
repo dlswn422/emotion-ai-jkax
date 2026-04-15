@@ -69,6 +69,7 @@ export const AlertPanel = defineComponent({
 
         store.add({
           severity,
+          dbId: data.db_id || null,
           title: data.message || "새 알림이 감지되었습니다.",
           companyName: data.company_name || "",
           tabLabel: data.signal_type_label || "",
@@ -151,6 +152,32 @@ ${a.desc}
       sendStep.value = 1;
     }
 
+    // 단건 읽음 처리
+    async function markRead(alert) {
+      store.markRead(alert.id);
+      if (alert.dbId) {
+        try {
+          await fetch(`${BACKEND_URL}/notifications/${alert.dbId}/read`, {
+            method: "PATCH",
+          });
+        } catch (e) {
+          console.warn("[Notification] 읽음 처리 실패:", e);
+        }
+      }
+    }
+
+    // 전체 읽음 처리
+    async function markAllRead() {
+      store.markAllRead();
+      try {
+        await fetch(`${BACKEND_URL}/notifications/read-all`, {
+          method: "PATCH",
+        });
+      } catch (e) {
+        console.warn("[Notification] 전체 읽음 처리 실패:", e);
+      }
+    }
+
     const sevCfg = (id) => ALERT_SEVERITY[id] || ALERT_SEVERITY.info;
 
     function fmtDate(iso) {
@@ -176,6 +203,8 @@ ${a.desc}
       sevCfg,
       fmtDate,
       ALERT_SEVERITY,
+      markRead,
+      markAllRead,
     };
   },
 
@@ -197,7 +226,7 @@ ${a.desc}
             </div>
 
             <div class="alp-hd-right">
-              <button v-if="store.alerts.length" class="alp-read-all" @click="store.markAllRead()">전체 읽음</button>
+              <button v-if="store.alerts.length" class="alp-read-all" @click="markAllRead()">전체 읽음</button>
               <button class="alp-close-btn" @click="store.showPanel=false">
                 <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
                   <path d="M18 6L6 18M6 6l12 12"/>
@@ -220,7 +249,7 @@ ${a.desc}
               v-for="alert in store.alerts"
               :key="alert.id"
               :class="['alp-item', 'alp-sev-'+alert.severity, { unread: !alert.read }]"
-              @click="store.markRead(alert.id)"
+              @click="markRead(alert)"
             >
               <div
                 class="alp-item-icon"
@@ -263,17 +292,7 @@ ${a.desc}
               </div>
 
               <div class="alp-item-actions">
-                <button
-                  class="alp-send-btn"
-                  :class="{ sent: !!alert.sentAt }"
-                  @click.stop="openSend(alert)"
-                  :title="alert.sentAt ? '재발송' : 'Alert 발송'"
-                >
-                  <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                    <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/>
-                  </svg>
-                  {{alert.sentAt ? '재발송' : '발송'}}
-                </button>
+
 
                 <button class="alp-del-btn" @click.stop="store.remove(alert.id)" title="삭제">
                   <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">

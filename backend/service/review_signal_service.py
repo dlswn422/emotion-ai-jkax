@@ -135,15 +135,14 @@ def _insert_signal(db: Session, data: Dict[str, Any]) -> int:
 # 4. notifications INSERT
 # ──────────────────────────────────────────────
 
-def _insert_notification(db: Session, data: Dict[str, Any]) -> None:
+def _insert_notification(db: Session, data: Dict[str, Any]) -> Optional[int]:
     """
-    notifications 테이블 컬럼 수정 예정이므로
-    현재 구조 기준으로 최소 삽입.
+    notifications 테이블 INSERT 후 생성된 id 반환.
     savepoint를 사용해 실패해도 트랜잭션이 오염되지 않도록 처리.
     """
     try:
         db.execute(text("SAVEPOINT notification_save"))
-        db.execute(
+        result = db.execute(
             text("""
                 INSERT INTO public.notifications (
                     tenant_id,
@@ -166,14 +165,17 @@ def _insert_notification(db: Session, data: Dict[str, Any]) -> None:
                     :is_read,
                     NOW()
                 )
+                RETURNING id
             """),
             data,
         )
+        return result.fetchone()[0]
         db.execute(text("RELEASE SAVEPOINT notification_save"))
     except Exception as e:
         # 트랜잭션 오염 방지: savepoint로 롤백
         db.execute(text("ROLLBACK TO SAVEPOINT notification_save"))
         print(f"[WARN] notifications INSERT 실패 (source_id={data.get('source_id')}): {e}")
+        return None
 
 
 # ──────────────────────────────────────────────
@@ -266,7 +268,7 @@ def _process_review(db: Session, row: Dict[str, Any], tenant_id: int) -> str:
         "is_read":           False,
         "source_id":         google_review_id,  # 로그용
     }
-    _insert_notification(db, notification_data)
+    notification_id = _insert_notification(db, notification_data)
 
     # ── is_analyzed 업데이트 ──
     _mark_as_analyzed(db, google_review_id)
@@ -353,7 +355,7 @@ def _send_alerts(db: Session, inserted_count: int) -> None:
     try:
         rows = db.execute(
             text("""
-                SELECT company_name, category, signal_type_label, message, link_url
+                SELECT id, company_name, category, signal_type_label, message, link_url
                 FROM public.notifications
                 WHERE created_at >= NOW() - INTERVAL '10 minutes'
                 ORDER BY created_at DESC
@@ -363,12 +365,13 @@ def _send_alerts(db: Session, inserted_count: int) -> None:
         for row in rows:
             payload = json.dumps({
                 "tenant_id": 7,
+                "db_id": row["id"],
                 "message": row["message"],
                 "category": row["category"],
                 "signal_type_label": row["signal_type_label"],
                 "company_name": row["company_name"],
                 "link_url": row["link_url"],
-                "open_panel": False,  # 건별은 패널 자동 오픈 안 함
+                "open_panel": False,
             })
             publish("alert_channel", payload)
 
