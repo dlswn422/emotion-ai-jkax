@@ -31,7 +31,7 @@ jobs:
           response=$(curl -s -w "\n%{http_code}" \
             --max-time 1200 \
             -X POST \
-            "${{ secrets.BACKEND_URL }}/batch/trigger/analyze-reviews?secret=${{ secrets.BATCH_SECRET }}&store_id=store_7")
+            "${{ secrets.BACKEND_URL }}/batch/trigger/analyze-reviews?secret=${{ secrets.BATCH_SECRET }}&store_id=store_7&tenant_id=${{ secrets.TENANT_ID }}")
           body=$(echo "$response" | head -n -1)
           status=$(echo "$response" | tail -n 1)
           echo "HTTP Status: $status"
