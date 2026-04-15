@@ -324,24 +324,59 @@ def run_analyze_reviews_batch(
 def _send_alerts(db: Session, inserted_count: int) -> None:
     """
     배치 완료 후 Redis Publish + FCM 일괄 발송.
+
+    순서:
+    1. 요약 메시지 1건 emit (패널 자동 오픈)
+    2. notifications 테이블에서 방금 적재된 건별 데이터 emit
+    3. FCM 요약 메시지 1건 발송
     """
     import json
 
-    message = f"오늘 긴급 알림 {inserted_count}건이 감지되었습니다."
+    summary_message = f"오늘 긴급 알림 {inserted_count}건이 감지되었습니다."
 
-    # ── Redis Publish ──
+    # ── ① 요약 메시지 emit (패널 자동 오픈) ──
     try:
         payload = json.dumps({
             "tenant_id": 7,
-            "message": message,
-            "inserted_count": inserted_count,
+            "message": summary_message,
+            "category": "정보",
+            "signal_type_label": "시스템 알림",
+            "company_name": "",
+            "open_panel": True,  # 프론트에서 패널 자동 오픈 트리거
         })
         publish("alert_channel", payload)
-        print(f"[Redis] alert_channel 발송 완료")
+        print(f"[Redis] 요약 메시지 발송 완료")
     except Exception as e:
-        print(f"[ERROR] Redis Publish 실패: {e}")
+        print(f"[ERROR] Redis 요약 메시지 발송 실패: {e}")
 
-    # ── FCM 발송 ──
+    # ── ② 건별 notifications 데이터 emit ──
+    try:
+        rows = db.execute(
+            text("""
+                SELECT company_name, category, signal_type_label, message, link_url
+                FROM public.notifications
+                WHERE created_at >= NOW() - INTERVAL '10 minutes'
+                ORDER BY created_at DESC
+            """)
+        ).mappings().all()
+
+        for row in rows:
+            payload = json.dumps({
+                "tenant_id": 7,
+                "message": row["message"],
+                "category": row["category"],
+                "signal_type_label": row["signal_type_label"],
+                "company_name": row["company_name"],
+                "link_url": row["link_url"],
+                "open_panel": False,  # 건별은 패널 자동 오픈 안 함
+            })
+            publish("alert_channel", payload)
+
+        print(f"[Redis] 건별 알림 {len(rows)}건 발송 완료")
+    except Exception as e:
+        print(f"[ERROR] Redis 건별 발송 실패: {e}")
+
+    # ── ③ FCM 발송 (요약 1건) ──
     try:
         rows = db.execute(
             text("""
@@ -355,7 +390,7 @@ def _send_alerts(db: Session, inserted_count: int) -> None:
         send_fcm_to_devices(
             tokens=tokens,
             title="경영진 Alert",
-            body=message,
+            body=summary_message,
         )
     except Exception as e:
         print(f"[ERROR] FCM 발송 실패: {e}")
