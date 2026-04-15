@@ -17,6 +17,7 @@ from backend.api.disclosure_signals import router as disclosure_signals_router
 from backend.api.dashboard_customer_trend import router as dashboard_customer_trend_router
 from backend.api.dashboard_competitor_analysis import router as dashboard_competitor_analysis_router
 from backend.api.news_signals import router as news_signals_router
+from backend.api.batch import router as batch_router
 
 from backend.api import (
     analysis,
@@ -84,3 +85,4 @@ app.include_router(disclosure_signals_router)
 app.include_router(dashboard_customer_trend_router)
 app.include_router(dashboard_competitor_analysis_router)
 app.include_router(news_signals_router)
+app.include_router(batch_router)
