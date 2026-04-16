@@ -711,38 +711,89 @@
 .cdt-kw-table {
   width: 100%;
   border-collapse: collapse;
+  table-layout: fixed;
 }
+
+.cdt-kw-table colgroup col:nth-child(1) {
+  width: 56px;
+}
+.cdt-kw-table colgroup col:nth-child(2) {
+  width: 28%;
+}
+.cdt-kw-table colgroup col:nth-child(3) {
+  width: 15%;
+}
+.cdt-kw-table colgroup col:nth-child(4) {
+  width: 14%;
+}
+.cdt-kw-table colgroup col:nth-child(5) {
+  width: 14%;
+}
+.cdt-kw-table colgroup col:nth-child(6) {
+  width: 17%;
+}
+
 .cdt-kw-table thead th {
-  padding: 14px 16px;
+  padding: 14px 18px;
   background: var(--n-50);
   border-top: 1px solid var(--border-base);
   border-bottom: 1px solid var(--border-base);
   font-size: 11px;
   font-weight: 800;
   color: var(--text-4);
-  text-align: left;
+  text-align: center;
+  vertical-align: middle;
   white-space: nowrap;
 }
+
 .cdt-kw-table tbody td {
-  padding: 14px 16px;
+  padding: 16px 18px;
   border-bottom: 1px solid var(--border-subtle);
   vertical-align: middle;
+  text-align: center;
 }
+
+.cdt-kw-table tbody td:nth-child(2) {
+  text-align: center;
+}
+
+.cdt-kw-table tbody td:first-child {
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--text-4);
+  text-align: center;
+}
+
+.cdt-kw-table tbody td:nth-child(4) {
+  text-align: center;
+}
+
+.cdt-kw-table tbody td:nth-child(6) {
+  font-size: 11px;
+  color: var(--text-4);
+  text-align: center;
+  white-space: nowrap;
+}
+
 .cdt-kw-row:last-child td {
   border-bottom: none;
 }
+
 .cdt-kw-row:hover {
   background: var(--n-50);
 }
+
 .cdt-kw-chip {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 5px 10px;
+  max-width: 100%;
+  padding: 5px 12px;
   border-radius: 999px;
   font-size: 11px;
   font-weight: 700;
   white-space: nowrap;
+  text-align: center;
 }
 .cdt-kw-high {
   background: #fff1f2;
@@ -759,19 +810,23 @@
   color: #2563eb;
   border: 1px solid #bfdbfe;
 }
+
 .cdt-type-tag {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 34px;
-  padding: 4px 8px;
+  min-width: 42px;
+  max-width: 100%;
+  padding: 4px 10px;
   border-radius: 999px;
   font-size: 10px;
   font-weight: 700;
   color: #64748b;
   background: #f1f5f9;
   border: 1px solid #e2e8f0;
+  text-align: center;
 }
+
 .cdt-signal-dot {
   display: inline-block;
   width: 7px;
@@ -789,13 +844,14 @@
 .cdt-sig-low {
   background: #94a3b8;
 }
+
 .cdt-hit-badge {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 24px;
-  height: 22px;
-  padding: 0 8px;
+  min-width: 28px;
+  height: 24px;
+  padding: 0 10px;
   border-radius: 999px;
   background: #eef2ff;
   color: #6366f1;

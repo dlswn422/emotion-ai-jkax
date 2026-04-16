@@ -391,14 +391,26 @@ export const B2BCustomerTrendSection = defineComponent({
 
       <div class="r-card-body" style="padding:0">
         <template v-if="kwChartMode==='rank'">
-          <div v-if="!signalKeywordsSource.length" style="padding:20px;text-align:center;color:var(--text-4);font-size:13px">
+          <div
+            v-if="!signalKeywordsSource.length"
+            style="padding:20px;text-align:center;color:var(--text-4);font-size:13px"
+          >
             Admin에서 시그널 키워드를 등록하세요
           </div>
 
           <table v-else class="cdt-kw-table">
+            <colgroup>
+              <col />
+              <col />
+              <col />
+              <col />
+              <col />
+              <col />
+            </colgroup>
+
             <thead>
               <tr>
-                <th style="width:28px">#</th>
+                <th>#</th>
                 <th>키워드</th>
                 <th>유형</th>
                 <th>강도</th>
@@ -406,16 +418,19 @@ export const B2BCustomerTrendSection = defineComponent({
                 <th>최근 탐지</th>
               </tr>
             </thead>
+
             <tbody>
               <tr
                 v-for="(kw, idx) in externalKeywordRows.slice(0, 10)"
                 :key="kw._id || kw.keyword || idx"
                 :class="['cdt-kw-row', kw.active === false ? 'cdt-kw-inactive' : '']"
               >
-                <td style="text-align:center;font-size:11px;font-weight:800;color:var(--text-4)">{{ idx + 1 }}</td>
+                <td>{{ idx + 1 }}</td>
 
                 <td>
-                  <span class="cdt-kw-chip" :class="'cdt-kw-' + kw.signal_level">{{ kw.keyword }}</span>
+                  <span class="cdt-kw-chip" :class="'cdt-kw-' + kw.signal_level">
+                    {{ kw.keyword }}
+                  </span>
                 </td>
 
                 <td>
@@ -423,17 +438,37 @@ export const B2BCustomerTrendSection = defineComponent({
                 </td>
 
                 <td>
-                  <span class="cdt-signal-dot" :class="'cdt-sig-' + kw.signal_level"></span>
-                  <span :style="{ fontSize:'11px', fontWeight:'700', color: kw.signal_level==='high' ? '#f43f5e' : kw.signal_level==='medium' ? '#f59e0b' : '#94a3b8' }">
-                    {{ kw.signal_level==='high' ? 'HIGH' : kw.signal_level==='medium' ? 'MED' : 'LOW' }}
+                  <span
+                    class="cdt-signal-dot"
+                    :class="'cdt-sig-' + kw.signal_level"
+                  ></span>
+                  <span
+                    :style="{
+                      fontSize: '11px',
+                      fontWeight: '700',
+                      color:
+                        kw.signal_level === 'high'
+                          ? '#f43f5e'
+                          : kw.signal_level === 'medium'
+                          ? '#f59e0b'
+                          : '#94a3b8'
+                    }"
+                  >
+                    {{
+                      kw.signal_level === 'high'
+                        ? 'HIGH'
+                        : kw.signal_level === 'medium'
+                        ? 'MED'
+                        : 'LOW'
+                    }}
                   </span>
                 </td>
 
-                <td style="text-align:center">
+                <td>
                   <span class="cdt-hit-badge">{{ kw.hit_count || 0 }}</span>
                 </td>
 
-                <td style="font-size:11px;color:var(--text-4)">{{ kw.last_hit || '—' }}</td>
+                <td>{{ kw.last_hit || '—' }}</td>
               </tr>
             </tbody>
           </table>
@@ -449,7 +484,17 @@ export const B2BCustomerTrendSection = defineComponent({
                   :key="kw.keyword"
                   class="cdt-legend-item"
                 >
-                  <span class="cdt-legend-dot" :style="{ background: kw.signal_level==='high' ? '#f43f5e' : kw.signal_level==='medium' ? '#f59e0b' : '#94a3b8' }"></span>
+                  <span
+                    class="cdt-legend-dot"
+                    :style="{
+                      background:
+                        kw.signal_level === 'high'
+                          ? '#f43f5e'
+                          : kw.signal_level === 'medium'
+                          ? '#f59e0b'
+                          : '#94a3b8'
+                    }"
+                  ></span>
                   {{ kw.keyword }}
                 </span>
               </div>
@@ -466,9 +511,18 @@ export const B2BCustomerTrendSection = defineComponent({
             <div class="cdt-trend-info">
               <div class="cdt-trend-desc">최근 6개월 시그널 레벨별 히트 건수</div>
               <div class="cdt-trend-legend">
-                <span class="cdt-legend-item"><span class="cdt-legend-dot" style="background:#f43f5e"></span>HIGH 시그널</span>
-                <span class="cdt-legend-item"><span class="cdt-legend-dot" style="background:#f59e0b"></span>MED 시그널</span>
-                <span class="cdt-legend-item"><span class="cdt-legend-dot" style="background:#94a3b8"></span>LOW 시그널</span>
+                <span class="cdt-legend-item">
+                  <span class="cdt-legend-dot" style="background:#f43f5e"></span>
+                  HIGH 시그널
+                </span>
+                <span class="cdt-legend-item">
+                  <span class="cdt-legend-dot" style="background:#f59e0b"></span>
+                  MED 시그널
+                </span>
+                <span class="cdt-legend-item">
+                  <span class="cdt-legend-dot" style="background:#94a3b8"></span>
+                  LOW 시그널
+                </span>
               </div>
             </div>
 
@@ -478,7 +532,6 @@ export const B2BCustomerTrendSection = defineComponent({
           </div>
         </template>
       </div>
-    </div>
 
     <div class="r-card">
       <div class="r-card-hd">
