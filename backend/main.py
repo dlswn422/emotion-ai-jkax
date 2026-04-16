@@ -8,23 +8,19 @@ env_path = Path(__file__).resolve().parent / ".env"
 load_dotenv(env_path)
 
 import os
+import asyncio
+from contextlib import asynccontextmanager, suppress
+
+import socketio
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.sessions import SessionMiddleware
-from backend.api.disclosure_candidates import router as disclosure_candidates_router
-from backend.api.disclosure_signals import router as disclosure_signals_router
-from backend.api.disclosure_signals import router as disclosure_signals_router
-from backend.api.dashboard_customer_trend import router as dashboard_customer_trend_router
-from backend.api.dashboard_competitor_analysis import router as dashboard_competitor_analysis_router
-from backend.api.news_signals import router as news_signals_router
-from backend.api.batch import router as batch_router
-from backend.api.notifications import router as notifications_router
-from backend.api.devices import router as devices_router
+
 from backend.core.socket_manager import sio
+from backend.api.socket_events import redis_listener
 
 from backend.api import (
     analysis,
-    auth,
     stores,
     google_business,
     dashboard,
@@ -35,35 +31,52 @@ from backend.api import (
     industry_targets,
 )
 
-# =========================
-# FastAPI App
-# =========================
-from contextlib import asynccontextmanager
-from backend.api.socket_events import redis_listener
-import asyncio
-
-@asynccontextmanager
-async def lifespan(app):
-    # 서버 시작 시 Redis 리스너 백그라운드 실행
-    task = asyncio.create_task(redis_listener())
-    yield
-    task.cancel()
-
-app = FastAPI(title="CX Nexus Backend", lifespan=lifespan)
+from backend.api.batch import router as batch_router
+from backend.api.devices import router as devices_router
+from backend.api.disclosure_candidates import router as disclosure_candidates_router
+from backend.api.disclosure_signals import router as disclosure_signals_router
+from backend.api.dashboard_competitor_analysis import (
+    router as dashboard_competitor_analysis_router,
+)
+from backend.api.dashboard_customer_trend import (
+    router as dashboard_customer_trend_router,
+)
+from backend.api.news_signals import router as news_signals_router
+from backend.api.notifications import router as notifications_router
 
 ENV = os.getenv("ENV", "local")
+
+ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+    "https://cxnexus.ai",
+    "https://www.cxnexus.ai",
+    "https://emotion-ai-jkax-wqsd.vercel.app",
+]
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # 서버 시작 시 Redis 리스너 백그라운드 실행
+    task = asyncio.create_task(redis_listener())
+    try:
+        yield
+    finally:
+        task.cancel()
+        with suppress(asyncio.CancelledError):
+            await task
+
+
+app = FastAPI(
+    title="CX Nexus Backend",
+    lifespan=lifespan,
+)
 
 # =========================
 # CORS 설정
 # =========================
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",
-        "https://cxnexus.ai",
-        "https://www.cxnexus.ai",
-        "https://emotion-ai-jkax-wqsd.vercel.app"
-    ],
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -83,28 +96,30 @@ app.add_middleware(
 # =========================
 # Routers
 # =========================
-app.include_router(stores.router)
-# app.include_router(auth.router)
-app.include_router(analysis.router)
-app.include_router(dashboard.router)
-app.include_router(google_business.router)
-app.include_router(customers.router)
-app.include_router(tenant_news.router)
-app.include_router(tenant_disclosures.router)
-app.include_router(monitoring_targets.router)
-app.include_router(industry_targets.router)
-app.include_router(disclosure_candidates_router)
-app.include_router(disclosure_signals_router)
-app.include_router(disclosure_signals_router)
-app.include_router(dashboard_customer_trend_router)
-app.include_router(dashboard_competitor_analysis_router)
-app.include_router(news_signals_router)
-app.include_router(batch_router)
-app.include_router(notifications_router)
-app.include_router(devices_router)
+ROUTERS = [
+    stores.router,
+    analysis.router,
+    dashboard.router,
+    google_business.router,
+    customers.router,
+    tenant_news.router,
+    tenant_disclosures.router,
+    monitoring_targets.router,
+    industry_targets.router,
+    disclosure_candidates_router,
+    disclosure_signals_router,
+    dashboard_customer_trend_router,
+    dashboard_competitor_analysis_router,
+    news_signals_router,
+    batch_router,
+    notifications_router,
+    devices_router,
+]
+
+for router in ROUTERS:
+    app.include_router(router)
 
 # =========================
 # Socket.io 마운트
 # =========================
-import socketio
 socket_app = socketio.ASGIApp(sio, app)

@@ -14,7 +14,7 @@ from backend.core.fcm_client import send_fcm_to_devices
 # 상수
 # ──────────────────────────────────────────────
 
-STORE_ID = "store7"
+STORE_ID = "store_7"
 
 SIGNAL_TYPE_MAP = {
     1: "RISK",        # 경쟁사
@@ -169,8 +169,9 @@ def _insert_notification(db: Session, data: Dict[str, Any]) -> Optional[int]:
             """),
             data,
         )
-        return result.fetchone()[0]
+        notification_id = result.fetchone()[0]
         db.execute(text("RELEASE SAVEPOINT notification_save"))
+        return notification_id
     except Exception as e:
         # 트랜잭션 오염 방지: savepoint로 롤백
         db.execute(text("ROLLBACK TO SAVEPOINT notification_save"))
@@ -349,7 +350,7 @@ def _send_alerts(db: Session, inserted_count: int) -> None:
         rows = []
 
     notification_count = len(rows)
-    summary_message = f"오늘 긴급 알림 {notification_count}건이 감지되었습니다."
+    summary_message = f"오늘 알림 {notification_count}건이 감지되었습니다."
 
     # ── ② 요약 메시지 emit (패널 자동 오픈) ──
     try:

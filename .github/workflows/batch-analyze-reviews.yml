@@ -1,3 +1,7 @@
+# 깃허브 액션 배치용 파일 지금 Render cron 사용해서 필요없음.
+
+
+
 name: Batch - Analyze Reviews (Daily)
 
 on:

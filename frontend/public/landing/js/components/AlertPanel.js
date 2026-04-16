@@ -55,6 +55,7 @@ export const AlertPanel = defineComponent({
           const severityMap = {
             "긴급": "critical",
             "주의": "warning",
+            "신호": "notice",
             "일반": "info",
             "정보": "info",
           };
@@ -84,7 +85,7 @@ export const AlertPanel = defineComponent({
             const parts = [];
             if (criticalCount > 0) parts.push(`긴급 ${criticalCount}건`);
             if (warningCount > 0) parts.push(`주의 ${warningCount}건`);
-            if (noticeCount > 0) parts.push(`참고 ${noticeCount}건`);
+            if (noticeCount > 0) parts.push(`신호 ${noticeCount}건`);
             const summaryText = `오늘 ${parts.join(" / ")} 알림이 감지되었습니다.`;
             store.add({
               severity: "info",
@@ -123,6 +124,7 @@ export const AlertPanel = defineComponent({
         const severityMap = {
           "긴급": "critical",
           "주의": "warning",
+          "신호": "notice",
           "일반": "info",
           "정보": "info",
         };
@@ -173,7 +175,9 @@ export const AlertPanel = defineComponent({
           ? "🔴 긴급"
           : a.severity === "warning"
             ? "🟡 주의"
-            : "🔵 정보"
+            : a.severity === "notice"
+              ? "🟢 신호"
+              : "🔵 정보"
       }]
 
 안녕하세요. CXNexus 자동 알림 시스템입니다.
