@@ -51,6 +51,8 @@ ALLOWED_ORIGINS = [
     "https://cxnexus.ai",
     "https://www.cxnexus.ai",
     "https://emotion-ai-jkax-wqsd.vercel.app",
+    "http://10.0.2.2:3000",
+    "http://127.0.0.1:3000",
 ]
 
 
@@ -122,4 +124,4 @@ for router in ROUTERS:
 # =========================
 # Socket.io 마운트
 # =========================
-socket_app = socketio.ASGIApp(sio, app)
+app = socketio.ASGIApp(sio, app)

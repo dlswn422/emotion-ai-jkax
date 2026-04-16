@@ -56,33 +56,20 @@ export const AlertPanel = defineComponent({
     };
 
     async function loadUnreadNotifications() {
-      console.log(
-        "[Notification] loadUnreadNotifications 시작",
-        new Date().toISOString(),
-      );
       const res = await fetch(
         `${BACKEND_URL}/notifications?tenant_id=7&is_read=false`,
       );
-      console.log("[Notification] unread API status:", res.status, res.ok);
-
       if (!res.ok) {
         throw new Error(`HTTP ${res.status}`);
       }
 
       const data = await res.json();
-      console.log("[Notification] unread API 응답 개수:", data.length);
-      console.log("[Notification] unread API 첫번째 데이터:", data[0] || null);
-      console.log("[Notification] unread API 전체 데이터:", data);
+
       window._cxDBLoading = true;
       store.alerts.splice(0);
       store._save();
-      console.log(
-        "[Notification] 기존 alerts 비운 후 개수:",
-        store.alerts.length,
-      );
 
       [...data].reverse().forEach((row) => {
-        console.log("[Notification] store.add 직전 row:", idx, row);
         store.add({
           severity: severityMap[row.category] || "info",
           dbId: row.id,
@@ -93,10 +80,6 @@ export const AlertPanel = defineComponent({
           desc: row.message,
           dupKey: `notification-${row.id}`,
         });
-        console.log(
-          "[Notification] store.add 직후 alerts 개수:",
-          store.alerts.length,
-        );
       });
 
       if (data.length > 0) {
@@ -112,9 +95,8 @@ export const AlertPanel = defineComponent({
           dupKey: "summary-load",
         });
       }
+
       console.log(`[Notification] 미읽음 알림 ${data.length}건 로드 완료`);
-      console.log("[Notification] 최종 store.alerts:", store.alerts);
-      console.log("[Notification] 최종 unread 개수:", store.unread);
     }
 
     async function requestMarkRead(dbId) {
@@ -131,92 +113,63 @@ export const AlertPanel = defineComponent({
     }
 
     function initSocket() {
-      if (typeof io === "undefined") return;
+      if (typeof io !== "undefined" && !window._cxSocketInitialized) {
+        window._cxSocketInitialized = true;
 
-      if (window._cxSocket && window._cxSocket.connected) {
-        return;
-      }
+        const socket = io(BACKEND_URL, { transports: ["websocket"] });
+        window._cxSocket = socket;
 
-      if (window._cxSocket) {
-        try {
-          window._cxSocket.disconnect();
-        } catch (e) {
-          console.warn("[Socket.io] 기존 소켓 정리 실패:", e);
-        }
-      }
-
-      const socket = io(BACKEND_URL, { transports: ["websocket"] });
-      window._cxSocket = socket;
-      window._cxSocketInitialized = true;
-
-      socket.on("connect", () => {
-        console.log("[Socket.io] AlertPanel 연결 완료:", socket.id);
-        socket.emit("join_room", { tenant_id: 7 });
-      });
-
-      socket.on("new_alert", (data) => {
-        console.log("[Socket.io] new_alert 진입");
-        console.log("[Socket.io] 현재 _cxDBLoading:", window._cxDBLoading);
-        // DB 로드 중이면 소켓 수신 차단
-        if (window._cxDBLoading) {
-          console.log("[Socket.io] DB 로딩 중이라 소켓 수신 무시");
-          return;
-        }
-        console.log("[Socket.io] 새 알림 수신:", data);
-
-        const severity = severityMap[data.category] || "info";
-        store.add({
-          severity,
-          dbId: data.db_id || null,
-          title: data.message || "새 알림이 감지되었습니다.",
-          companyName: data.company_name || "",
-          tabLabel: data.signal_type_label || "",
-          keyword: data.keyword || "",
-          desc: data.message || "",
-          dupKey: `notification-${data.db_id || data.message || Date.now()}`,
+        socket.on("connect", () => {
+          console.log("[Socket.io] AlertPanel 연결 완료:", socket.id);
+          socket.emit("join_room", { tenant_id: 7 });
         });
 
-        if (data.open_panel) {
-          store.showPanel = true;
-        }
-      });
+        socket.on("new_alert", (data) => {
+          // DB 로드 중이면 소켓 수신 차단
+          if (window._cxDBLoading) return;
+          console.log("[Socket.io] 새 알림 수신:", data);
+          const severity = severityMap[data.category] || "info";
+          store.add({
+            severity,
+            dbId: data.db_id || null,
+            title: data.message || "새 알림이 감지되었습니다.",
+            companyName: data.company_name || "",
+            tabLabel: data.signal_type_label || "",
+            keyword: data.keyword || "",
+            desc: data.message || "",
+            dupKey: `notification-${data.db_id || data.message || Date.now()}`,
+          });
+          if (data.open_panel) {
+            store.showPanel = true;
+          }
+        });
 
-      socket.on("disconnect", () => {
-        console.log("[Socket.io] AlertPanel 연결 해제");
-        window._cxSocketInitialized = false;
-      });
+        socket.on("disconnect", () => {
+          console.log("[Socket.io] AlertPanel 연결 해제");
+          window._cxSocketInitialized = false;
+        });
+      }
     }
 
     function bindResumeHandlers() {
       if (window._cxResumeHandlersBound) return;
       window._cxResumeHandlersBound = true;
 
-      // 안드로이드 네이티브에서 호출할 함수
+      // 안드로이드 네이티브(MainActivity onResume)에서 호출
       window.onAppResume = async function () {
-        console.log(
-          "[Notification] onAppResume 호출됨 - 시작",
-          new Date().toISOString(),
-        );
-
         try {
           await loadUnreadNotifications();
-          console.log("[Notification] onAppResume 재조회 완료");
         } catch (e) {
           console.warn("[Notification] onAppResume 재조회 실패:", e);
         } finally {
           window._cxDBLoading = false;
           initSocket();
-          console.log("[Notification] onAppResume 종료");
         }
       };
 
-      // 웹 환경에서도 탭 복귀 시 재조회되게 보조 처리
+      // 웹 환경 보조: 탭 복귀 시 재조회
       document.addEventListener("visibilitychange", async () => {
         if (document.visibilityState === "visible") {
-          console.log(
-            "[Notification] visibilitychange visible",
-            new Date().toISOString(),
-          );
           try {
             await loadUnreadNotifications();
           } catch (e) {
@@ -229,7 +182,6 @@ export const AlertPanel = defineComponent({
       });
 
       window.addEventListener("focus", async () => {
-        console.log("[Notification] window focus", new Date().toISOString());
         try {
           await loadUnreadNotifications();
         } catch (e) {
@@ -267,6 +219,7 @@ export const AlertPanel = defineComponent({
         }
       })();
     } else {
+      // 이미 로드됐으면 바로 소켓 연결
       initSocket();
       bindResumeHandlers();
     }
@@ -275,11 +228,9 @@ export const AlertPanel = defineComponent({
       store.pendingAlert = alert;
       editMsg.value = buildDefaultMsg(alert);
       sendStep.value = 1;
-
       RECIPIENTS.forEach((r) => {
         r.checked.value = r.id === "ceo";
       });
-
       store.showSendModal = true;
     }
 
@@ -390,7 +341,6 @@ ${a.desc}
 
     function fmtDate(iso) {
       if (!iso) return "";
-
       const d = new Date(iso);
       return d.toLocaleString("ko-KR", {
         month: "2-digit",

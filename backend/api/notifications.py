@@ -8,9 +8,6 @@ from sqlalchemy.orm import Session
 
 from backend.db.session import get_db
 
-import json
-from fastapi import Body
-
 router = APIRouter(prefix="/notifications", tags=["notifications"])
 
 
@@ -122,73 +119,8 @@ def mark_all_notifications_read(
         {"tenant_id": tenant_id},
     )
     db.commit()
-    return {"status": "ok"}
-
-
-@router.post("/test-create")
-def create_test_notification(
-    tenant_id: int = Body(default=7),
-    company_name: str = Body(default="테스트 기업"),
-    category: str = Body(default="긴급"),
-    signal_type_label: str = Body(default="경쟁 동향"),
-    message: str = Body(default='부정 키워드 감지: "테스트"'),
-    db: Session = Depends(get_db),
-):
-    row = db.execute(
-        text("""
-            INSERT INTO public.notifications (
-                tenant_id,
-                signal_id,
-                company_name,
-                category,
-                signal_type_label,
-                message,
-                link_url,
-                is_read,
-                created_at
-            ) VALUES (
-                :tenant_id,
-                NULL,
-                :company_name,
-                :category,
-                :signal_type_label,
-                :message,
-                NULL,
-                FALSE,
-                NOW()
-            )
-            RETURNING id, tenant_id, company_name, category, signal_type_label, message, link_url, is_read, created_at
-        """),
-        {
-            "tenant_id": tenant_id,
-            "company_name": company_name,
-            "category": category,
-            "signal_type_label": signal_type_label,
-            "message": message,
-        },
-    ).mappings().first()
-
-    db.commit()
-
-    try:
-        from backend.core.redis_client import publish
-
-        payload = json.dumps({
-            "tenant_id": row["tenant_id"],
-            "db_id": row["id"],
-            "message": row["message"],
-            "category": row["category"],
-            "signal_type_label": row["signal_type_label"],
-            "company_name": row["company_name"],
-            "link_url": row["link_url"],
-            "open_panel": True,
-        })
-        publish("alert_channel", payload)
-        print(f"[TEST] Redis publish 완료: notification_id={row['id']}")
-    except Exception as e:
-        print(f"[TEST] Redis publish 실패: {e}")
 
     return {
         "status": "ok",
-        "notification": dict(row),
+        "updated": result.rowcount or 0,
     }
