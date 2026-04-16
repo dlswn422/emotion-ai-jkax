@@ -2,7 +2,7 @@ name: Batch - Analyze Reviews (Daily)
 
 on:
   schedule:
-    - cron: '30 13 * * *'
+    - cron: '40 13 * * *'
       timezone: 'Asia/Seoul'
   workflow_dispatch:
 
