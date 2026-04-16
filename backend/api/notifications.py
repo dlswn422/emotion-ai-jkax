@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 from typing import Optional
-from fastapi import APIRouter, Depends, Query
+
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
@@ -49,17 +50,55 @@ def mark_notification_read(
 ):
     """
     단건 읽음 처리
+    - 같은 알림군 전체를 읽음 처리
+    - 그룹 기준: tenant_id + company_name + category + signal_type_label + message + created_at::date
     """
-    db.execute(
+    row = db.execute(
         text("""
-            UPDATE public.notifications
-            SET is_read = TRUE
+            SELECT
+                id,
+                tenant_id,
+                company_name,
+                category,
+                signal_type_label,
+                message,
+                created_at::date AS created_date
+            FROM public.notifications
             WHERE id = :id
         """),
         {"id": notification_id},
+    ).mappings().first()
+
+    if not row:
+        raise HTTPException(status_code=404, detail="notification not found")
+
+    result = db.execute(
+        text("""
+            UPDATE public.notifications
+            SET is_read = TRUE
+            WHERE tenant_id = :tenant_id
+              AND COALESCE(company_name, '') = COALESCE(:company_name, '')
+              AND COALESCE(category, '') = COALESCE(:category, '')
+              AND COALESCE(signal_type_label, '') = COALESCE(:signal_type_label, '')
+              AND COALESCE(message, '') = COALESCE(:message, '')
+              AND created_at::date = :created_date
+              AND is_read = FALSE
+        """),
+        {
+            "tenant_id": row["tenant_id"],
+            "company_name": row["company_name"],
+            "category": row["category"],
+            "signal_type_label": row["signal_type_label"],
+            "message": row["message"],
+            "created_date": row["created_date"],
+        },
     )
     db.commit()
-    return {"status": "ok"}
+
+    return {
+        "status": "ok",
+        "updated": result.rowcount or 0,
+    }
 
 
 @router.patch("/read-all")
@@ -70,7 +109,7 @@ def mark_all_notifications_read(
     """
     전체 읽음 처리
     """
-    db.execute(
+    result = db.execute(
         text("""
             UPDATE public.notifications
             SET is_read = TRUE
@@ -80,4 +119,8 @@ def mark_all_notifications_read(
         {"tenant_id": tenant_id},
     )
     db.commit()
-    return {"status": "ok"}
+
+    return {
+        "status": "ok",
+        "updated": result.rowcount or 0,
+    }

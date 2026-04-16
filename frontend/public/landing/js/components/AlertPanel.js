@@ -55,6 +55,61 @@ export const AlertPanel = defineComponent({
       "정보": "info",
     };
 
+    async function loadUnreadNotifications() {
+      const res = await fetch(`${BACKEND_URL}/notifications?tenant_id=7&is_read=false`);
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}`);
+      }
+
+      const data = await res.json();
+
+      window._cxDBLoading = true;
+      store.alerts.splice(0);
+      store._save();
+
+      [...data].reverse().forEach((row) => {
+        store.add({
+          severity: severityMap[row.category] || "info",
+          dbId: row.id,
+          title: row.message,
+          companyName: row.company_name || "",
+          tabLabel: row.signal_type_label || "",
+          keyword: "",
+          desc: row.message,
+          dupKey: `notification-${row.id}`,
+        });
+      });
+
+      if (data.length > 0) {
+        const summaryText = `오늘 알림 ${data.length}건이 감지되었습니다.`;
+        store.add({
+          severity: "info",
+          dbId: null,
+          title: summaryText,
+          companyName: "",
+          tabLabel: "시스템 알림",
+          keyword: "",
+          desc: summaryText,
+          dupKey: "summary-load",
+        });
+      }
+
+      console.log(`[Notification] 미읽음 알림 ${data.length}건 로드 완료`);
+    }
+
+    async function requestMarkRead(dbId) {
+      const res = await fetch(`${BACKEND_URL}/notifications/${dbId}/read`, {
+        method: "PATCH",
+        keepalive: true,
+      });
+
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}`);
+      }
+
+      return res.json();
+    }
+
     function initSocket() {
       if (typeof io !== "undefined" && !window._cxSocketInitialized) {
         window._cxSocketInitialized = true;
@@ -70,9 +125,7 @@ export const AlertPanel = defineComponent({
         socket.on("new_alert", (data) => {
           // DB 로드 중이면 소켓 수신 차단
           if (window._cxDBLoading) return;
-
           console.log("[Socket.io] 새 알림 수신:", data);
-
           const severity = severityMap[data.category] || "info";
           store.add({
             severity,
@@ -84,7 +137,6 @@ export const AlertPanel = defineComponent({
             desc: data.message || "",
             dupKey: `notification-${data.db_id || data.message || Date.now()}`,
           });
-
           if (data.open_panel) {
             store.showPanel = true;
           }
@@ -99,59 +151,13 @@ export const AlertPanel = defineComponent({
 
     if (!window._cxNotificationsLoaded) {
       window._cxNotificationsLoaded = true;
-
       (async () => {
         try {
-          const res = await fetch(`${BACKEND_URL}/notifications?tenant_id=7&is_read=false`);
-
-          if (!res.ok) {
-            throw new Error(`HTTP ${res.status}`);
-          }
-
-          const data = await res.json();
-
-          // DB 로드 중 소켓 수신 차단
-          window._cxDBLoading = true;
-
-          // localStorage 비우고 DB 기준으로만 로드
-          store.alerts.splice(0);
-          store._save();
-
-          // 건별 알림 추가 (역순으로 추가해야 화면에서 최신순 표시)
-          [...data].reverse().forEach((row) => {
-            store.add({
-              severity: severityMap[row.category] || "info",
-              dbId: row.id,
-              title: row.message,
-              companyName: row.company_name || "",
-              tabLabel: row.signal_type_label || "",
-              keyword: "",
-              desc: row.message,
-              dupKey: `notification-${row.id}`,
-            });
-          });
-
-          // 요약 메시지 맨 위에 표시
-          if (data.length > 0) {
-            const summaryText = `오늘 알림 ${data.length}건이 감지되었습니다.`;
-            store.add({
-              severity: "info",
-              dbId: null,
-              title: summaryText,
-              companyName: "",
-              tabLabel: "시스템 알림",
-              keyword: "",
-              desc: summaryText,
-              dupKey: "summary-load",
-            });
-          }
-
-          console.log(`[Notification] 미읽음 알림 ${data.length}건 로드 완료`);
+          await loadUnreadNotifications();
         } catch (e) {
           console.warn("[Notification] 미읽음 알림 조회 실패:", e);
         } finally {
           window._cxDBLoading = false;
-          // DB 로드 완료 후 소켓 연결 (순서 보장)
           initSocket();
         }
       })();
@@ -164,11 +170,9 @@ export const AlertPanel = defineComponent({
       store.pendingAlert = alert;
       editMsg.value = buildDefaultMsg(alert);
       sendStep.value = 1;
-
       RECIPIENTS.forEach((r) => {
         r.checked.value = r.id === "ceo";
       });
-
       store.showSendModal = true;
     }
 
@@ -224,50 +228,39 @@ ${a.desc}
       sendStep.value = 1;
     }
 
-    async function requestMarkRead(dbId) {
-      const res = await fetch(`${BACKEND_URL}/notifications/${dbId}/read`, {
-        method: "PATCH",
-        keepalive: true,
-      });
-
-      if (!res.ok) {
-        throw new Error(`HTTP ${res.status}`);
-      }
-
-      return res;
-    }
-
-    // 알림 삭제 (DB is_read=TRUE 성공 후 localStorage 삭제)
     async function removeAlert(alert) {
       if (alert.dbId) {
         try {
           await requestMarkRead(alert.dbId);
+          await loadUnreadNotifications();
         } catch (e) {
           console.warn("[Notification] 삭제 처리 실패:", e);
           return;
         }
+        return;
       }
 
+      // 요약 알림 같은 dbId 없는 로컬 알림
       store.remove(alert.id);
     }
 
-    // 단건 읽음 처리
     async function markRead(alert) {
       if (alert.read) return;
 
       if (alert.dbId) {
         try {
           await requestMarkRead(alert.dbId);
+          await loadUnreadNotifications();
         } catch (e) {
           console.warn("[Notification] 읽음 처리 실패:", e);
           return;
         }
+        return;
       }
 
       store.markRead(alert.id);
     }
 
-    // 전체 읽음 처리 + 알림 전체 삭제
     async function markAllRead() {
       try {
         const res = await fetch(`${BACKEND_URL}/notifications/read-all`, {
@@ -278,21 +271,18 @@ ${a.desc}
         if (!res.ok) {
           throw new Error(`HTTP ${res.status}`);
         }
+
+        store.alerts.splice(0);
+        store._save();
       } catch (e) {
         console.warn("[Notification] 전체 읽음 처리 실패:", e);
-        return;
       }
-
-      // 서버 반영 성공 후 localStorage + 화면에서 전체 삭제
-      store.alerts.splice(0);
-      store._save();
     }
 
     const sevCfg = (id) => ALERT_SEVERITY[id] || ALERT_SEVERITY.info;
 
     function fmtDate(iso) {
       if (!iso) return "";
-
       const d = new Date(iso);
       return d.toLocaleString("ko-KR", {
         month: "2-digit",
