@@ -1,5 +1,6 @@
 const { defineComponent, ref } = Vue;
 import { ALERT_STORE, ALERT_SEVERITY } from "../b2b/shared.js";
+
 export const AlertPanel = defineComponent({
   name: "AlertPanel",
   setup() {
@@ -69,7 +70,9 @@ export const AlertPanel = defineComponent({
         socket.on("new_alert", (data) => {
           // DB 로드 중이면 소켓 수신 차단
           if (window._cxDBLoading) return;
+
           console.log("[Socket.io] 새 알림 수신:", data);
+
           const severity = severityMap[data.category] || "info";
           store.add({
             severity,
@@ -81,6 +84,7 @@ export const AlertPanel = defineComponent({
             desc: data.message || "",
             dupKey: `notification-${data.db_id || data.message || Date.now()}`,
           });
+
           if (data.open_panel) {
             store.showPanel = true;
           }
@@ -95,13 +99,20 @@ export const AlertPanel = defineComponent({
 
     if (!window._cxNotificationsLoaded) {
       window._cxNotificationsLoaded = true;
+
       (async () => {
         try {
           const res = await fetch(`${BACKEND_URL}/notifications?tenant_id=7&is_read=false`);
+
+          if (!res.ok) {
+            throw new Error(`HTTP ${res.status}`);
+          }
+
           const data = await res.json();
 
           // DB 로드 중 소켓 수신 차단
           window._cxDBLoading = true;
+
           // localStorage 비우고 DB 기준으로만 로드
           store.alerts.splice(0);
           store._save();
@@ -136,10 +147,10 @@ export const AlertPanel = defineComponent({
           }
 
           console.log(`[Notification] 미읽음 알림 ${data.length}건 로드 완료`);
-          window._cxDBLoading = false;
         } catch (e) {
           console.warn("[Notification] 미읽음 알림 조회 실패:", e);
         } finally {
+          window._cxDBLoading = false;
           // DB 로드 완료 후 소켓 연결 (순서 보장)
           initSocket();
         }
@@ -149,15 +160,15 @@ export const AlertPanel = defineComponent({
       initSocket();
     }
 
-
-
     function openSend(alert) {
       store.pendingAlert = alert;
       editMsg.value = buildDefaultMsg(alert);
       sendStep.value = 1;
+
       RECIPIENTS.forEach((r) => {
         r.checked.value = r.id === "ceo";
       });
+
       store.showSendModal = true;
     }
 
@@ -171,7 +182,9 @@ export const AlertPanel = defineComponent({
           ? "🔴 긴급"
           : a.severity === "warning"
             ? "🟡 주의"
-            : "🔵 정보"
+            : a.severity === "notice"
+              ? "🟢 신호"
+              : "🔵 정보"
       }]
 
 안녕하세요. CXNexus 자동 알림 시스템입니다.
@@ -211,45 +224,66 @@ ${a.desc}
       sendStep.value = 1;
     }
 
-    // 알림 삭제 (DB is_read=TRUE + localStorage 삭제)
+    async function requestMarkRead(dbId) {
+      const res = await fetch(`${BACKEND_URL}/notifications/${dbId}/read`, {
+        method: "PATCH",
+        keepalive: true,
+      });
+
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}`);
+      }
+
+      return res;
+    }
+
+    // 알림 삭제 (DB is_read=TRUE 성공 후 localStorage 삭제)
     async function removeAlert(alert) {
-      store.remove(alert.id);
       if (alert.dbId) {
         try {
-          await fetch(`${BACKEND_URL}/notifications/${alert.dbId}/read`, {
-            method: "PATCH",
-          });
+          await requestMarkRead(alert.dbId);
         } catch (e) {
           console.warn("[Notification] 삭제 처리 실패:", e);
+          return;
         }
       }
+
+      store.remove(alert.id);
     }
 
     // 단건 읽음 처리
     async function markRead(alert) {
-      store.markRead(alert.id);
+      if (alert.read) return;
+
       if (alert.dbId) {
         try {
-          await fetch(`${BACKEND_URL}/notifications/${alert.dbId}/read`, {
-            method: "PATCH",
-          });
+          await requestMarkRead(alert.dbId);
         } catch (e) {
           console.warn("[Notification] 읽음 처리 실패:", e);
+          return;
         }
       }
+
+      store.markRead(alert.id);
     }
 
     // 전체 읽음 처리 + 알림 전체 삭제
     async function markAllRead() {
-      // DB 업데이트
       try {
-        await fetch(`${BACKEND_URL}/notifications/read-all`, {
+        const res = await fetch(`${BACKEND_URL}/notifications/read-all`, {
           method: "PATCH",
+          keepalive: true,
         });
+
+        if (!res.ok) {
+          throw new Error(`HTTP ${res.status}`);
+        }
       } catch (e) {
         console.warn("[Notification] 전체 읽음 처리 실패:", e);
+        return;
       }
-      // localStorage + 화면에서 전체 삭제
+
+      // 서버 반영 성공 후 localStorage + 화면에서 전체 삭제
       store.alerts.splice(0);
       store._save();
     }
@@ -258,6 +292,7 @@ ${a.desc}
 
     function fmtDate(iso) {
       if (!iso) return "";
+
       const d = new Date(iso);
       return d.toLocaleString("ko-KR", {
         month: "2-digit",
@@ -369,8 +404,6 @@ ${a.desc}
               </div>
 
               <div class="alp-item-actions">
-
-
                 <button class="alp-del-btn" @click.stop="removeAlert(alert)" title="삭제">
                   <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
                     <path d="M18 6L6 18M6 6l12 12"/>
