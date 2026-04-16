@@ -2,8 +2,9 @@ name: Batch - Analyze Reviews (Daily)
 
 on:
   schedule:
-    - cron: '0 3 * * *'  # 매일 오전 12시 KST (UTC 01:00)
-  workflow_dispatch:      # 수동 실행 가능
+    - cron: '30 13 * * *'
+      timezone: 'Asia/Seoul'
+  workflow_dispatch:
 
 jobs:
   trigger:
