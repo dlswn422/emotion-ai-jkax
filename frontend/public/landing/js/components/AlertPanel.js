@@ -166,9 +166,9 @@ ${a.desc}
       }
     }
 
-    // 전체 읽음 처리
+    // 전체 읽음 처리 + 알림 전체 삭제
     async function markAllRead() {
-      store.markAllRead();
+      // DB 업데이트
       try {
         await fetch(`${BACKEND_URL}/notifications/read-all`, {
           method: "PATCH",
@@ -176,6 +176,9 @@ ${a.desc}
       } catch (e) {
         console.warn("[Notification] 전체 읽음 처리 실패:", e);
       }
+      // localStorage + 화면에서 전체 삭제
+      store.alerts.splice(0);
+      store._save();
     }
 
     const sevCfg = (id) => ALERT_SEVERITY[id] || ALERT_SEVERITY.info;
