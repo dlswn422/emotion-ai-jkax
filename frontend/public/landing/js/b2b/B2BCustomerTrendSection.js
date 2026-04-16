@@ -245,7 +245,11 @@ export const B2BCustomerTrendSection = defineComponent({
     // API 호출부
     async function loadCustomerTrend() {
       try {
-        const result = await fetchDashboardCustomerTrend(props.tenantId);
+        const result = await fetchDashboardCustomerTrend(
+          props.tenantId,
+          props.analysisPeriod?.start,
+          props.analysisPeriod?.end,
+        );
 
         signalKeywords.value = Array.isArray(result?.signalKeywords)
           ? result.signalKeywords
