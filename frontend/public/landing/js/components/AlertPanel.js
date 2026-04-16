@@ -45,20 +45,59 @@ export const AlertPanel = defineComponent({
     // ── 백엔드 URL ──
     const BACKEND_URL = "https://emotion-ai-backend-bfdc.onrender.com";
 
-    // ── 브라우저 열릴 때 미읽음 알림 조회 ──
+    // ── 브라우저 열릴 때 미읽음 알림 조회 + 완료 후 소켓 연결 ──
+    const severityMap = {
+      "긴급": "critical",
+      "주의": "warning",
+      "신호": "notice",
+      "일반": "info",
+      "정보": "info",
+    };
+
+    function initSocket() {
+      if (typeof io !== "undefined" && !window._cxSocketInitialized) {
+        window._cxSocketInitialized = true;
+
+        const socket = io(BACKEND_URL, { transports: ["websocket"] });
+        window._cxSocket = socket;
+
+        socket.on("connect", () => {
+          console.log("[Socket.io] AlertPanel 연결 완료:", socket.id);
+          socket.emit("join_room", { tenant_id: 7 });
+        });
+
+        socket.on("new_alert", (data) => {
+          console.log("[Socket.io] 새 알림 수신:", data);
+          const severity = severityMap[data.category] || "info";
+          store.add({
+            severity,
+            dbId: data.db_id || null,
+            title: data.message || "새 알림이 감지되었습니다.",
+            companyName: data.company_name || "",
+            tabLabel: data.signal_type_label || "",
+            keyword: data.keyword || "",
+            desc: data.message || "",
+            dupKey: `notification-${data.db_id || data.message || Date.now()}`,
+          });
+          if (data.open_panel) {
+            store.showPanel = true;
+          }
+        });
+
+        socket.on("disconnect", () => {
+          console.log("[Socket.io] AlertPanel 연결 해제");
+          window._cxSocketInitialized = false;
+        });
+      }
+    }
+
     if (!window._cxNotificationsLoaded) {
       window._cxNotificationsLoaded = true;
       (async () => {
         try {
           const res = await fetch(`${BACKEND_URL}/notifications?tenant_id=7&is_read=false`);
           const data = await res.json();
-          const severityMap = {
-            "긴급": "critical",
-            "주의": "warning",
-            "신호": "notice",
-            "일반": "info",
-            "정보": "info",
-          };
+
           // localStorage 비우고 DB 기준으로만 로드
           store.alerts.splice(0);
           store._save();
@@ -77,16 +116,9 @@ export const AlertPanel = defineComponent({
             });
           });
 
-          // 요약 메시지 맨 마지막에 store.add() → unshift로 맨 위에 표시
+          // 요약 메시지 맨 위에 표시
           if (data.length > 0) {
-            const criticalCount = data.filter(r => r.category === "긴급").length;
-            const warningCount = data.filter(r => r.category === "주의").length;
-            const noticeCount = data.filter(r => r.category === "신호").length;
-            const parts = [];
-            if (criticalCount > 0) parts.push(`긴급 ${criticalCount}건`);
-            if (warningCount > 0) parts.push(`주의 ${warningCount}건`);
-            if (noticeCount > 0) parts.push(`신호 ${noticeCount}건`);
-            const summaryText = `오늘 ${parts.join(" / ")} 알림이 감지되었습니다.`;
+            const summaryText = `오늘 알림 ${data.length}건이 감지되었습니다.`;
             store.add({
               severity: "info",
               dbId: null,
@@ -102,58 +134,17 @@ export const AlertPanel = defineComponent({
           console.log(`[Notification] 미읽음 알림 ${data.length}건 로드 완료`);
         } catch (e) {
           console.warn("[Notification] 미읽음 알림 조회 실패:", e);
+        } finally {
+          // DB 로드 완료 후 소켓 연결 (순서 보장)
+          initSocket();
         }
       })();
+    } else {
+      // 이미 로드됐으면 바로 소켓 연결
+      initSocket();
     }
 
-    // ── Socket.io 실시간 알림 연결 (싱글톤) ──
-    if (typeof io !== "undefined" && !window._cxSocketInitialized) {
-      window._cxSocketInitialized = true;
 
-      const socket = io(BACKEND_URL, { transports: ["websocket"] });
-      window._cxSocket = socket;
-
-      socket.on("connect", () => {
-        console.log("[Socket.io] AlertPanel 연결 완료:", socket.id);
-        socket.emit("join_room", { tenant_id: 7 });
-      });
-
-      socket.on("new_alert", (data) => {
-        console.log("[Socket.io] 새 알림 수신:", data);
-
-        const severityMap = {
-          "긴급": "critical",
-          "주의": "warning",
-          "신호": "notice",
-          "일반": "info",
-          "정보": "info",
-        };
-        const severity = severityMap[data.category] || "info";
-
-        store.add({
-          severity,
-          dbId: data.db_id || null,
-          title: data.message || "새 알림이 감지되었습니다.",
-          companyName: data.company_name || "",
-          tabLabel: data.signal_type_label || "",
-          keyword: data.keyword || "",
-          desc: data.message || "",
-          dupKey: `notification-${data.db_id || data.message || Date.now()}`,
-        });
-
-        // open_panel = true 인 경우에만 패널 자동 오픈 (요약 메시지)
-        if (data.open_panel) {
-          store.showPanel = true;
-        }
-      });
-
-      socket.on("disconnect", () => {
-        console.log("[Socket.io] AlertPanel 연결 해제");
-        window._cxSocketInitialized = false;
-      });
-    } else if (!window._cxSocketInitialized) {
-      console.warn("[Socket.io] io 라이브러리를 찾을 수 없습니다.");
-    }
 
     function openSend(alert) {
       store.pendingAlert = alert;
@@ -175,9 +166,7 @@ export const AlertPanel = defineComponent({
           ? "🔴 긴급"
           : a.severity === "warning"
             ? "🟡 주의"
-            : a.severity === "notice"
-              ? "🟢 신호"
-              : "🔵 정보"
+            : "🔵 정보"
       }]
 
 안녕하세요. CXNexus 자동 알림 시스템입니다.

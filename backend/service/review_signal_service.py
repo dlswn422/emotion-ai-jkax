@@ -169,9 +169,8 @@ def _insert_notification(db: Session, data: Dict[str, Any]) -> Optional[int]:
             """),
             data,
         )
-        notification_id = result.fetchone()[0]
+        return result.fetchone()[0]
         db.execute(text("RELEASE SAVEPOINT notification_save"))
-        return notification_id
     except Exception as e:
         # 트랜잭션 오염 방지: savepoint로 롤백
         db.execute(text("ROLLBACK TO SAVEPOINT notification_save"))
@@ -352,22 +351,7 @@ def _send_alerts(db: Session, inserted_count: int) -> None:
     notification_count = len(rows)
     summary_message = f"오늘 알림 {notification_count}건이 감지되었습니다."
 
-    # ── ② 요약 메시지 emit (패널 자동 오픈) ──
-    try:
-        payload = json.dumps({
-            "tenant_id": 7,
-            "message": summary_message,
-            "category": "정보",
-            "signal_type_label": "시스템 알림",
-            "company_name": "",
-            "open_panel": True,
-        })
-        publish("alert_channel", payload)
-        print(f"[Redis] 요약 메시지 발송 완료 ({notification_count}건)")
-    except Exception as e:
-        print(f"[ERROR] Redis 요약 메시지 발송 실패: {e}")
-
-    # ── ③ 건별 emit ──
+    # ── ② 건별 emit (먼저 발송) ──
     try:
         for row in rows:
             payload = json.dumps({
@@ -385,6 +369,21 @@ def _send_alerts(db: Session, inserted_count: int) -> None:
         print(f"[Redis] 건별 알림 {notification_count}건 발송 완료")
     except Exception as e:
         print(f"[ERROR] Redis 건별 발송 실패: {e}")
+
+    # ── ③ 요약 메시지 마지막에 emit → 프론트에서 맨 위에 표시 ──
+    try:
+        payload = json.dumps({
+            "tenant_id": 7,
+            "message": summary_message,
+            "category": "정보",
+            "signal_type_label": "시스템 알림",
+            "company_name": "",
+            "open_panel": True,
+        })
+        publish("alert_channel", payload)
+        print(f"[Redis] 요약 메시지 발송 완료 ({notification_count}건)")
+    except Exception as e:
+        print(f"[ERROR] Redis 요약 메시지 발송 실패: {e}")
 
     # ── ③ FCM 발송 (요약 1건) ──
     try:
