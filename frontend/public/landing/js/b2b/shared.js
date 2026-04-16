@@ -126,6 +126,11 @@ export const ALERT_STORE =
     },
 
     add(alert) {
+      // dupKey 중복 체크
+      if (alert.dupKey) {
+        const existing = this.alerts.find((a) => a.dupKey === alert.dupKey);
+        if (existing) return existing.id;
+      }
       const id = "ALT-" + Date.now();
       const newAlert = {
         id,

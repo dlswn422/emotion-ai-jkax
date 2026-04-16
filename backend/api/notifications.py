@@ -34,7 +34,7 @@ def get_notifications(
             WHERE tenant_id = :tenant_id
               AND is_read = :is_read
             ORDER BY created_at DESC
-            LIMIT 100
+            LIMIT 500
         """),
         {"tenant_id": tenant_id, "is_read": is_read},
     ).mappings().all()
