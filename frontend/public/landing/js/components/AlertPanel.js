@@ -48,117 +48,155 @@ export const AlertPanel = defineComponent({
 
     // ── 브라우저 열릴 때 미읽음 알림 조회 + 완료 후 소켓 연결 ──
     const severityMap = {
-      "긴급": "critical",
-      "주의": "warning",
-      "신호": "notice",
-      "일반": "info",
-      "정보": "info",
+      긴급: "critical",
+      주의: "warning",
+      신호: "notice",
+      일반: "info",
+      정보: "info",
     };
 
     function initSocket() {
-      if (typeof io !== "undefined" && !window._cxSocketInitialized) {
-        window._cxSocketInitialized = true;
+      if (typeof io === "undefined") return;
 
-        const socket = io(BACKEND_URL, { transports: ["websocket"] });
-        window._cxSocket = socket;
+      if (window._cxSocket && window._cxSocket.connected) {
+        return;
+      }
 
-        socket.on("connect", () => {
-          console.log("[Socket.io] AlertPanel 연결 완료:", socket.id);
-          socket.emit("join_room", { tenant_id: 7 });
+      if (window._cxSocket) {
+        try {
+          window._cxSocket.disconnect();
+        } catch (e) {
+          console.warn("[Socket.io] 기존 소켓 정리 실패:", e);
+        }
+      }
+
+      const socket = io(BACKEND_URL, { transports: ["websocket"] });
+      window._cxSocket = socket;
+
+      socket.on("connect", () => {
+        console.log("[Socket.io] AlertPanel 연결 완료:", socket.id);
+        socket.emit("join_room", { tenant_id: 7 });
+      });
+
+      socket.on("new_alert", (data) => {
+        if (window._cxDBLoading) return;
+
+        console.log("[Socket.io] 새 알림 수신:", data);
+
+        const severity = severityMap[data.category] || "info";
+        store.add({
+          severity,
+          dbId: data.db_id || null,
+          title: data.message || "새 알림이 감지되었습니다.",
+          companyName: data.company_name || "",
+          tabLabel: data.signal_type_label || "",
+          keyword: data.keyword || "",
+          desc: data.message || "",
+          dupKey: `notification-${data.db_id || data.message || Date.now()}`,
         });
 
-        socket.on("new_alert", (data) => {
-          // DB 로드 중이면 소켓 수신 차단
-          if (window._cxDBLoading) return;
+        if (data.open_panel) {
+          store.showPanel = true;
+        }
+      });
 
-          console.log("[Socket.io] 새 알림 수신:", data);
+      socket.on("disconnect", () => {
+        console.log("[Socket.io] AlertPanel 연결 해제");
+      });
+    }
 
-          const severity = severityMap[data.category] || "info";
+    async function loadNotifications() {
+      try {
+        const res = await fetch(
+          `${BACKEND_URL}/notifications?tenant_id=7&is_read=false`,
+        );
+
+        if (!res.ok) {
+          throw new Error(`HTTP ${res.status}`);
+        }
+
+        const data = await res.json();
+
+        // DB 로드 중 소켓 수신 차단
+        window._cxDBLoading = true;
+
+        // 기존 목록 초기화
+        store.alerts.splice(0);
+        store._save();
+
+        // 건별 알림 추가 (역순으로 추가해야 화면에서 최신순 표시)
+        [...data].reverse().forEach((row) => {
           store.add({
-            severity,
-            dbId: data.db_id || null,
-            title: data.message || "새 알림이 감지되었습니다.",
-            companyName: data.company_name || "",
-            tabLabel: data.signal_type_label || "",
-            keyword: data.keyword || "",
-            desc: data.message || "",
-            dupKey: `notification-${data.db_id || data.message || Date.now()}`,
+            severity: severityMap[row.category] || "info",
+            dbId: row.id,
+            title: row.message,
+            companyName: row.company_name || "",
+            tabLabel: row.signal_type_label || "",
+            keyword: "",
+            desc: row.message,
+            dupKey: `notification-${row.id}`,
           });
-
-          if (data.open_panel) {
-            store.showPanel = true;
-          }
         });
 
-        socket.on("disconnect", () => {
-          console.log("[Socket.io] AlertPanel 연결 해제");
-          window._cxSocketInitialized = false;
-        });
+        // 요약 메시지 맨 위에 표시
+        if (data.length > 0) {
+          const summaryText = `오늘 알림 ${data.length}건이 감지되었습니다.`;
+          store.add({
+            severity: "info",
+            dbId: null,
+            title: summaryText,
+            companyName: "",
+            tabLabel: "시스템 알림",
+            keyword: "",
+            desc: summaryText,
+            dupKey: "summary-load",
+          });
+        }
+
+        console.log(`[Notification] 미읽음 알림 ${data.length}건 로드 완료`);
+      } catch (e) {
+        console.warn("[Notification] 미읽음 알림 조회 실패:", e);
+      } finally {
+        window._cxDBLoading = false;
       }
     }
 
-    if (!window._cxNotificationsLoaded) {
-      window._cxNotificationsLoaded = true;
+    function bindResumeHandlers() {
+      if (window._cxResumeHandlersBound) return;
+      window._cxResumeHandlersBound = true;
 
-      (async () => {
-        try {
-          const res = await fetch(`${BACKEND_URL}/notifications?tenant_id=7&is_read=false`);
+      // 안드로이드 네이티브에서 호출할 함수
+      window.onAppResume = async function () {
+        console.log("[Notification] onAppResume 호출됨");
+        await loadNotifications();
+        initSocket();
+      };
 
-          if (!res.ok) {
-            throw new Error(`HTTP ${res.status}`);
-          }
-
-          const data = await res.json();
-
-          // DB 로드 중 소켓 수신 차단
-          window._cxDBLoading = true;
-
-          // localStorage 비우고 DB 기준으로만 로드
-          store.alerts.splice(0);
-          store._save();
-
-          // 건별 알림 추가 (역순으로 추가해야 화면에서 최신순 표시)
-          [...data].reverse().forEach((row) => {
-            store.add({
-              severity: severityMap[row.category] || "info",
-              dbId: row.id,
-              title: row.message,
-              companyName: row.company_name || "",
-              tabLabel: row.signal_type_label || "",
-              keyword: "",
-              desc: row.message,
-              dupKey: `notification-${row.id}`,
-            });
-          });
-
-          // 요약 메시지 맨 위에 표시
-          if (data.length > 0) {
-            const summaryText = `오늘 알림 ${data.length}건이 감지되었습니다.`;
-            store.add({
-              severity: "info",
-              dbId: null,
-              title: summaryText,
-              companyName: "",
-              tabLabel: "시스템 알림",
-              keyword: "",
-              desc: summaryText,
-              dupKey: "summary-load",
-            });
-          }
-
-          console.log(`[Notification] 미읽음 알림 ${data.length}건 로드 완료`);
-        } catch (e) {
-          console.warn("[Notification] 미읽음 알림 조회 실패:", e);
-        } finally {
-          window._cxDBLoading = false;
-          // DB 로드 완료 후 소켓 연결 (순서 보장)
+      // 웹 환경에서도 탭 복귀 시 재조회되게 보조 처리
+      document.addEventListener("visibilitychange", async () => {
+        if (document.visibilityState === "visible") {
+          console.log("[Notification] visibilitychange visible");
+          await loadNotifications();
           initSocket();
         }
-      })();
-    } else {
-      // 이미 로드됐으면 바로 소켓 연결
-      initSocket();
+      });
+
+      window.addEventListener("focus", async () => {
+        console.log("[Notification] window focus");
+        await loadNotifications();
+        initSocket();
+      });
+
+      // 수동 호출용
+      window.refreshCxNotifications = loadNotifications;
     }
+
+    // 최초 진입
+    (async () => {
+      await loadNotifications();
+      initSocket();
+      bindResumeHandlers();
+    })();
 
     function openSend(alert) {
       store.pendingAlert = alert;
