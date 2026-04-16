@@ -56,21 +56,33 @@ export const AlertPanel = defineComponent({
     };
 
     async function loadUnreadNotifications() {
+      console.log(
+        "[Notification] loadUnreadNotifications 시작",
+        new Date().toISOString(),
+      );
       const res = await fetch(
         `${BACKEND_URL}/notifications?tenant_id=7&is_read=false`,
       );
+      console.log("[Notification] unread API status:", res.status, res.ok);
 
       if (!res.ok) {
         throw new Error(`HTTP ${res.status}`);
       }
 
       const data = await res.json();
-
+      console.log("[Notification] unread API 응답 개수:", data.length);
+      console.log("[Notification] unread API 첫번째 데이터:", data[0] || null);
+      console.log("[Notification] unread API 전체 데이터:", data);
       window._cxDBLoading = true;
       store.alerts.splice(0);
       store._save();
+      console.log(
+        "[Notification] 기존 alerts 비운 후 개수:",
+        store.alerts.length,
+      );
 
       [...data].reverse().forEach((row) => {
+        console.log("[Notification] store.add 직전 row:", idx, row);
         store.add({
           severity: severityMap[row.category] || "info",
           dbId: row.id,
@@ -81,6 +93,10 @@ export const AlertPanel = defineComponent({
           desc: row.message,
           dupKey: `notification-${row.id}`,
         });
+        console.log(
+          "[Notification] store.add 직후 alerts 개수:",
+          store.alerts.length,
+        );
       });
 
       if (data.length > 0) {
@@ -96,8 +112,9 @@ export const AlertPanel = defineComponent({
           dupKey: "summary-load",
         });
       }
-
       console.log(`[Notification] 미읽음 알림 ${data.length}건 로드 완료`);
+      console.log("[Notification] 최종 store.alerts:", store.alerts);
+      console.log("[Notification] 최종 unread 개수:", store.unread);
     }
 
     async function requestMarkRead(dbId) {
@@ -138,9 +155,13 @@ export const AlertPanel = defineComponent({
       });
 
       socket.on("new_alert", (data) => {
+        console.log("[Socket.io] new_alert 진입");
+        console.log("[Socket.io] 현재 _cxDBLoading:", window._cxDBLoading);
         // DB 로드 중이면 소켓 수신 차단
-        if (window._cxDBLoading) return;
-
+        if (window._cxDBLoading) {
+          console.log("[Socket.io] DB 로딩 중이라 소켓 수신 무시");
+          return;
+        }
         console.log("[Socket.io] 새 알림 수신:", data);
 
         const severity = severityMap[data.category] || "info";
@@ -172,21 +193,30 @@ export const AlertPanel = defineComponent({
 
       // 안드로이드 네이티브에서 호출할 함수
       window.onAppResume = async function () {
-        console.log("[Notification] onAppResume 호출됨");
+        console.log(
+          "[Notification] onAppResume 호출됨 - 시작",
+          new Date().toISOString(),
+        );
+
         try {
           await loadUnreadNotifications();
+          console.log("[Notification] onAppResume 재조회 완료");
         } catch (e) {
           console.warn("[Notification] onAppResume 재조회 실패:", e);
         } finally {
           window._cxDBLoading = false;
           initSocket();
+          console.log("[Notification] onAppResume 종료");
         }
       };
 
       // 웹 환경에서도 탭 복귀 시 재조회되게 보조 처리
       document.addEventListener("visibilitychange", async () => {
         if (document.visibilityState === "visible") {
-          console.log("[Notification] visibilitychange visible");
+          console.log(
+            "[Notification] visibilitychange visible",
+            new Date().toISOString(),
+          );
           try {
             await loadUnreadNotifications();
           } catch (e) {
@@ -199,7 +229,7 @@ export const AlertPanel = defineComponent({
       });
 
       window.addEventListener("focus", async () => {
-        console.log("[Notification] window focus");
+        console.log("[Notification] window focus", new Date().toISOString());
         try {
           await loadUnreadNotifications();
         } catch (e) {
