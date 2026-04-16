@@ -11,11 +11,19 @@ import { apiFetch } from "./client.js";
  *   }
  * - B2BCustomerTrendSection.js가 기대하는 형태로 변환해서 반환
  */
-export async function fetchDashboardCustomerTrend(tenantId) {
+export async function fetchDashboardCustomerTrend(tenantId, from, to) {
   const params = new URLSearchParams();
 
   if (tenantId !== undefined && tenantId !== null && tenantId !== "") {
     params.append("tenant_id", tenantId);
+  }
+
+  if (from !== undefined && from !== null && from !== "") {
+    params.append("from", from);
+  }
+
+  if (to !== undefined && to !== null && to !== "") {
+    params.append("to", to);
   }
 
   const query = params.toString();
@@ -49,8 +57,8 @@ export async function fetchDashboardCustomerTrend(tenantId) {
             String(row?.signal_level ?? "MEDIUM").toUpperCase() === "HIGH"
               ? "high"
               : String(row?.signal_level ?? "MEDIUM").toUpperCase() === "LOW"
-              ? "low"
-              : "medium",
+                ? "low"
+                : "medium",
           sales_status: "new",
           note: row?.summary ?? "",
           ref_url: row?.source_url ?? "",

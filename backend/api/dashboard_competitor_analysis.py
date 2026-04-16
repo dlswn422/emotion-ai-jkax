@@ -10,9 +10,22 @@ router = APIRouter(prefix="/dashboard", tags=["dashboard"])
 @router.get("/competitor-analysis")
 def get_competitor_analysis_dashboard(
     tenant_id: int = Query(...),
+    # 시작일: 프론트에서 ?from=2026-01-01 형태로 들어옴
+    from_date: str | None = Query(None, alias="from"),
+    # 종료일: 프론트에서 ?to=2026-03-31 형태로 들어옴
+    to_date: str | None = Query(None, alias="to"),
     db: Session = Depends(get_db),
 ):
+    # 모든 SQL에서 공통으로 쓰는 파라미터
+    params = {
+        "tenant_id": tenant_id,
+        "from_date": from_date,
+        "to_date": to_date,
+    }
+
     # KPI
+    # - tenant_id 기준 조회
+    # - detected_at이 기간 안에 들어오는 데이터만 집계
     kpi_row = db.execute(
         text("""
             select
@@ -21,11 +34,15 @@ def get_competitor_analysis_dashboard(
                 count(distinct signal_keyword) filter (where signal_type = 'RISK') as monitoring_keyword_count
             from public.signals
             where tenant_id = :tenant_id
+              and (:from_date is null or detected_at >= cast(:from_date as date))
+              and (:to_date is null or detected_at < cast(:to_date as date) + interval '1 day')
         """),
-        {"tenant_id": tenant_id},
+        params,
     ).mappings().first()
 
     # 키워드 히트 현황
+    # - RISK 타입만
+    # - 기간 안의 데이터만 집계
     keyword_hits = db.execute(
         text("""
             select
@@ -37,6 +54,8 @@ def get_competitor_analysis_dashboard(
             from public.signals
             where tenant_id = :tenant_id
               and signal_type = 'RISK'
+              and (:from_date is null or detected_at >= cast(:from_date as date))
+              and (:to_date is null or detected_at < cast(:to_date as date) + interval '1 day')
             group by signal_keyword, signal_category, signal_level
             order by
                 case signal_level
@@ -49,10 +68,12 @@ def get_competitor_analysis_dashboard(
                 last_detected_at desc nulls last
             limit 20
         """),
-        {"tenant_id": tenant_id},
+        params,
     ).mappings().all()
 
     # 경쟁사 상세 리스트
+    # - RISK 타입만
+    # - 기간 필터도 같이 적용
     competitor_details = db.execute(
         text("""
             select
@@ -67,6 +88,8 @@ def get_competitor_analysis_dashboard(
             from public.signals
             where tenant_id = :tenant_id
               and signal_type = 'RISK'
+              and (:from_date is null or detected_at >= cast(:from_date as date))
+              and (:to_date is null or detected_at < cast(:to_date as date) + interval '1 day')
             order by
                 case signal_level
                     when 'HIGH' then 1
@@ -78,7 +101,7 @@ def get_competitor_analysis_dashboard(
                 id desc
             limit 30
         """),
-        {"tenant_id": tenant_id},
+        params,
     ).mappings().all()
 
     return {

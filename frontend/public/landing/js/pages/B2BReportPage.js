@@ -1,4 +1,4 @@
-const { defineComponent, ref, computed, onMounted, onUnmounted } = Vue;
+const { defineComponent, ref, computed, watch, onMounted, onUnmounted } = Vue;
 const { useRouter, useRoute } = VueRouter;
 
 import { NavBar } from "../components/NavBar.js";
@@ -67,15 +67,37 @@ export const B2BReportPage = defineComponent({
 
     // analysisPeriod: B2BCustomerTrendSection / B2BCompetitiveSection에 전달
     const analysisPeriod = computed(() => {
+      // 1순위: URL에 직접 들어온 start/end 사용
+      if (route.query.start && route.query.end) {
+        return {
+          start: String(route.query.start),
+          end: String(route.query.end),
+        };
+      }
+
+      // 2순위: snapshot 기준 계산
       const end = new Date();
       const start = new Date();
       const days = parseInt(periodType.value) || 30;
       start.setDate(end.getDate() - days);
+
       return {
         start: start.toISOString().slice(0, 10),
         end: end.toISOString().slice(0, 10),
       };
     });
+
+    watch(
+      () => analysisPeriod.value,
+      (val) => {
+        console.log(
+          "[B2BReportPage] selectedSnapshot =",
+          selectedSnapshot.value,
+        );
+        console.log("[B2BReportPage] analysisPeriod =", val);
+      },
+      { immediate: true, deep: true },
+    );
 
     const loading = ref(false);
     const activeTab = ref("external");
@@ -158,14 +180,32 @@ export const B2BReportPage = defineComponent({
     }
 
     // 새 DateModal: {snapshotKey, snapshotLabel} 수신
-    function onPeriodConfirm({ snapshotKey }) {
+    function onPeriodConfirm(payload) {
       showPeriodModal.value = false;
-      selectedSnapshot.value = snapshotKey;
-      router.replace({
-        query: { ...route.query, snapshot: snapshotKey },
-      });
-    }
 
+      // DateModal이 start/end를 보내는 경우
+      if (payload?.start && payload?.end) {
+        router.replace({
+          query: {
+            ...route.query,
+            start: payload.start,
+            end: payload.end,
+          },
+        });
+        return;
+      }
+
+      // DateModal이 snapshotKey를 보내는 경우
+      if (payload?.snapshotKey) {
+        selectedSnapshot.value = payload.snapshotKey;
+        router.replace({
+          query: {
+            ...route.query,
+            snapshot: payload.snapshotKey,
+          },
+        });
+      }
+    }
 
     onMounted(() => {
       window.addEventListener("resize", handleResize);
@@ -364,7 +404,7 @@ export const B2BReportPage = defineComponent({
             <B2BCompetitiveSection
               :tenant-id="company.tenant_id"
               :comp-id="company.id"
-              :period-type="periodType"
+              :analysis-period="analysisPeriod"
             />
           </template>
 
