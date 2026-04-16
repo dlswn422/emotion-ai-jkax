@@ -10,26 +10,25 @@ router = APIRouter(prefix="/dashboard", tags=["dashboard"])
 @router.get("/customer-trend")
 def get_customer_trend_dashboard(
     tenant_id: int = Query(...),
-    # 시작일: 프론트에서 ?from=2026-01-01 형태로 들어옴
+    # 프론트에서 ?from=2026-01-01 형태로 들어옴
     from_date: str | None = Query(None, alias="from"),
-    # 종료일: 프론트에서 ?to=2026-03-31 형태로 들어옴
+    # 프론트에서 ?to=2026-03-31 형태로 들어옴
     to_date: str | None = Query(None, alias="to"),
     db: Session = Depends(get_db),
 ):
-    
     print("[customer-trend] tenant_id =", tenant_id)
     print("[customer-trend] from_date =", from_date)
     print("[customer-trend] to_date =", to_date)
-    # 모든 SQL에서 공통으로 쓰는 파라미터
+
     params = {
         "tenant_id": tenant_id,
         "from_date": from_date,
         "to_date": to_date,
     }
 
-    # KPI
-    # - tenant_id 기준 조회
-    # - detected_at이 기간 안에 들어오는 데이터만 집계
+    # ------------------------------------------------------------
+    # 1) 상단 KPI
+    # ------------------------------------------------------------
     kpi_row = db.execute(
         text("""
             select
@@ -47,8 +46,10 @@ def get_customer_trend_dashboard(
         params,
     ).mappings().first()
 
-    # 키워드 히트 현황
-    # - 기간 안의 데이터만 group by
+    # ------------------------------------------------------------
+    # 2) 순위표용 키워드 히트 현황
+    #    - 사용자가 선택한 기간 기준
+    # ------------------------------------------------------------
     keyword_hits = db.execute(
         text("""
             select
@@ -68,9 +69,54 @@ def get_customer_trend_dashboard(
         params,
     ).mappings().all()
 
-    # 기회 카드
-    # - OPPORTUNITY 타입만 조회
-    # - 기간 필터도 같이 적용
+    # ------------------------------------------------------------
+    # 3) 일별 추이용 데이터
+    #    - 오늘 기준 최근 14일
+    #    - 실제 감지된 키워드만 날짜별 count
+    #    - 순위표 기준과 맞추기 위해 keyword/category/level 조합 유지
+    # ------------------------------------------------------------
+    daily_trend = db.execute(
+        text("""
+            select
+                to_char(detected_at::date, 'YYYY-MM-DD') as bucket_date,
+                signal_keyword as keyword,
+                signal_category as category,
+                signal_level as level,
+                count(*) as hit_count
+            from public.signals
+            where tenant_id = :tenant_id
+              and detected_at >= current_date - interval '13 day'
+              and detected_at < current_date + interval '1 day'
+            group by detected_at::date, signal_keyword, signal_category, signal_level
+            order by bucket_date asc, keyword asc, category asc, level asc
+        """),
+        {"tenant_id": tenant_id},
+    ).mappings().all()
+
+    # ------------------------------------------------------------
+    # 4) 월별 추이용 데이터
+    #    - 오늘 기준 최근 6개월
+    #    - HIGH / MEDIUM / LOW 총 건수 집계
+    # ------------------------------------------------------------
+    monthly_trend = db.execute(
+        text("""
+            select
+                to_char(date_trunc('month', detected_at), 'YYYY-MM') as bucket_month,
+                signal_level,
+                count(*) as hit_count
+            from public.signals
+            where tenant_id = :tenant_id
+              and detected_at >= date_trunc('month', current_date) - interval '5 month'
+              and detected_at < date_trunc('month', current_date) + interval '1 month'
+            group by date_trunc('month', detected_at), signal_level
+            order by bucket_month asc
+        """),
+        {"tenant_id": tenant_id},
+    ).mappings().all()
+
+    # ------------------------------------------------------------
+    # 5) 신규 영업기회 카드
+    # ------------------------------------------------------------
     opportunity_cards = db.execute(
         text("""
             select
@@ -111,6 +157,24 @@ def get_customer_trend_dashboard(
             "high_opportunity_count": int(kpi_row["high_opportunity_count"] or 0),
         },
         "keyword_hits": [dict(row) for row in keyword_hits],
+        "daily_trend": [
+            {
+                "date": row["bucket_date"],
+                "keyword": row["keyword"],
+                "category": row["category"],
+                "level": row["level"],
+                "hit_count": int(row["hit_count"] or 0),
+            }
+            for row in daily_trend
+        ],
+        "monthly_trend": [
+            {
+                "month": row["bucket_month"],
+                "signal_level": (row["signal_level"] or "MEDIUM").upper(),
+                "hit_count": int(row["hit_count"] or 0),
+            }
+            for row in monthly_trend
+        ],
         "opportunity_cards": [
             {
                 "company_name": row["company_name"],

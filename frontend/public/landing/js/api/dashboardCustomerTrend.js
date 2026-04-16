@@ -2,14 +2,9 @@ import { apiFetch } from "./client.js";
 
 /**
  * B2B 고객 동향 분석 데이터 조회
- * - 백엔드 응답 shape:
- *   {
- *     tenant_id,
- *     kpis: {},
- *     keyword_hits: [],
- *     opportunity_cards: []
- *   }
- * - B2BCustomerTrendSection.js가 기대하는 형태로 변환해서 반환
+ * - 순위표: 사용자가 선택한 기간 기준
+ * - 일별 추이: 오늘 기준 최근 14일 실데이터
+ * - 월별 추이: 오늘 기준 최근 6개월 HIGH/MED/LOW 집계
  */
 export async function fetchDashboardCustomerTrend(tenantId, from, to) {
   const params = new URLSearchParams();
@@ -30,6 +25,7 @@ export async function fetchDashboardCustomerTrend(tenantId, from, to) {
   const url = query
     ? `/dashboard/customer-trend?${query}`
     : `/dashboard/customer-trend`;
+
   const json = await apiFetch(url);
 
   return {
@@ -42,6 +38,26 @@ export async function fetchDashboardCustomerTrend(tenantId, from, to) {
           hit_count: Number(row?.hit_count ?? 0),
           last_hit: row?.last_detected_at ?? "",
           active: true,
+        }))
+      : [],
+
+    // 최근 14일 일별 추이 실데이터
+    dailyTrend: Array.isArray(json?.daily_trend)
+      ? json.daily_trend.map((row) => ({
+          date: row?.date ?? "",
+          keyword: row?.keyword ?? "",
+          category: row?.category ?? "",
+          level: String(row?.level ?? "MEDIUM").toUpperCase(),
+          hit_count: Number(row?.hit_count ?? 0),
+        }))
+      : [],
+
+    // 최근 6개월 월별 HIGH/MED/LOW 집계
+    monthlyTrend: Array.isArray(json?.monthly_trend)
+      ? json.monthly_trend.map((row) => ({
+          month: row?.month ?? "",
+          signal_level: String(row?.signal_level ?? "MEDIUM").toUpperCase(),
+          hit_count: Number(row?.hit_count ?? 0),
         }))
       : [],
 

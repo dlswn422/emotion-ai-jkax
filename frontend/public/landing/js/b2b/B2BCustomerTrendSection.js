@@ -30,6 +30,8 @@ export const B2BCustomerTrendSection = defineComponent({
     // 실데이터 저장 상태
     const signalKeywords = ref([]);
     const prospects = ref([]);
+    const dailyTrend = ref([]);
+    const monthlyTrend = ref([]);
 
     // 차트 인스턴스
     let kwDailyChartInst = null;
@@ -57,7 +59,7 @@ export const B2BCustomerTrendSection = defineComponent({
       };
     });
 
-    // 키워드 표/차트용 가공 데이터
+    // 키워드 표용 가공 데이터
     const externalKeywordRows = computed(() =>
       [...signalKeywordsSource.value]
         .filter((k) => k.active !== false)
@@ -78,6 +80,41 @@ export const B2BCustomerTrendSection = defineComponent({
       const base = prospectsSource.value;
       if (!prospectFilter.value) return base;
       return base.filter((x) => x.opportunity_grade === prospectFilter.value);
+    });
+
+    // 최근 14일 안에 실제 감지된 키워드 시리즈 상위 5개
+    const dailyLegendRows = computed(() => {
+      const recentSeriesMap = new Map();
+
+      for (const row of dailyTrend.value) {
+        const level = String(row.level || "MEDIUM").toUpperCase();
+        const category = row.category || "이벤트";
+        const key = `${row.keyword}__${category}__${level}`;
+
+        if (!recentSeriesMap.has(key)) {
+          recentSeriesMap.set(key, {
+            keyword: row.keyword,
+            category,
+            level,
+          });
+        }
+      }
+
+      return Array.from(recentSeriesMap.values())
+        .map((item) => {
+          const total = dailyTrend.value
+            .filter(
+              (row) =>
+                row.keyword === item.keyword &&
+                (row.category || "이벤트") === item.category &&
+                String(row.level || "MEDIUM").toUpperCase() === item.level,
+            )
+            .reduce((sum, row) => sum + Number(row.hit_count || 0), 0);
+
+          return { ...item, total };
+        })
+        .sort((a, b) => b.total - a.total)
+        .slice(0, 5);
     });
 
     // 일별 추이 라인차트 생성
@@ -111,7 +148,12 @@ export const B2BCustomerTrendSection = defineComponent({
             y: {
               beginAtZero: true,
               grid: { color: "rgba(0,0,0,.05)" },
-              ticks: { color: "#94a3b8", font: { size: 10 }, stepSize: 1 },
+              ticks: {
+                color: "#94a3b8",
+                font: { size: 10 },
+                stepSize: 1,
+                precision: 0,
+              },
             },
           },
         },
@@ -146,7 +188,12 @@ export const B2BCustomerTrendSection = defineComponent({
               stacked: true,
               beginAtZero: true,
               grid: { color: "rgba(0,0,0,.05)" },
-              ticks: { color: "#94a3b8", font: { size: 10 } },
+              ticks: {
+                color: "#94a3b8",
+                font: { size: 10 },
+                stepSize: 1,
+                precision: 0,
+              },
             },
           },
         },
@@ -156,30 +203,59 @@ export const B2BCustomerTrendSection = defineComponent({
     // 일별 차트 데이터 생성
     async function buildKwDailyChart() {
       await nextTick();
-      const rows = externalKeywordRows.value.slice(0, 5);
       destroyChart(kwDailyChartInst);
 
+      // 오늘 기준 최근 14일 라벨
+      const endDate = new Date();
       const labels = [];
+      const labelKeys = [];
+
       for (let i = 13; i >= 0; i--) {
-        const d = new Date();
-        d.setDate(d.getDate() - i);
-        labels.push(`${d.getMonth() + 1}/${d.getDate()}`);
+        const d = new Date(endDate);
+        d.setDate(endDate.getDate() - i);
+
+        const month = d.getMonth() + 1;
+        const day = d.getDate();
+
+        labels.push(`${month}/${day}`);
+        labelKeys.push(
+          `${d.getFullYear()}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`,
+        );
       }
 
       const COLORS = ["#f43f5e", "#f59e0b", "#6366f1", "#10b981", "#8b5cf6"];
 
+      // 최근 14일 안에 실제 감지된 키워드 상위 5개만 사용
+      const rows = dailyLegendRows.value;
+
+      // 날짜별 raw count 맵
+      const dailyMap = new Map();
+      for (const row of dailyTrend.value) {
+        const level = String(row.level || "MEDIUM").toUpperCase();
+        const category = row.category || "이벤트";
+        const key = `${row.keyword}__${category}__${level}__${row.date}`;
+        dailyMap.set(key, Number(row.hit_count || 0));
+      }
+
       const datasets = rows.map((kw, idx) => {
-        const total = kw.hit_count || 0;
-        const data = labels.map((_, i) => {
-          const w = Math.pow(1.15, i);
-          return Math.round(
-            (total * w) / labels.reduce((s, _, j) => s + Math.pow(1.15, j), 0),
-          );
+        // 1) 날짜별 실제 발생 건수
+        const rawData = labelKeys.map((dateKey) => {
+          const key = `${kw.keyword}__${kw.category}__${kw.level}__${dateKey}`;
+          return dailyMap.get(key) || 0;
         });
 
+        // 2) 누적합으로 변환
+        const cumulativeData = [];
+        let running = 0;
+
+        for (const value of rawData) {
+          running += value;
+          cumulativeData.push(running);
+        }
+
         return {
-          label: kw.keyword,
-          data,
+          label: `${kw.keyword} (${kw.level})`,
+          data: cumulativeData,
           borderColor: COLORS[idx % COLORS.length],
           backgroundColor: COLORS[idx % COLORS.length] + "15",
           fill: false,
@@ -195,48 +271,52 @@ export const B2BCustomerTrendSection = defineComponent({
       await nextTick();
       destroyChart(kwMonthlyChartInst);
 
-      const rows = externalKeywordRows.value;
-      const highTotal = rows
-        .filter((k) => k.signal_level === "high")
-        .reduce((s, k) => s + (k.hit_count || 0), 0);
-      const medTotal = rows
-        .filter((k) => k.signal_level === "medium")
-        .reduce((s, k) => s + (k.hit_count || 0), 0);
-      const lowTotal = rows
-        .filter((k) => k.signal_level === "low")
-        .reduce((s, k) => s + (k.hit_count || 0), 0);
-
+      const endDate = new Date();
       const labels = [];
+      const monthKeys = [];
+
+      // 오늘 기준 최근 6개월
       for (let i = 5; i >= 0; i--) {
-        const d = new Date();
-        d.setMonth(d.getMonth() - i);
+        const d = new Date(endDate);
+        d.setMonth(endDate.getMonth() - i);
+
+        const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+        monthKeys.push(key);
         labels.push(`${d.getMonth() + 1}월`);
       }
 
-      const growFactor = (total, idx) =>
-        Math.max(
-          0,
-          Math.round(
-            (total * (0.45 + (idx / 5) * 0.75)) / 3 + Math.random() * 1.5,
-          ),
-        );
+      const highData = new Array(labels.length).fill(0);
+      const medData = new Array(labels.length).fill(0);
+      const lowData = new Array(labels.length).fill(0);
+
+      for (const row of monthlyTrend.value) {
+        const idx = monthKeys.indexOf(row.month);
+        if (idx === -1) continue;
+
+        const hitCount = Number(row.hit_count || 0);
+        const level = String(row.signal_level || "MEDIUM").toUpperCase();
+
+        if (level === "HIGH") highData[idx] += hitCount;
+        else if (level === "MEDIUM") medData[idx] += hitCount;
+        else if (level === "LOW") lowData[idx] += hitCount;
+      }
 
       kwMonthlyChartInst = makeBarChart("kwMonthlyChart", labels, [
         {
           label: "HIGH",
-          data: labels.map((_, i) => growFactor(highTotal, i)),
+          data: highData,
           backgroundColor: "rgba(244,63,94,.8)",
           borderRadius: 5,
         },
         {
           label: "MED",
-          data: labels.map((_, i) => growFactor(medTotal, i)),
+          data: medData,
           backgroundColor: "rgba(245,158,11,.7)",
           borderRadius: 5,
         },
         {
           label: "LOW",
-          data: labels.map((_, i) => growFactor(lowTotal, i)),
+          data: lowData,
           backgroundColor: "rgba(148,163,184,.5)",
           borderRadius: 5,
         },
@@ -261,10 +341,20 @@ export const B2BCustomerTrendSection = defineComponent({
         prospects.value = Array.isArray(result?.prospects)
           ? result.prospects
           : [];
+
+        dailyTrend.value = Array.isArray(result?.dailyTrend)
+          ? result.dailyTrend
+          : [];
+
+        monthlyTrend.value = Array.isArray(result?.monthlyTrend)
+          ? result.monthlyTrend
+          : [];
       } catch (e) {
         console.error(e);
         signalKeywords.value = [];
         prospects.value = [];
+        dailyTrend.value = [];
+        monthlyTrend.value = [];
       } finally {
         emit("loading-change", false);
       }
@@ -315,6 +405,8 @@ export const B2BCustomerTrendSection = defineComponent({
       externalTopKpis,
       externalKeywordRows,
       filteredProspects,
+      dailyTrend,
+      dailyLegendRows,
     };
   },
 
@@ -477,25 +569,25 @@ export const B2BCustomerTrendSection = defineComponent({
         <template v-else-if="kwChartMode==='daily'">
           <div class="cdt-trend-wrap">
             <div class="cdt-trend-info">
-              <div class="cdt-trend-desc">최근 14일 키워드 누적 히트 추이</div>
+              <div class="cdt-trend-desc">최근 14일 실제 감지 키워드 히트 추이</div>
               <div class="cdt-trend-legend">
                 <span
-                  v-for="kw in externalKeywordRows.slice(0, 5)"
-                  :key="kw.keyword"
+                  v-for="kw in dailyLegendRows"
+                  :key="kw.keyword + '-' + kw.category + '-' + kw.level"
                   class="cdt-legend-item"
                 >
                   <span
                     class="cdt-legend-dot"
                     :style="{
                       background:
-                        kw.signal_level === 'high'
+                        kw.level === 'HIGH'
                           ? '#f43f5e'
-                          : kw.signal_level === 'medium'
+                          : kw.level === 'MEDIUM'
                           ? '#f59e0b'
-                          : '#94a3b8'
+                          : '#6366f1'
                     }"
                   ></span>
-                  {{ kw.keyword }}
+                  {{ kw.keyword }} ({{ kw.level }})
                 </span>
               </div>
             </div>
@@ -509,7 +601,7 @@ export const B2BCustomerTrendSection = defineComponent({
         <template v-else>
           <div class="cdt-trend-wrap">
             <div class="cdt-trend-info">
-              <div class="cdt-trend-desc">최근 6개월 시그널 레벨별 히트 건수</div>
+              <div class="cdt-trend-desc">최근 6개월 HIGH / MED / LOW 시그널 히트 건수</div>
               <div class="cdt-trend-legend">
                 <span class="cdt-legend-item">
                   <span class="cdt-legend-dot" style="background:#f43f5e"></span>
@@ -532,6 +624,7 @@ export const B2BCustomerTrendSection = defineComponent({
           </div>
         </template>
       </div>
+    </div>
 
     <div class="r-card">
       <div class="r-card-hd">
