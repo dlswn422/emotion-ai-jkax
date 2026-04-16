@@ -139,8 +139,29 @@ def _insert_notification(db: Session, data: Dict[str, Any]) -> Optional[int]:
     """
     notifications 테이블 INSERT 후 생성된 id 반환.
     savepoint를 사용해 실패해도 트랜잭션이 오염되지 않도록 처리.
+    중복 체크: message + company_name + tenant_id 기준으로 중복 시 스킵.
     """
     try:
+        # ── 중복 체크 ──
+        existing = db.execute(
+            text("""
+                SELECT id FROM public.notifications
+                WHERE tenant_id = :tenant_id
+                  AND company_name = :company_name
+                  AND message = :message
+                LIMIT 1
+            """),
+            {
+                "tenant_id": data["tenant_id"],
+                "company_name": data["company_name"],
+                "message": data["message"],
+            },
+        ).fetchone()
+
+        if existing:
+            print(f"[SKIP] notifications 중복 — message={data['message'][:30]}, company={data['company_name']}")
+            return existing[0]
+
         db.execute(text("SAVEPOINT notification_save"))
         result = db.execute(
             text("""
