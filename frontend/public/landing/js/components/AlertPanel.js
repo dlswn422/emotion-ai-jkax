@@ -42,6 +42,41 @@ export const AlertPanel = defineComponent({
     const editMsg = ref("");
     const sending = ref(false);
 
+    // ── 브라우저 열릴 때 미읽음 알림 조회 ──
+    if (!window._cxNotificationsLoaded) {
+      window._cxNotificationsLoaded = true;
+      (async () => {
+        try {
+          const res = await fetch(`${BACKEND_URL}/notifications?tenant_id=7&is_read=false`);
+          const data = await res.json();
+          const severityMap = {
+            "긴급": "critical",
+            "주의": "warning",
+            "일반": "info",
+            "정보": "info",
+          };
+          data.forEach((row) => {
+            const dupKey = `notification-${row.id}`;
+            const existing = store.alerts.find((a) => a.dupKey === dupKey);
+            if (existing) return;
+            store.add({
+              severity: severityMap[row.category] || "info",
+              dbId: row.id,
+              title: row.message,
+              companyName: row.company_name || "",
+              tabLabel: row.signal_type_label || "",
+              keyword: "",
+              desc: row.message,
+              dupKey,
+            });
+          });
+          console.log(`[Notification] 미읽음 알림 ${data.length}건 로드 완료`);
+        } catch (e) {
+          console.warn("[Notification] 미읽음 알림 조회 실패:", e);
+        }
+      })();
+    }
+
     // ── Socket.io 실시간 알림 연결 (싱글톤) ──
     const BACKEND_URL = "https://emotion-ai-backend-bfdc.onrender.com";
 
@@ -75,7 +110,7 @@ export const AlertPanel = defineComponent({
           tabLabel: data.signal_type_label || "",
           keyword: data.keyword || "",
           desc: data.message || "",
-          dupKey: `socket-${Date.now()}`,
+          dupKey: `notification-${data.db_id || data.message || Date.now()}`,
         });
 
         // open_panel = true 인 경우에만 패널 자동 오픈 (요약 메시지)
@@ -166,9 +201,9 @@ ${a.desc}
       }
     }
 
-    // 전체 읽음 처리
+    // 전체 읽음 처리 + 알림 전체 삭제
     async function markAllRead() {
-      store.markAllRead();
+      // DB 업데이트
       try {
         await fetch(`${BACKEND_URL}/notifications/read-all`, {
           method: "PATCH",
@@ -176,6 +211,9 @@ ${a.desc}
       } catch (e) {
         console.warn("[Notification] 전체 읽음 처리 실패:", e);
       }
+      // localStorage + 화면에서 전체 삭제
+      store.alerts.splice(0);
+      store._save();
     }
 
     const sevCfg = (id) => ALERT_SEVERITY[id] || ALERT_SEVERITY.info;

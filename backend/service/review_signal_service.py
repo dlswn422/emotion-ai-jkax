@@ -334,24 +334,7 @@ def _send_alerts(db: Session, inserted_count: int) -> None:
     """
     import json
 
-    summary_message = f"오늘 긴급 알림 {inserted_count}건이 감지되었습니다."
-
-    # ── ① 요약 메시지 emit (패널 자동 오픈) ──
-    try:
-        payload = json.dumps({
-            "tenant_id": 7,
-            "message": summary_message,
-            "category": "정보",
-            "signal_type_label": "시스템 알림",
-            "company_name": "",
-            "open_panel": True,  # 프론트에서 패널 자동 오픈 트리거
-        })
-        publish("alert_channel", payload)
-        print(f"[Redis] 요약 메시지 발송 완료")
-    except Exception as e:
-        print(f"[ERROR] Redis 요약 메시지 발송 실패: {e}")
-
-    # ── ② 건별 notifications 데이터 emit ──
+    # ── ① 건별 notifications 데이터 먼저 조회 ──
     try:
         rows = db.execute(
             text("""
@@ -361,7 +344,30 @@ def _send_alerts(db: Session, inserted_count: int) -> None:
                 ORDER BY created_at DESC
             """)
         ).mappings().all()
+    except Exception as e:
+        print(f"[ERROR] notifications 조회 실패: {e}")
+        rows = []
 
+    notification_count = len(rows)
+    summary_message = f"오늘 긴급 알림 {notification_count}건이 감지되었습니다."
+
+    # ── ② 요약 메시지 emit (패널 자동 오픈) ──
+    try:
+        payload = json.dumps({
+            "tenant_id": 7,
+            "message": summary_message,
+            "category": "정보",
+            "signal_type_label": "시스템 알림",
+            "company_name": "",
+            "open_panel": True,
+        })
+        publish("alert_channel", payload)
+        print(f"[Redis] 요약 메시지 발송 완료 ({notification_count}건)")
+    except Exception as e:
+        print(f"[ERROR] Redis 요약 메시지 발송 실패: {e}")
+
+    # ── ③ 건별 emit ──
+    try:
         for row in rows:
             payload = json.dumps({
                 "tenant_id": 7,
@@ -375,7 +381,7 @@ def _send_alerts(db: Session, inserted_count: int) -> None:
             })
             publish("alert_channel", payload)
 
-        print(f"[Redis] 건별 알림 {len(rows)}건 발송 완료")
+        print(f"[Redis] 건별 알림 {notification_count}건 발송 완료")
     except Exception as e:
         print(f"[ERROR] Redis 건별 발송 실패: {e}")
 
