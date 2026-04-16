@@ -62,8 +62,8 @@ export const AlertPanel = defineComponent({
           store.alerts.splice(0);
           store._save();
 
-          // 건별 알림 추가
-          data.forEach((row) => {
+          // 건별 알림 추가 (역순으로 추가해야 화면에서 최신순 표시)
+          [...data].reverse().forEach((row) => {
             store.add({
               severity: severityMap[row.category] || "info",
               dbId: row.id,
@@ -76,24 +76,26 @@ export const AlertPanel = defineComponent({
             });
           });
 
-          // 미읽음 건수가 있으면 요약 메시지 맨 위에 추가
+          // 요약 메시지 맨 마지막에 store.add() → unshift로 맨 위에 표시
           if (data.length > 0) {
-            store.alerts.unshift({
-              id: "summary-" + Date.now(),
+            const criticalCount = data.filter(r => r.category === "긴급").length;
+            const warningCount = data.filter(r => r.category === "주의").length;
+            const noticeCount = data.filter(r => r.category === "신호").length;
+            const parts = [];
+            if (criticalCount > 0) parts.push(`긴급 ${criticalCount}건`);
+            if (warningCount > 0) parts.push(`주의 ${warningCount}건`);
+            if (noticeCount > 0) parts.push(`참고 ${noticeCount}건`);
+            const summaryText = `오늘 ${parts.join(" / ")} 알림이 감지되었습니다.`;
+            store.add({
               severity: "info",
               dbId: null,
-              title: `오늘 긴급 알림 ${data.length}건이 감지되었습니다.`,
+              title: summaryText,
               companyName: "",
               tabLabel: "시스템 알림",
               keyword: "",
-              desc: `오늘 긴급 알림 ${data.length}건이 감지되었습니다.`,
+              desc: summaryText,
               dupKey: "summary-load",
-              read: false,
-              createdAt: new Date().toISOString(),
-              sentAt: null,
-              sentTo: [],
             });
-            store._save();
           }
 
           console.log(`[Notification] 미읽음 알림 ${data.length}건 로드 완료`);

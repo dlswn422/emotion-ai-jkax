@@ -14,7 +14,7 @@ from backend.core.fcm_client import send_fcm_to_devices
 # 상수
 # ──────────────────────────────────────────────
 
-STORE_ID = "store_7"
+STORE_ID = "store7"
 
 SIGNAL_TYPE_MAP = {
     1: "RISK",        # 경쟁사
@@ -24,7 +24,7 @@ SIGNAL_TYPE_MAP = {
 SIGNAL_LEVEL_TO_CATEGORY = {
     "HIGH":   "긴급",
     "MEDIUM": "주의",
-    "LOW":    "일반",
+    "LOW":    "신호",
 }
 
 SIGNAL_TYPE_TO_LABEL = {
@@ -251,8 +251,8 @@ def _process_review(db: Session, row: Dict[str, Any], tenant_id: int) -> str:
         print(f"[ERROR] signals INSERT 실패 — google_review_id={google_review_id}: {e}")
         return "failed"
 
-    # ── notifications INSERT (signal_level HIGH만) ──
-    if llm["signal_level"] != "LOW":
+    # ── notifications INSERT (HIGH/MEDIUM/LOW 모두) ──
+    if llm["signal_level"] not in ("HIGH", "MEDIUM", "LOW"):
         _mark_as_analyzed(db, google_review_id)
         db.commit()
         return "inserted"

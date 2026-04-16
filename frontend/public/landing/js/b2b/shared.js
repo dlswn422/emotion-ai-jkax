@@ -21,6 +21,13 @@ export const ALERT_SEVERITY = {
     border: "#fde68a",
     icon: "M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z",
   },
+  notice: {
+    label: "신호",
+    color: "#10b981",
+    bg: "#ecfdf5",
+    border: "#6ee7b7",
+    icon: "M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z",
+  },
   info: {
     label: "정보",
     color: "#6366f1",
