@@ -31,7 +31,7 @@ def batch_status(secret: str = Query(...), _: None = Depends(_verify_secret)):
 @router.post("/trigger/analyze-reviews")
 def trigger_analyze_reviews(
     tenant_id: int = Query(..., description="대상 tenant_id"),
-    store_id: str = Query(default="store7", description="대상 store_id"),
+    store_id: str = Query(default="store_7", description="대상 store_id"),
     _: None = Depends(_verify_secret),
     db: Session = Depends(get_db),
 ):
