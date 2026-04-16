@@ -58,10 +58,12 @@ export const AlertPanel = defineComponent({
             "일반": "info",
             "정보": "info",
           };
+          // localStorage 비우고 DB 기준으로만 로드
+          store.alerts.splice(0);
+          store._save();
+
+          // 건별 알림 추가
           data.forEach((row) => {
-            const dupKey = `notification-${row.id}`;
-            const existing = store.alerts.find((a) => a.dupKey === dupKey);
-            if (existing) return;
             store.add({
               severity: severityMap[row.category] || "info",
               dbId: row.id,
@@ -70,9 +72,30 @@ export const AlertPanel = defineComponent({
               tabLabel: row.signal_type_label || "",
               keyword: "",
               desc: row.message,
-              dupKey,
+              dupKey: `notification-${row.id}`,
             });
           });
+
+          // 미읽음 건수가 있으면 요약 메시지 맨 위에 추가
+          if (data.length > 0) {
+            store.alerts.unshift({
+              id: "summary-" + Date.now(),
+              severity: "info",
+              dbId: null,
+              title: `오늘 긴급 알림 ${data.length}건이 감지되었습니다.`,
+              companyName: "",
+              tabLabel: "시스템 알림",
+              keyword: "",
+              desc: `오늘 긴급 알림 ${data.length}건이 감지되었습니다.`,
+              dupKey: "summary-load",
+              read: false,
+              createdAt: new Date().toISOString(),
+              sentAt: null,
+              sentTo: [],
+            });
+            store._save();
+          }
+
           console.log(`[Notification] 미읽음 알림 ${data.length}건 로드 완료`);
         } catch (e) {
           console.warn("[Notification] 미읽음 알림 조회 실패:", e);
