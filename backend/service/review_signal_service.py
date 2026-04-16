@@ -14,7 +14,7 @@ from backend.core.fcm_client import send_fcm_to_devices
 # 상수
 # ──────────────────────────────────────────────
 
-STORE_ID = "store7"
+STORE_ID = "store_7"
 
 SIGNAL_TYPE_MAP = {
     1: "RISK",        # 경쟁사
