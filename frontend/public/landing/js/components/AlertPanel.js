@@ -42,6 +42,9 @@ export const AlertPanel = defineComponent({
     const editMsg = ref("");
     const sending = ref(false);
 
+    // ── 백엔드 URL ──
+    const BACKEND_URL = "https://emotion-ai-backend-bfdc.onrender.com";
+
     // ── 브라우저 열릴 때 미읽음 알림 조회 ──
     if (!window._cxNotificationsLoaded) {
       window._cxNotificationsLoaded = true;
@@ -78,8 +81,6 @@ export const AlertPanel = defineComponent({
     }
 
     // ── Socket.io 실시간 알림 연결 (싱글톤) ──
-    const BACKEND_URL = "https://emotion-ai-backend-bfdc.onrender.com";
-
     if (typeof io !== "undefined" && !window._cxSocketInitialized) {
       window._cxSocketInitialized = true;
 
