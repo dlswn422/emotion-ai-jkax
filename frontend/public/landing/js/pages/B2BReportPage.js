@@ -102,6 +102,9 @@ export const B2BReportPage = defineComponent({
     const loading = ref(false);
     const activeTab = ref("external");
     const showPeriodModal = ref(false);
+    function setSectionLoading(next) {
+      loading.value = !!next;
+    }
 
     // 600px 이하에서는 상위 탭 대신 세로 스택 모드
     const viewportWidth = ref(window.innerWidth);
@@ -235,6 +238,7 @@ export const B2BReportPage = defineComponent({
       isMobileStackMode,
       isVisibleTab,
       analysisPeriod,
+      setSectionLoading,
     };
   },
 
@@ -299,7 +303,16 @@ export const B2BReportPage = defineComponent({
           </div>
         </aside>
 
-        <main class="report-content" v-show="!loading">
+        <div class="report-content" style="position:relative">
+        <div v-if="loading" class="b2b-report-loading">
+          <div class="b2b-report-loading-card">
+            <div class="b2b-report-loading-spinner"></div>
+            <div class="b2b-report-loading-title">로딩 중</div>
+            <div class="b2b-report-loading-desc">데이터를 불러오고 있습니다.</div>
+          </div>
+        </div>
+
+  <main v-show="!loading">
           <div class="store-banner b2b-company-banner">
             <div class="b2b-banner-logo" :style="{background:company.logoBg,color:company.logoColor}">
               {{company.logo}}
@@ -365,6 +378,7 @@ export const B2BReportPage = defineComponent({
               :tenant-id="company.tenant_id"
               :comp-id="company.id"
               :analysis-period="analysisPeriod"
+              @loading-change="setSectionLoading"
             />
           </template>
 
@@ -405,6 +419,7 @@ export const B2BReportPage = defineComponent({
               :tenant-id="company.tenant_id"
               :comp-id="company.id"
               :analysis-period="analysisPeriod"
+              @loading-change="setSectionLoading"
             />
           </template>
 

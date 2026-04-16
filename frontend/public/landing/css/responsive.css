@@ -993,10 +993,17 @@
   }
 
   .ci-detail-thead,
-  .ci-detail-row,
+  .ci-detail-row {
+    min-width: 880px !important;
+  }
+
   .ci-kw-thead,
   .ci-kw-row {
-    min-width: 760px !important;
+    min-width: 900px !important;
+  }
+  .ci-kw-thead,
+  .ci-kw-row {
+    min-width: 900px !important;
   }
 
   .ci-hr-header,
@@ -2166,10 +2173,18 @@
   }
 
   .ci-detail-thead,
-  .ci-detail-row,
+  .ci-detail-row {
+    min-width: 900px !important;
+  }
+
   .ci-kw-thead,
   .ci-kw-row {
-    min-width: 780px !important;
+    min-width: 900px !important;
+  }
+
+  .ci-kw-thead,
+  .ci-kw-row {
+    min-width: 900px !important;
   }
 
   .ci-hr-header,
@@ -3372,12 +3387,19 @@
   }
 
   .ci-detail-thead,
-  .ci-detail-row,
-  .ci-kw-thead,
-  .ci-kw-row {
-    min-width: 860px;
+  .ci-detail-row {
+    min-width: 920px;
   }
 
+  .ci-kw-thead,
+  .ci-kw-row {
+    min-width: 920px;
+  }
+
+  .ci-kw-thead,
+  .ci-kw-row {
+    min-width: 920px;
+  }
   .ci-hr-header,
   .ci-hr-row {
     min-width: 940px;

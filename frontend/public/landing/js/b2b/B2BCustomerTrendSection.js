@@ -14,6 +14,7 @@ import { fetchDashboardCustomerTrend } from "../api/dashboardCustomerTrend.js";
 
 export const B2BCustomerTrendSection = defineComponent({
   name: "B2BCustomerTrendSection",
+  emits: ["loading-change"],
 
   props: {
     tenantId: { type: [String, Number], required: true },
@@ -21,7 +22,7 @@ export const B2BCustomerTrendSection = defineComponent({
     analysisPeriod: { type: Object, required: true },
   },
 
-  setup(props) {
+  setup(props, { emit }) {
     // 화면 토글 상태
     const kwChartMode = ref("rank");
     const prospectFilter = ref("");
@@ -244,6 +245,8 @@ export const B2BCustomerTrendSection = defineComponent({
 
     // API 호출부
     async function loadCustomerTrend() {
+      emit("loading-change", true);
+
       try {
         const result = await fetchDashboardCustomerTrend(
           props.tenantId,
@@ -262,6 +265,8 @@ export const B2BCustomerTrendSection = defineComponent({
         console.error(e);
         signalKeywords.value = [];
         prospects.value = [];
+      } finally {
+        emit("loading-change", false);
       }
     }
 

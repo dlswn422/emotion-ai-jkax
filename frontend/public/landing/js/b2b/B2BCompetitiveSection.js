@@ -13,6 +13,7 @@ import { fetchDashboardCompetitorAnalysis } from "../api/dashboardCompetitorAnal
 
 export const B2BCompetitiveSection = defineComponent({
   name: "B2BCompetitiveSection",
+  emits: ["loading-change"],
 
   props: {
     tenantId: { type: [String, Number], required: true },
@@ -20,7 +21,7 @@ export const B2BCompetitiveSection = defineComponent({
     analysisPeriod: { type: Object, required: true },
   },
 
-  setup(props) {
+  setup(props, { emit }) {
     // 화면 토글 상태
     const compChartMode = ref("rank");
     const compDetailFilter = ref("all");
@@ -274,6 +275,8 @@ export const B2BCompetitiveSection = defineComponent({
 
     // API 호출부
     async function loadCompetitorAnalysis() {
+      emit("loading-change", true);
+
       try {
         const result = await fetchDashboardCompetitorAnalysis(
           props.tenantId,
@@ -291,6 +294,8 @@ export const B2BCompetitiveSection = defineComponent({
         console.error(error);
         issueSources.value = [];
         issueKeywords.value = [];
+      } finally {
+        emit("loading-change", false);
       }
 
       await nextTick();
