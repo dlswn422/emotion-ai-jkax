@@ -252,7 +252,7 @@ def _process_review(db: Session, row: Dict[str, Any], tenant_id: int) -> str:
         return "failed"
 
     # ── notifications INSERT (signal_level HIGH만) ──
-    if llm["signal_level"] != "HIGH":
+    if llm["signal_level"] != "LOW":
         _mark_as_analyzed(db, google_review_id)
         db.commit()
         return "inserted"
