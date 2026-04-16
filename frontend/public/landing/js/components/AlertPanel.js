@@ -48,15 +48,18 @@ export const AlertPanel = defineComponent({
 
     // ── 브라우저 열릴 때 미읽음 알림 조회 + 완료 후 소켓 연결 ──
     const severityMap = {
-      "긴급": "critical",
-      "주의": "warning",
-      "신호": "notice",
-      "일반": "info",
-      "정보": "info",
+      긴급: "critical",
+      주의: "warning",
+      신호: "notice",
+      일반: "info",
+      정보: "info",
     };
 
     async function loadUnreadNotifications() {
-      const res = await fetch(`${BACKEND_URL}/notifications?tenant_id=7&is_read=false`);
+      const res = await fetch(
+        `${BACKEND_URL}/notifications?tenant_id=7&is_read=false`,
+      );
+
       if (!res.ok) {
         throw new Error(`HTTP ${res.status}`);
       }
@@ -111,42 +114,113 @@ export const AlertPanel = defineComponent({
     }
 
     function initSocket() {
-      if (typeof io !== "undefined" && !window._cxSocketInitialized) {
-        window._cxSocketInitialized = true;
+      if (typeof io === "undefined") return;
 
-        const socket = io(BACKEND_URL, { transports: ["websocket"] });
-        window._cxSocket = socket;
-
-        socket.on("connect", () => {
-          console.log("[Socket.io] AlertPanel 연결 완료:", socket.id);
-          socket.emit("join_room", { tenant_id: 7 });
-        });
-
-        socket.on("new_alert", (data) => {
-          // DB 로드 중이면 소켓 수신 차단
-          if (window._cxDBLoading) return;
-          console.log("[Socket.io] 새 알림 수신:", data);
-          const severity = severityMap[data.category] || "info";
-          store.add({
-            severity,
-            dbId: data.db_id || null,
-            title: data.message || "새 알림이 감지되었습니다.",
-            companyName: data.company_name || "",
-            tabLabel: data.signal_type_label || "",
-            keyword: data.keyword || "",
-            desc: data.message || "",
-            dupKey: `notification-${data.db_id || data.message || Date.now()}`,
-          });
-          if (data.open_panel) {
-            store.showPanel = true;
-          }
-        });
-
-        socket.on("disconnect", () => {
-          console.log("[Socket.io] AlertPanel 연결 해제");
-          window._cxSocketInitialized = false;
-        });
+      if (window._cxSocket && window._cxSocket.connected) {
+        return;
       }
+
+      if (window._cxSocket) {
+        try {
+          window._cxSocket.disconnect();
+        } catch (e) {
+          console.warn("[Socket.io] 기존 소켓 정리 실패:", e);
+        }
+      }
+
+      const socket = io(BACKEND_URL, { transports: ["websocket"] });
+      window._cxSocket = socket;
+      window._cxSocketInitialized = true;
+
+      socket.on("connect", () => {
+        console.log("[Socket.io] AlertPanel 연결 완료:", socket.id);
+        socket.emit("join_room", { tenant_id: 7 });
+      });
+
+      socket.on("new_alert", (data) => {
+        // DB 로드 중이면 소켓 수신 차단
+        if (window._cxDBLoading) return;
+
+        console.log("[Socket.io] 새 알림 수신:", data);
+
+        const severity = severityMap[data.category] || "info";
+        store.add({
+          severity,
+          dbId: data.db_id || null,
+          title: data.message || "새 알림이 감지되었습니다.",
+          companyName: data.company_name || "",
+          tabLabel: data.signal_type_label || "",
+          keyword: data.keyword || "",
+          desc: data.message || "",
+          dupKey: `notification-${data.db_id || data.message || Date.now()}`,
+        });
+
+        if (data.open_panel) {
+          store.showPanel = true;
+        }
+      });
+
+      socket.on("disconnect", () => {
+        console.log("[Socket.io] AlertPanel 연결 해제");
+        window._cxSocketInitialized = false;
+      });
+    }
+
+    function bindResumeHandlers() {
+      if (window._cxResumeHandlersBound) return;
+      window._cxResumeHandlersBound = true;
+
+      // 안드로이드 네이티브에서 호출할 함수
+      window.onAppResume = async function () {
+        console.log("[Notification] onAppResume 호출됨");
+        try {
+          await loadUnreadNotifications();
+        } catch (e) {
+          console.warn("[Notification] onAppResume 재조회 실패:", e);
+        } finally {
+          window._cxDBLoading = false;
+          initSocket();
+        }
+      };
+
+      // 웹 환경에서도 탭 복귀 시 재조회되게 보조 처리
+      document.addEventListener("visibilitychange", async () => {
+        if (document.visibilityState === "visible") {
+          console.log("[Notification] visibilitychange visible");
+          try {
+            await loadUnreadNotifications();
+          } catch (e) {
+            console.warn("[Notification] visibility 재조회 실패:", e);
+          } finally {
+            window._cxDBLoading = false;
+            initSocket();
+          }
+        }
+      });
+
+      window.addEventListener("focus", async () => {
+        console.log("[Notification] window focus");
+        try {
+          await loadUnreadNotifications();
+        } catch (e) {
+          console.warn("[Notification] focus 재조회 실패:", e);
+        } finally {
+          window._cxDBLoading = false;
+          initSocket();
+        }
+      });
+
+      // 수동 호출용
+      window.refreshCxNotifications = async function () {
+        try {
+          await loadUnreadNotifications();
+        } catch (e) {
+          console.warn("[Notification] 수동 재조회 실패:", e);
+        } finally {
+          window._cxDBLoading = false;
+          initSocket();
+        }
+      };
     }
 
     if (!window._cxNotificationsLoaded) {
@@ -159,20 +233,23 @@ export const AlertPanel = defineComponent({
         } finally {
           window._cxDBLoading = false;
           initSocket();
+          bindResumeHandlers();
         }
       })();
     } else {
-      // 이미 로드됐으면 바로 소켓 연결
       initSocket();
+      bindResumeHandlers();
     }
 
     function openSend(alert) {
       store.pendingAlert = alert;
       editMsg.value = buildDefaultMsg(alert);
       sendStep.value = 1;
+
       RECIPIENTS.forEach((r) => {
         r.checked.value = r.id === "ceo";
       });
+
       store.showSendModal = true;
     }
 
@@ -283,6 +360,7 @@ ${a.desc}
 
     function fmtDate(iso) {
       if (!iso) return "";
+
       const d = new Date(iso);
       return d.toLocaleString("ko-KR", {
         month: "2-digit",
