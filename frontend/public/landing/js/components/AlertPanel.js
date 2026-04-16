@@ -67,6 +67,8 @@ export const AlertPanel = defineComponent({
         });
 
         socket.on("new_alert", (data) => {
+          // DB 로드 중이면 소켓 수신 차단
+          if (window._cxDBLoading) return;
           console.log("[Socket.io] 새 알림 수신:", data);
           const severity = severityMap[data.category] || "info";
           store.add({
@@ -98,6 +100,8 @@ export const AlertPanel = defineComponent({
           const res = await fetch(`${BACKEND_URL}/notifications?tenant_id=7&is_read=false`);
           const data = await res.json();
 
+          // DB 로드 중 소켓 수신 차단
+          window._cxDBLoading = true;
           // localStorage 비우고 DB 기준으로만 로드
           store.alerts.splice(0);
           store._save();
@@ -132,6 +136,7 @@ export const AlertPanel = defineComponent({
           }
 
           console.log(`[Notification] 미읽음 알림 ${data.length}건 로드 완료`);
+          window._cxDBLoading = false;
         } catch (e) {
           console.warn("[Notification] 미읽음 알림 조회 실패:", e);
         } finally {
@@ -206,6 +211,20 @@ ${a.desc}
       sendStep.value = 1;
     }
 
+    // 알림 삭제 (DB is_read=TRUE + localStorage 삭제)
+    async function removeAlert(alert) {
+      store.remove(alert.id);
+      if (alert.dbId) {
+        try {
+          await fetch(`${BACKEND_URL}/notifications/${alert.dbId}/read`, {
+            method: "PATCH",
+          });
+        } catch (e) {
+          console.warn("[Notification] 삭제 처리 실패:", e);
+        }
+      }
+    }
+
     // 단건 읽음 처리
     async function markRead(alert) {
       store.markRead(alert.id);
@@ -262,6 +281,7 @@ ${a.desc}
       ALERT_SEVERITY,
       markRead,
       markAllRead,
+      removeAlert,
     };
   },
 
@@ -351,7 +371,7 @@ ${a.desc}
               <div class="alp-item-actions">
 
 
-                <button class="alp-del-btn" @click.stop="store.remove(alert.id)" title="삭제">
+                <button class="alp-del-btn" @click.stop="removeAlert(alert)" title="삭제">
                   <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
                     <path d="M18 6L6 18M6 6l12 12"/>
                   </svg>
