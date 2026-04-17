@@ -1,3 +1,4 @@
+
 from __future__ import annotations
 
 import json
@@ -12,10 +13,6 @@ from backend.core.fcm_client import send_fcm_to_devices
 from backend.core.redis_client import publish
 from backend.service.review_signal_classifier import classify_review_signal
 
-
-# ──────────────────────────────────────────────
-# 상수
-# ──────────────────────────────────────────────
 
 TENANT_ID = 7
 STORE_ID = "store_7"
@@ -38,10 +35,6 @@ SIGNAL_TYPE_TO_LABEL = {
 
 NOTIFIABLE_LEVELS = {"HIGH", "MEDIUM", "LOW"}
 
-
-# ──────────────────────────────────────────────
-# 공통 유틸
-# ──────────────────────────────────────────────
 
 def _normalize_text(value: Any) -> str:
     if value is None:
@@ -71,21 +64,59 @@ def _resolve_date_bucket(value: Any) -> date:
     return datetime.now().date()
 
 
-def _build_notification_message(signal_type: str, signal_keyword: str) -> str:
-    keyword = (signal_keyword or "").strip()
-    if signal_type == "RISK":
-        return f'부정 키워드 감지: "{keyword}"'
-    return f'긍정 키워드 감지: "{keyword}"'
+def _pick_analysis_content(row: Dict[str, Any]) -> str:
+    candidates = [
+        row.get("raw_comment"),
+        row.get("comment"),
+        row.get("article_summary"),
+        row.get("article_title"),
+    ]
+    for value in candidates:
+        if value and str(value).strip():
+            return str(value).strip()
+    return ""
 
 
-# ──────────────────────────────────────────────
-# 1. 미분석 리뷰 선점 조회
-# ──────────────────────────────────────────────
+def _shorten_text(value: Any, limit: int = 40) -> str:
+    if not value:
+        return ""
+    text_value = re.sub(r"\s+", " ", str(value)).strip()
+    if len(text_value) <= limit:
+        return text_value
+    return text_value[: limit - 1].rstrip() + "…"
+
+
+def _build_notification_message(
+    signal_type: str,
+    signal_keyword: str,
+    event_type: str,
+    company_name: str,
+    title: str,
+) -> str:
+    prefix = "부정 이벤트 감지" if signal_type == "RISK" else "긍정 이벤트 감지"
+
+    parts: List[str] = []
+    main_label = _shorten_text(event_type or signal_keyword, 28)
+    keyword_label = _shorten_text(signal_keyword, 24)
+    company_label = _shorten_text(company_name, 20)
+    title_label = _shorten_text(title, 36)
+
+    for candidate in (main_label, keyword_label, company_label, title_label):
+        normalized = _normalize_text(candidate)
+        if candidate and normalized and normalized not in {_normalize_text(p) for p in parts}:
+            parts.append(candidate)
+
+    if not parts:
+        return prefix
+
+    return f"{prefix}: " + " · ".join(parts)
+
 
 def fetch_unanalyzed_reviews(db: Session, store_id: str = STORE_ID) -> List[Dict[str, Any]]:
     """
     google_reviews에서 미분석(N) 리뷰를 먼저 P(processing)로 선점한 뒤 반환.
-    동시 배치 실행 시 같은 리뷰를 중복 처리하는 위험을 줄인다.
+    현재 스키마 기준으로 raw_comment / comment / article_summary / article_title 중
+    하나라도 내용이 있으면 분석 대상으로 본다.
     """
     rows = db.execute(
         text(
@@ -95,8 +126,12 @@ def fetch_unanalyzed_reviews(db: Session, store_id: str = STORE_ID) -> List[Dict
                 FROM google_reviews
                 WHERE store_id = :store_id
                   AND is_analyzed = 'N'
-                  AND raw_comment IS NOT NULL
-                  AND BTRIM(raw_comment) <> ''
+                  AND COALESCE(
+                        NULLIF(BTRIM(raw_comment), ''),
+                        NULLIF(BTRIM(comment), ''),
+                        NULLIF(BTRIM(article_summary), ''),
+                        NULLIF(BTRIM(article_title), '')
+                  ) IS NOT NULL
                 ORDER BY id
                 FOR UPDATE SKIP LOCKED
             )
@@ -109,24 +144,20 @@ def fetch_unanalyzed_reviews(db: Session, store_id: str = STORE_ID) -> List[Dict
                 gr.author_name,
                 gr.source_type,
                 gr.article_title,
+                gr.article_summary,
                 gr.source_url,
                 gr.published_at,
                 gr.raw_comment,
+                gr.comment,
                 gr.target_type_code
             """
         ),
         {"store_id": store_id},
     ).mappings().all()
 
-    # 선점 상태를 즉시 반영
     db.commit()
-
     return [dict(r) for r in rows]
 
-
-# ──────────────────────────────────────────────
-# 2. signals 중복 체크 / upsert helper
-# ──────────────────────────────────────────────
 
 def _find_signal_id_by_source(db: Session, source: str, source_id: str) -> Optional[int]:
     row = db.execute(
@@ -150,14 +181,15 @@ def _find_semantic_duplicate_signal_id(
     company_name: str,
     signal_type: str,
     signal_keyword: str,
+    event_type: str,
     signal_level: str,
     detected_date: date,
 ) -> Optional[int]:
     company_name_norm = _normalize_text(company_name)
     signal_keyword_norm = _normalize_text(signal_keyword)
+    event_type_norm = _normalize_text(event_type)
 
-    # 회사명/키워드가 비면 과도한 중복 판정 위험이 커서 semantic dedupe 생략
-    if not company_name_norm or not signal_keyword_norm:
+    if not company_name_norm or (not signal_keyword_norm and not event_type_norm):
         return None
 
     row = db.execute(
@@ -169,8 +201,9 @@ def _find_semantic_duplicate_signal_id(
               AND regexp_replace(lower(coalesce(company_name, '')), '\s+', ' ', 'g') = :company_name_norm
               AND coalesce(signal_type, '') = :signal_type
               AND regexp_replace(lower(coalesce(signal_keyword, '')), '\s+', ' ', 'g') = :signal_keyword_norm
+              AND regexp_replace(lower(coalesce(event_type, '')), '\s+', ' ', 'g') = :event_type_norm
               AND coalesce(signal_level, '') = :signal_level
-              AND coalesce(detected_at::date, created_at::date) = :detected_date
+              AND detected_at = :detected_date
             ORDER BY id
             LIMIT 1
             """
@@ -180,6 +213,7 @@ def _find_semantic_duplicate_signal_id(
             "company_name_norm": company_name_norm,
             "signal_type": signal_type or "",
             "signal_keyword_norm": signal_keyword_norm,
+            "event_type_norm": event_type_norm,
             "signal_level": signal_level or "",
             "detected_date": detected_date,
         },
@@ -241,14 +275,11 @@ def _upsert_signal(
     company_name: str,
     signal_type: str,
     signal_keyword: str,
+    event_type: str,
     signal_level: str,
     detected_at: Any,
     signal_data: Dict[str, Any],
 ) -> Tuple[int, bool]:
-    """
-    반환:
-      (signal_id, created)
-    """
     exact_signal_id = _find_signal_id_by_source(db, source, source_id)
     if exact_signal_id:
         return exact_signal_id, False
@@ -258,6 +289,7 @@ def _upsert_signal(
         company_name=company_name,
         signal_type=signal_type,
         signal_keyword=signal_keyword,
+        event_type=event_type,
         signal_level=signal_level,
         detected_date=_resolve_date_bucket(detected_at),
     )
@@ -268,9 +300,28 @@ def _upsert_signal(
     return signal_id, True
 
 
-# ──────────────────────────────────────────────
-# 3. notifications 중복 체크 / upsert helper
-# ──────────────────────────────────────────────
+def _get_notification_row(db: Session, notification_id: int) -> Optional[Dict[str, Any]]:
+    row = db.execute(
+        text(
+            """
+            SELECT
+                id,
+                signal_id,
+                company_name,
+                category,
+                signal_type_label,
+                message,
+                is_read,
+                created_at::date AS created_date
+            FROM public.notifications
+            WHERE id = :id
+            LIMIT 1
+            """
+        ),
+        {"id": notification_id},
+    ).mappings().first()
+    return dict(row) if row else None
+
 
 def _find_notification_id_by_signal(db: Session, signal_id: int) -> Optional[int]:
     row = db.execute(
@@ -357,6 +408,37 @@ def _insert_notification(db: Session, data: Dict[str, Any]) -> int:
     return result.fetchone()[0]
 
 
+def _reactivate_notification(db: Session, notification_id: int, data: Dict[str, Any]) -> int:
+    result = db.execute(
+        text(
+            """
+            UPDATE public.notifications
+            SET signal_id = COALESCE(signal_id, :signal_id),
+                company_name = :company_name,
+                category = :category,
+                signal_type_label = :signal_type_label,
+                message = :message,
+                link_url = :link_url,
+                is_read = FALSE,
+                created_at = NOW()
+            WHERE id = :id
+            RETURNING id
+            """
+        ),
+        {
+            "id": notification_id,
+            "signal_id": data["signal_id"],
+            "company_name": data["company_name"],
+            "category": data["category"],
+            "signal_type_label": data["signal_type_label"],
+            "message": data["message"],
+            "link_url": data["link_url"],
+        },
+    ).fetchone()
+
+    return result[0]
+
+
 def _upsert_notification(
     db: Session,
     *,
@@ -365,10 +447,14 @@ def _upsert_notification(
 ) -> Tuple[int, bool]:
     """
     반환:
-      (notification_id, created)
+      (notification_id, changed)
+    changed=True 이면 새 생성 또는 재활성화된 경우
     """
     existing_by_signal = _find_notification_id_by_signal(db, data["signal_id"])
     if existing_by_signal:
+        existing_row = _get_notification_row(db, existing_by_signal)
+        if existing_row and existing_row["is_read"]:
+            return _reactivate_notification(db, existing_by_signal, data), True
         return existing_by_signal, False
 
     existing_fallback = _find_duplicate_notification_id(
@@ -380,15 +466,14 @@ def _upsert_notification(
         detected_date=_resolve_date_bucket(detected_at),
     )
     if existing_fallback:
+        existing_row = _get_notification_row(db, existing_fallback)
+        if existing_row and existing_row["is_read"]:
+            return _reactivate_notification(db, existing_fallback, data), True
         return existing_fallback, False
 
     notification_id = _insert_notification(db, data)
     return notification_id, True
 
-
-# ──────────────────────────────────────────────
-# 4. 상태 업데이트
-# ──────────────────────────────────────────────
 
 def _mark_as_analyzed(db: Session, google_review_id: str) -> None:
     db.execute(
@@ -416,27 +501,15 @@ def _mark_for_retry(db: Session, google_review_id: str) -> None:
     )
 
 
-# ──────────────────────────────────────────────
-# 5. 1건 처리
-# ──────────────────────────────────────────────
-
 def _process_review(db: Session, row: Dict[str, Any]) -> Dict[str, Any]:
-    """
-    반환 예:
-      {
-        "status": "inserted" | "skipped" | "failed",
-        "notification_id": Optional[int],
-        "notification_created": bool,
-      }
-    """
     google_review_id = row["google_review_id"]
     source = row["source_type"]
-    raw_comment = row["raw_comment"]
+    content = _pick_analysis_content(row)
 
     result: Dict[str, Any] = {
         "status": "failed",
         "notification_id": None,
-        "notification_created": False,
+        "notification_changed": False,
     }
 
     if not source:
@@ -445,7 +518,18 @@ def _process_review(db: Session, row: Dict[str, Any]) -> Dict[str, Any]:
         db.commit()
         return result
 
-    llm = classify_review_signal(source_type=source, content=raw_comment)
+    if not content:
+        print(f"[WARN] 분석할 본문 없음 — google_review_id={google_review_id}")
+        _mark_for_retry(db, google_review_id)
+        db.commit()
+        return result
+
+    llm = classify_review_signal(
+        source_type=source,
+        content=content,
+        title=row.get("article_title", "") or "",
+        article_summary=row.get("article_summary", "") or "",
+    )
     if not llm:
         print(f"[WARN] LLM 분석 실패 — google_review_id={google_review_id}")
         _mark_for_retry(db, google_review_id)
@@ -454,21 +538,22 @@ def _process_review(db: Session, row: Dict[str, Any]) -> Dict[str, Any]:
 
     signal_type = SIGNAL_TYPE_MAP.get(row["target_type_code"], llm.get("signal_type")) or ""
     signal_level = llm.get("signal_level") or ""
-    detected_at = row["published_at"]
+    event_type = llm.get("event_type", "") or ""
+    detected_at = _resolve_date_bucket(row["published_at"])
 
     signal_data = {
         "tenant_id": TENANT_ID,
         "source_id": google_review_id,
         "source": source,
-        "source_url": row["source_url"],
-        "company_name": row["author_name"],
-        "title": row["article_title"],
+        "source_url": row.get("source_url"),
+        "company_name": row.get("author_name"),
+        "title": row.get("article_title"),
         "detected_at": detected_at,
         "signal_type": signal_type,
         "signal_keyword": llm.get("signal_keyword"),
         "signal_category": llm.get("signal_category"),
         "signal_level": signal_level,
-        "event_type": llm.get("event_type"),
+        "event_type": event_type,
         "summary": llm.get("summary"),
         "industry_label": llm.get("industry_label"),
     }
@@ -478,29 +563,36 @@ def _process_review(db: Session, row: Dict[str, Any]) -> Dict[str, Any]:
             db,
             source=source,
             source_id=google_review_id,
-            company_name=row["author_name"],
+            company_name=row.get("author_name", ""),
             signal_type=signal_type,
             signal_keyword=llm.get("signal_keyword", ""),
+            event_type=event_type,
             signal_level=signal_level,
             detected_at=detected_at,
             signal_data=signal_data,
         )
 
         notification_id: Optional[int] = None
-        notification_created = False
+        notification_changed = False
 
         if signal_level in NOTIFIABLE_LEVELS:
             notification_data = {
                 "tenant_id": TENANT_ID,
                 "signal_id": signal_id,
-                "company_name": row["author_name"],
+                "company_name": row.get("author_name"),
                 "category": SIGNAL_LEVEL_TO_CATEGORY.get(signal_level, "일반"),
                 "signal_type_label": SIGNAL_TYPE_TO_LABEL.get(signal_type, ""),
-                "message": _build_notification_message(signal_type, llm.get("signal_keyword", "")),
-                "link_url": row["source_url"],
+                "message": _build_notification_message(
+                    signal_type=signal_type,
+                    signal_keyword=llm.get("signal_keyword", ""),
+                    event_type=event_type,
+                    company_name=row.get("author_name", ""),
+                    title=row.get("article_title", ""),
+                ),
+                "link_url": row.get("source_url"),
                 "is_read": False,
             }
-            notification_id, notification_created = _upsert_notification(
+            notification_id, notification_changed = _upsert_notification(
                 db,
                 data=notification_data,
                 detected_at=detected_at,
@@ -510,8 +602,8 @@ def _process_review(db: Session, row: Dict[str, Any]) -> Dict[str, Any]:
         db.commit()
 
         result["notification_id"] = notification_id
-        result["notification_created"] = notification_created
-        result["status"] = "inserted" if (signal_created or notification_created) else "skipped"
+        result["notification_changed"] = notification_changed
+        result["status"] = "inserted" if (signal_created or notification_changed) else "skipped"
         return result
 
     except Exception as e:
@@ -528,20 +620,12 @@ def _process_review(db: Session, row: Dict[str, Any]) -> Dict[str, Any]:
         return result
 
 
-# ──────────────────────────────────────────────
-# 6. 배치 메인 함수
-# ──────────────────────────────────────────────
-
 def run_analyze_reviews_batch(
     db: Session,
     tenant_id: int = TENANT_ID,
     store_id: str = STORE_ID,
 ) -> Dict[str, int]:
-    """
-    tenant_id는 현재 7 고정으로 사용.
-    미분석 리뷰 전체를 선점 후 순회 처리하고 결과를 집계한다.
-    """
-    tenant_id = TENANT_ID  # 고정 tenant
+    tenant_id = TENANT_ID
 
     rows = fetch_unanalyzed_reviews(db, store_id)
 
@@ -552,41 +636,29 @@ def run_analyze_reviews_batch(
         "failed": 0,
     }
 
-    created_notification_ids: List[int] = []
+    changed_notification_ids: List[int] = []
 
     for row in rows:
         outcome = _process_review(db, row)
         stats[outcome["status"]] += 1
 
-        if outcome.get("notification_created") and outcome.get("notification_id"):
-            created_notification_ids.append(outcome["notification_id"])
+        if outcome.get("notification_changed") and outcome.get("notification_id"):
+            changed_notification_ids.append(outcome["notification_id"])
 
     print(
         f"[BATCH] analyze-reviews 완료 | "
         f"tenant_id={tenant_id} total={stats['total']} "
         f"inserted={stats['inserted']} skipped={stats['skipped']} "
-        f"failed={stats['failed']} notifications_created={len(created_notification_ids)}"
+        f"failed={stats['failed']} notifications_changed={len(changed_notification_ids)}"
     )
 
-    if created_notification_ids:
-        _send_alerts(db, created_notification_ids)
+    if changed_notification_ids:
+        _send_alerts(db, changed_notification_ids)
 
     return stats
 
 
-# ──────────────────────────────────────────────
-# 7. 배치 후 알림 발송
-# ──────────────────────────────────────────────
-
 def _send_alerts(db: Session, notification_ids: List[int]) -> None:
-    """
-    배치 완료 후 Redis Publish + FCM 일괄 발송.
-
-    변경점:
-    - 최근 10분 전체를 긁지 않고
-      이번 배치에서 새로 만들어진 notification id만 전송
-    - tenant_id는 7 고정
-    """
     notification_ids = sorted(set(notification_ids))
     if not notification_ids:
         return
@@ -594,7 +666,7 @@ def _send_alerts(db: Session, notification_ids: List[int]) -> None:
     try:
         query = text(
             """
-            SELECT id, company_name, category, signal_type_label, message, link_url
+            SELECT id, signal_id, company_name, category, signal_type_label, message, link_url
             FROM public.notifications
             WHERE tenant_id = 7
               AND id IN :notification_ids
@@ -622,6 +694,7 @@ def _send_alerts(db: Session, notification_ids: List[int]) -> None:
                 {
                     "tenant_id": 7,
                     "db_id": row["id"],
+                    "signal_id": row["signal_id"],
                     "message": row["message"],
                     "category": row["category"],
                     "signal_type_label": row["signal_type_label"],
