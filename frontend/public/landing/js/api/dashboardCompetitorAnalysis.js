@@ -82,6 +82,7 @@ export async function fetchDashboardCompetitorAnalysis(tenantId, from, to) {
           last_hit: meta.last_hit ?? row?.detected_at ?? "",
           active: true,
           source_name: row?.source_label ?? "",
+          source_url: row?.source_url ?? "",
           competitor_name: row?.company_name ?? "",
           opportunity: row?.summary ?? "",
         };
