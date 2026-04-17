@@ -124,4 +124,4 @@ for router in ROUTERS:
 # =========================
 # Socket.io 마운트
 # =========================
-app = socketio.ASGIApp(sio, app)
+socket_app = socketio.ASGIApp(sio, app)
