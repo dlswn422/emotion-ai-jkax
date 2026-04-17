@@ -30,6 +30,12 @@ export const AlertPanel = defineComponent({
     const visibleAlerts = computed(() =>
       store.alerts.filter((alert) => !pendingDismissMap.value[alert.id])
     );
+    const visibleUnreadCount = computed(() =>
+      visibleAlerts.value.filter((alert) => !alert.read).length
+    );
+    const visibleNotificationCount = computed(() =>
+      visibleAlerts.value.filter((alert) => !!alert.dbId).length
+    );
 
     function isSameOptimisticGroup(base, candidate) {
       if (!base || !candidate) return false;
@@ -59,6 +65,7 @@ export const AlertPanel = defineComponent({
         else delete next[id];
       });
       pendingDismissMap.value = next;
+      syncSummaryCard();
     }
 
     function clearPendingForDbIds(dbIds) {
@@ -127,7 +134,9 @@ export const AlertPanel = defineComponent({
     }
 
     function syncSummaryCard() {
-      const count = store.alerts.filter((alert) => !!alert.dbId).length;
+      const count = store.alerts.filter(
+        (alert) => !!alert.dbId && !pendingDismissMap.value[alert.id]
+      ).length;
       const idx = store.alerts.findIndex((alert) => alert.dupKey === "summary-load");
 
       if (count <= 0) {
@@ -413,6 +422,8 @@ ${a.desc}
       markAllRead,
       removeAlert,
       visibleAlerts,
+      visibleUnreadCount,
+      visibleNotificationCount,
     };
   },
 
@@ -430,7 +441,7 @@ ${a.desc}
                 </svg>
               </div>
               <span class="alp-hd-title">경영진 Alert</span>
-              <span v-if="store.unread > 0" class="alp-unread-badge">{{store.unread}}</span>
+              <span v-if="visibleUnreadCount > 0" class="alp-unread-badge">{{visibleUnreadCount}}</span>
             </div>
 
             <div class="alp-hd-right">
