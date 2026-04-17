@@ -167,7 +167,7 @@ export const B2BReportPage = defineComponent({
     ];
 
     const B2B_TABS = computed(() =>
-      TAB_DEFS.map((t) => ({
+      TAB_DEFS.filter((t) => t.id !== "ownreview").map((t) => ({
         ...t,
         status: (GLOBAL_TAB_STATUSES[compId] || {})[t.id] || "ready",
       })),
@@ -304,15 +304,32 @@ export const B2BReportPage = defineComponent({
         </aside>
 
         <div class="report-content" style="position:relative">
-        <div v-if="loading" class="b2b-report-loading">
-          <div class="b2b-report-loading-card">
-            <div class="b2b-report-loading-spinner"></div>
-            <div class="b2b-report-loading-title">로딩 중</div>
-            <div class="b2b-report-loading-desc">데이터를 불러오고 있습니다.</div>
-          </div>
-        </div>
+          <div
+            v-if="loading"
+            class="b2b-report-loading"
+            aria-live="polite"
+            aria-busy="true"
+          >
+            <div class="b2b-report-loading-inner">
+              <div class="b2b-report-loading-spinner">
+                <span class="b2b-report-loading-ring ring-primary"></span>
+                <span class="b2b-report-loading-ring ring-secondary"></span>
+                <span class="b2b-report-loading-core"></span>
+                <span class="b2b-report-loading-spark spark-a"></span>
+                <span class="b2b-report-loading-spark spark-b"></span>
+              </div>
 
-  <main v-show="!loading">
+              <div class="b2b-report-loading-copy">
+                <div class="b2b-report-loading-kicker">LIVE SYNC</div>
+                <div class="b2b-report-loading-title">데이터 불러오는 중</div>
+                <div class="b2b-report-loading-desc">
+                  최신 분석 결과를 실시간으로 반영하고 있습니다
+                </div>
+              </div>
+            </div>
+          </div>
+
+  <main :class="{ 'b2b-report-main-loading': loading }">
           <div class="store-banner b2b-company-banner">
             <div class="b2b-banner-logo" :style="{background:company.logoBg,color:company.logoColor}">
               {{company.logo}}
