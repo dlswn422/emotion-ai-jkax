@@ -100,10 +100,58 @@ export const B2BReportPage = defineComponent({
     );
 
     const loading = ref(false);
+    const loadingCount = ref(0);
+    const loadingSource = ref("external");
     const activeTab = ref("external");
     const showPeriodModal = ref(false);
-    function setSectionLoading(next) {
-      loading.value = !!next;
+
+    const LOADING_THEMES = {
+      external: {
+        tone: "external",
+        kicker: "CUSTOMER SIGNAL SYNC",
+        title: "고객 시그널 재구성 중",
+        desc: "리스크 키워드와 영업 기회 후보를 실시간으로 정렬하고 있습니다.",
+      },
+      competitive: {
+        tone: "competitive",
+        kicker: "COMPETITIVE INTEL LIVE",
+        title: "경쟁 이슈 지형도 업데이트 중",
+        desc: "감지 키워드와 이슈 히트 현황을 동기화하고 있습니다.",
+      },
+      internal: {
+        tone: "internal",
+        kicker: "ORG SENTIMENT ENGINE",
+        title: "조직 감정 스펙트럼 분석 중",
+        desc: "직원 리뷰와 카테고리 점수를 재계산하고 있습니다.",
+      },
+    };
+
+    const loadingTheme = computed(
+      () => LOADING_THEMES[loadingSource.value] || LOADING_THEMES.external,
+    );
+
+    function setSectionLoading(payload) {
+      const next =
+        typeof payload === "object" && payload !== null
+          ? payload.loading
+          : payload;
+
+      const nextTabId =
+        typeof payload === "object" && payload !== null
+          ? payload.tabId
+          : null;
+
+      if (nextTabId && LOADING_THEMES[nextTabId]) {
+        loadingSource.value = nextTabId;
+      }
+
+      if (next) {
+        loadingCount.value += 1;
+      } else {
+        loadingCount.value = Math.max(0, loadingCount.value - 1);
+      }
+
+      loading.value = loadingCount.value > 0;
     }
 
     // 600px 이하에서는 상위 탭 대신 세로 스택 모드
@@ -239,6 +287,7 @@ export const B2BReportPage = defineComponent({
       isVisibleTab,
       analysisPeriod,
       setSectionLoading,
+      loadingTheme,
     };
   },
 
@@ -306,25 +355,35 @@ export const B2BReportPage = defineComponent({
         <div class="report-content" style="position:relative">
           <div
             v-if="loading"
-            class="b2b-report-loading"
+            :class="['b2b-report-loading', 'tone-' + loadingTheme.tone]"
             aria-live="polite"
             aria-busy="true"
           >
-            <div class="b2b-report-loading-inner">
-              <div class="b2b-report-loading-spinner">
+            <div class="b2b-report-loading-backdrop-grid"></div>
+
+            <div class="b2b-report-loading-anchor">
+              <div class="b2b-report-loading-beam"></div>
+
+              <div class="b2b-report-loading-orb" aria-hidden="true">
+                <span class="b2b-report-loading-halo halo-outer"></span>
+                <span class="b2b-report-loading-halo halo-inner"></span>
+
                 <span class="b2b-report-loading-ring ring-primary"></span>
                 <span class="b2b-report-loading-ring ring-secondary"></span>
+                <span class="b2b-report-loading-ring ring-tertiary"></span>
+
                 <span class="b2b-report-loading-core"></span>
-                <span class="b2b-report-loading-spark spark-a"></span>
-                <span class="b2b-report-loading-spark spark-b"></span>
+                <span class="b2b-report-loading-core-gloss"></span>
+
+                <span class="b2b-report-loading-particle particle-a"></span>
+                <span class="b2b-report-loading-particle particle-b"></span>
+                <span class="b2b-report-loading-particle particle-c"></span>
               </div>
 
               <div class="b2b-report-loading-copy">
-                <div class="b2b-report-loading-kicker">LIVE SYNC</div>
-                <div class="b2b-report-loading-title">데이터 불러오는 중</div>
-                <div class="b2b-report-loading-desc">
-                  최신 분석 결과를 실시간으로 반영하고 있습니다
-                </div>
+                <div class="b2b-report-loading-kicker">{{ loadingTheme.kicker }}</div>
+                <div class="b2b-report-loading-title">{{ loadingTheme.title }}</div>
+                <div class="b2b-report-loading-desc">{{ loadingTheme.desc }}</div>
               </div>
             </div>
           </div>
@@ -395,7 +454,7 @@ export const B2BReportPage = defineComponent({
               :tenant-id="company.tenant_id"
               :comp-id="company.id"
               :analysis-period="analysisPeriod"
-              @loading-change="setSectionLoading"
+              @loading-change="(loading) => setSectionLoading({ tabId: 'external', loading })"
             />
           </template>
 
@@ -436,7 +495,7 @@ export const B2BReportPage = defineComponent({
               :tenant-id="company.tenant_id"
               :comp-id="company.id"
               :analysis-period="analysisPeriod"
-              @loading-change="setSectionLoading"
+              @loading-change="(loading) => setSectionLoading({ tabId: 'competitive', loading })"
             />
           </template>
 
@@ -502,6 +561,7 @@ export const B2BReportPage = defineComponent({
             <B2BEmployeeEmotionSection
               :comp-id="company.id"
               :period-type="periodType"
+              @loading-change="(loading) => setSectionLoading({ tabId: 'internal', loading })"
             />
           </template>
         </main>
