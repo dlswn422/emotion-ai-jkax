@@ -107,11 +107,97 @@ export function destroyChart(inst) {
    ============================================================ */
 const _savedAlerts = (() => {
   try {
-    return JSON.parse(localStorage.getItem("cx_alerts") || "[]");
+    const raw = JSON.parse(localStorage.getItem("cx_alerts") || "[]");
+    if (!Array.isArray(raw)) return [];
+    return raw.map((alert, index) => ({
+      id:
+        alert?.id ||
+        (globalThis.crypto?.randomUUID?.() ?? `ALT-SAVED-${Date.now()}-${index}`),
+      read: !!alert?.read,
+      createdAt: alert?.createdAt || new Date().toISOString(),
+      sentAt: alert?.sentAt || null,
+      sentTo: Array.isArray(alert?.sentTo) ? alert.sentTo : [],
+      dupKey: alert?.dupKey || null,
+      dbId: alert?.dbId ?? null,
+      dbIds: Array.isArray(alert?.dbIds)
+        ? alert.dbIds.filter((v) => v != null)
+        : alert?.dbId != null
+          ? [alert.dbId]
+          : [],
+      signalId: alert?.signalId ?? null,
+      systemSummary: !!alert?.systemSummary,
+      ...alert,
+    }));
   } catch {
     return [];
   }
 })();
+
+function createClientAlertId() {
+  return (
+    globalThis.crypto?.randomUUID?.() ??
+    `ALT-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`
+  );
+}
+
+function normalizeServerIds(alert) {
+  if (Array.isArray(alert?.dbIds)) {
+    return [...new Set(alert.dbIds.filter((v) => v != null).map((v) => Number(v)))];
+  }
+  if (alert?.dbId != null) {
+    return [Number(alert.dbId)];
+  }
+  return [];
+}
+
+function getAlertDupKey(alert) {
+  if (alert?.dupKey) return alert.dupKey;
+  if (alert?.systemSummary) return 'summary-load';
+  if (alert?.signalId != null) return `signal-${alert.signalId}`;
+  if (alert?.dbId != null) return `notification-${alert.dbId}`;
+  return `client-${createClientAlertId()}`;
+}
+
+function mergeAlert(existing, incoming) {
+  const mergedDbIds = new Set([
+    ...normalizeServerIds(existing),
+    ...normalizeServerIds(incoming),
+  ]);
+
+  existing.dupKey = getAlertDupKey({ ...existing, ...incoming });
+  existing.dbId = incoming.dbId ?? existing.dbId ?? null;
+  existing.dbIds = [...mergedDbIds];
+  existing.signalId = incoming.signalId ?? existing.signalId ?? null;
+  existing.systemSummary = !!(incoming.systemSummary || existing.systemSummary);
+  existing.title = incoming.title ?? existing.title ?? '';
+  existing.desc = incoming.desc ?? existing.desc ?? '';
+  existing.companyName = incoming.companyName ?? existing.companyName ?? '';
+  existing.tab = incoming.tab ?? existing.tab ?? '';
+  existing.tabLabel = incoming.tabLabel ?? existing.tabLabel ?? '';
+  existing.keyword = incoming.keyword ?? existing.keyword ?? '';
+  existing.severity = incoming.severity ?? existing.severity ?? 'info';
+  existing.linkUrl = incoming.linkUrl ?? existing.linkUrl ?? '';
+  existing.compId = incoming.compId ?? existing.compId ?? existing.compId;
+  existing.read = incoming.read ?? false;
+  existing.sentAt = incoming.sentAt ?? existing.sentAt ?? null;
+  existing.sentTo = Array.isArray(incoming.sentTo)
+    ? incoming.sentTo
+    : Array.isArray(existing.sentTo)
+      ? existing.sentTo
+      : [];
+  existing.createdAt = incoming.createdAt || new Date().toISOString();
+  return existing;
+}
+
+function moveAlertToFront(list, target) {
+  const idx = list.indexOf(target);
+  if (idx > 0) {
+    list.splice(idx, 1);
+    list.unshift(target);
+  } else if (idx < 0) {
+    list.unshift(target);
+  }
+}
 
 export const ALERT_STORE =
   window.ALERT_STORE ||
@@ -120,46 +206,101 @@ export const ALERT_STORE =
     showPanel: false,
     showSendModal: false,
     pendingAlert: null,
+    pendingHidden: {},
+
+    get visibleAlerts() {
+      return this.alerts.filter((a) => !this.pendingHidden[a.id]);
+    },
 
     get unread() {
-      return this.alerts.filter((a) => !a.read).length;
+      return this.visibleAlerts.filter((a) => !a.read && !a.systemSummary).length;
     },
 
     add(alert) {
-      // dupKey 중복 체크
-      if (alert.dupKey) {
-        const existing = this.alerts.find((a) => a.dupKey === alert.dupKey);
-        if (existing) return existing.id;
-      }
-      const id = "ALT-" + Date.now();
-      const newAlert = {
-        id,
+      const incoming = {
+        id: alert?.id || createClientAlertId(),
+        dupKey: getAlertDupKey(alert),
+        read: alert?.systemSummary ? true : !!alert?.read,
+        createdAt: alert?.createdAt || new Date().toISOString(),
+        sentAt: alert?.sentAt || null,
+        sentTo: Array.isArray(alert?.sentTo) ? alert.sentTo : [],
+        dbId: alert?.dbId ?? null,
+        dbIds: normalizeServerIds(alert),
+        signalId: alert?.signalId ?? null,
+        systemSummary: !!alert?.systemSummary,
         ...alert,
-        read: false,
-        createdAt: new Date().toISOString(),
-        sentAt: null,
-        sentTo: [],
       };
-      this.alerts.unshift(newAlert);
+
+      const existing = this.alerts.find((a) => a.dupKey === incoming.dupKey);
+      if (existing) {
+        mergeAlert(existing, incoming);
+        const next = { ...this.pendingHidden };
+        delete next[existing.id];
+        this.pendingHidden = next;
+        moveAlertToFront(this.alerts, existing);
+        this._save();
+        return existing.id;
+      }
+
+      this.alerts.unshift(incoming);
       this._save();
-      return id;
+      return incoming.id;
+    },
+
+    setPending(ids, value) {
+      const next = { ...this.pendingHidden };
+      (ids || []).forEach((id) => {
+        if (!id) return;
+        if (value) next[id] = true;
+        else delete next[id];
+      });
+      this.pendingHidden = next;
+    },
+
+    clearPendingByDbIds(dbIds) {
+      const target = new Set((dbIds || []).filter((v) => v != null).map((v) => Number(v)));
+      if (!target.size) return;
+      const next = { ...this.pendingHidden };
+      this.alerts.forEach((alert) => {
+        const ids = normalizeServerIds(alert);
+        if (ids.some((id) => target.has(Number(id)))) {
+          delete next[alert.id];
+        }
+      });
+      this.pendingHidden = next;
     },
 
     markRead(id) {
-      const a = this.alerts.find((a) => a.id === id);
+      const a = this.alerts.find((item) => item.id === id);
       if (a) {
         a.read = true;
         this._save();
       }
     },
 
+    markReadByDbIds(dbIds) {
+      const target = new Set((dbIds || []).filter((v) => v != null).map((v) => Number(v)));
+      if (!target.size) return;
+      this.alerts.forEach((alert) => {
+        const ids = normalizeServerIds(alert);
+        if (ids.some((id) => target.has(Number(id)))) {
+          alert.read = true;
+        }
+      });
+      this.clearPendingByDbIds(dbIds);
+      this._save();
+    },
+
     markAllRead() {
-      this.alerts.forEach((a) => (a.read = true));
+      this.alerts.forEach((a) => {
+        a.read = true;
+      });
+      this.pendingHidden = {};
       this._save();
     },
 
     markSent(id, recipients) {
-      const a = this.alerts.find((a) => a.id === id);
+      const a = this.alerts.find((item) => item.id === id);
       if (a) {
         a.sentAt = new Date().toISOString();
         a.sentTo = recipients;
@@ -170,14 +311,80 @@ export const ALERT_STORE =
 
     remove(id) {
       this.alerts = this.alerts.filter((a) => a.id !== id);
+      const next = { ...this.pendingHidden };
+      delete next[id];
+      this.pendingHidden = next;
+      this._save();
+    },
+
+    removeByDbIds(dbIds) {
+      const target = new Set((dbIds || []).filter((v) => v != null).map((v) => Number(v)));
+      if (!target.size) return;
+      this.alerts = this.alerts.filter((alert) => {
+        const ids = normalizeServerIds(alert);
+        return !ids.some((id) => target.has(Number(id)));
+      });
+      this.clearPendingByDbIds(dbIds);
+      this._save();
+    },
+
+    upsertSummary(count) {
+      const idx = this.alerts.findIndex((a) => a.dupKey === 'summary-load');
+      if (count <= 0) {
+        if (idx >= 0) {
+          const id = this.alerts[idx].id;
+          this.alerts.splice(idx, 1);
+          const next = { ...this.pendingHidden };
+          delete next[id];
+          this.pendingHidden = next;
+          this._save();
+        }
+        return;
+      }
+
+      const summaryText = `오늘 알림 ${count}건이 감지되었습니다.`;
+      if (idx >= 0) {
+        this.alerts[idx].title = summaryText;
+        this.alerts[idx].desc = summaryText;
+        this.alerts[idx].read = true;
+        moveAlertToFront(this.alerts, this.alerts[idx]);
+      } else {
+        this.add({
+          systemSummary: true,
+          severity: 'info',
+          dbId: null,
+          signalId: null,
+          title: summaryText,
+          companyName: '',
+          tabLabel: '시스템 알림',
+          keyword: '',
+          desc: summaryText,
+          dupKey: 'summary-load',
+          read: true,
+        });
+      }
+      this._save();
+    },
+
+    replaceFromServer(rows, mapper) {
+      this.alerts.splice(0);
+      this.pendingHidden = {};
+      (rows || []).forEach((row) => {
+        this.add(mapper(row));
+      });
+      const notificationCount = this.alerts.filter((a) => !a.systemSummary).length;
+      this.upsertSummary(notificationCount);
       this._save();
     },
 
     _save() {
       try {
         localStorage.setItem(
-          "cx_alerts",
-          JSON.stringify(this.alerts.slice(0, 100)),
+          'cx_alerts',
+          JSON.stringify(this.alerts.slice(0, 100).map((alert) => ({
+            ...alert,
+            dbIds: normalizeServerIds(alert),
+          }))),
         );
       } catch {}
     },
