@@ -43,6 +43,7 @@ from backend.api.dashboard_customer_trend import (
 )
 from backend.api.news_signals import router as news_signals_router
 from backend.api.notifications import router as notifications_router
+from backend.api.precompute_batch import router as precompute_batch_router
 
 ENV = os.getenv("ENV", "local")
 
@@ -114,6 +115,7 @@ ROUTERS = [
     dashboard_competitor_analysis_router,
     news_signals_router,
     batch_router,
+    precompute_batch_router,
     notifications_router,
     devices_router,
 ]
