@@ -21,9 +21,9 @@ export const StoreListPage = defineComponent({
     const showModal = ref(false);
     const selectedStore = ref(null);
 
-    // 안드로이드 기기 여부
+    // 안드로이드 앱 여부
     function isAndroidDevice() {
-      return /Android/i.test(navigator.userAgent || "");
+      return window.__ANDROID_APP__ === true;
     }
 
     // 기업 목록만 추출
@@ -223,7 +223,7 @@ export const StoreListPage = defineComponent({
           <section class="page-section">
             <div class="section-head">
               <h2 class="section-title">기업</h2>
-              <p class="section-sub"></p>
+              <p class="section-sub">현재 아래 기업 데이터는 데모용 목데이터입니다.</p>
             </div>
 
             <!-- 기업 검색 -->
@@ -378,7 +378,7 @@ export const StoreListPage = defineComponent({
           <section v-if="shouldShowStoreSection" class="page-section">
             <div class="section-head">
               <h2 class="section-title">매장</h2>
-              <p class="section-sub"></p>
+              <p class="section-sub">현재 아래 매장 데이터는 데모용 목데이터입니다.</p>
             </div>
 
             <!-- 매장 검색 -->
