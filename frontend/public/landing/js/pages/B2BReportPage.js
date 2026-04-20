@@ -100,10 +100,58 @@ export const B2BReportPage = defineComponent({
     );
 
     const loading = ref(false);
+    const loadingCount = ref(0);
+    const loadingSource = ref("external");
     const activeTab = ref("external");
     const showPeriodModal = ref(false);
-    function setSectionLoading(next) {
-      loading.value = !!next;
+
+    const LOADING_THEMES = {
+      external: {
+        tone: "external",
+        kicker: "CUSTOMER SIGNAL SYNC",
+        title: "고객 시그널 재구성 중",
+        desc: "리스크 키워드와 영업 기회 후보를 실시간으로 정렬하고 있습니다.",
+      },
+      competitive: {
+        tone: "competitive",
+        kicker: "COMPETITIVE INTEL LIVE",
+        title: "경쟁 이슈 지형도 업데이트 중",
+        desc: "감지 키워드와 이슈 히트 현황을 동기화하고 있습니다.",
+      },
+      internal: {
+        tone: "internal",
+        kicker: "ORG SENTIMENT ENGINE",
+        title: "조직 감정 스펙트럼 분석 중",
+        desc: "직원 리뷰와 카테고리 점수를 재계산하고 있습니다.",
+      },
+    };
+
+    const loadingTheme = computed(
+      () => LOADING_THEMES[loadingSource.value] || LOADING_THEMES.external,
+    );
+
+    function setSectionLoading(payload) {
+      const next =
+        typeof payload === "object" && payload !== null
+          ? payload.loading
+          : payload;
+
+      const nextTabId =
+        typeof payload === "object" && payload !== null
+          ? payload.tabId
+          : null;
+
+      if (nextTabId && LOADING_THEMES[nextTabId]) {
+        loadingSource.value = nextTabId;
+      }
+
+      if (next) {
+        loadingCount.value += 1;
+      } else {
+        loadingCount.value = Math.max(0, loadingCount.value - 1);
+      }
+
+      loading.value = loadingCount.value > 0;
     }
 
     // 600px 이하에서는 상위 탭 대신 세로 스택 모드
@@ -167,7 +215,7 @@ export const B2BReportPage = defineComponent({
     ];
 
     const B2B_TABS = computed(() =>
-      TAB_DEFS.map((t) => ({
+      TAB_DEFS.filter((t) => t.id !== "ownreview").map((t) => ({
         ...t,
         status: (GLOBAL_TAB_STATUSES[compId] || {})[t.id] || "ready",
       })),
@@ -239,6 +287,7 @@ export const B2BReportPage = defineComponent({
       isVisibleTab,
       analysisPeriod,
       setSectionLoading,
+      loadingTheme,
     };
   },
 
@@ -247,7 +296,51 @@ export const B2BReportPage = defineComponent({
     <NavBar page="b2b-report"/>
     <AlertPanel/>
     <DateModal v-model="showPeriodModal" @confirm="onPeriodConfirm"/>
+    # 모바일 로딩창
+    <div
+      v-if="loading && isMobileStackMode"
+      class="b2b-mobile-loading-screen"
+      aria-live="polite"
+      aria-busy="true"
+    >
+      <div class="b2b-mobile-loading-panel">
+        <div class="b2b-mobile-loading-grid"></div>
 
+        <div class="b2b-mobile-loading-brand">
+          <div class="b2b-mobile-loading-logo">cx</div>
+          <div class="b2b-mobile-loading-brand-title">
+            <span>CX</span>넥서스
+          </div>
+          <div class="b2b-mobile-loading-brand-sub">JKAX 제작</div>
+        </div>
+
+        <div class="b2b-mobile-loading-spinner-wrap" aria-hidden="true">
+          <div class="b2b-mobile-loading-spinner">
+            <span class="b2b-mobile-loading-spinner-dot"></span>
+            <span class="b2b-mobile-loading-spinner-ring ring-a"></span>
+            <span class="b2b-mobile-loading-spinner-ring ring-b"></span>
+            <span class="b2b-mobile-loading-spinner-ring ring-c"></span>
+          </div>
+        </div>
+
+        <div class="b2b-mobile-loading-copy">
+          <div class="b2b-mobile-loading-copy-title">대시보드 데이터를 분석 중입니다</div>
+          <div class="b2b-mobile-loading-copy-desc">잠시만 기다려주세요</div>
+        </div>
+
+        <div class="b2b-mobile-loading-progress" aria-hidden="true">
+          <span class="b2b-mobile-loading-progress-bar"></span>
+        </div>
+
+        <div class="b2b-mobile-loading-badge">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path d="M12 3l7 4v5c0 5-3.5 8-7 9-3.5-1-7-4-7-9V7l7-4z"/>
+            <path d="M9 12l2 2 4-4"/>
+          </svg>
+          안전한 분석 환경
+        </div>
+      </div>
+    </div>
     <div class="report-shell">
       <div class="report-layout">
 
@@ -304,15 +397,42 @@ export const B2BReportPage = defineComponent({
         </aside>
 
         <div class="report-content" style="position:relative">
-        <div v-if="loading" class="b2b-report-loading">
-          <div class="b2b-report-loading-card">
-            <div class="b2b-report-loading-spinner"></div>
-            <div class="b2b-report-loading-title">로딩 중</div>
-            <div class="b2b-report-loading-desc">데이터를 불러오고 있습니다.</div>
-          </div>
-        </div>
+          <div
+            v-if="loading && !isMobileStackMode"
+            :class="['b2b-report-loading', 'tone-' + loadingTheme.tone]"
+            aria-live="polite"
+            aria-busy="true"
+          >
+            <div class="b2b-report-loading-backdrop-grid"></div>
 
-  <main v-show="!loading">
+            <div class="b2b-report-loading-anchor">
+              <div class="b2b-report-loading-beam"></div>
+
+              <div class="b2b-report-loading-orb" aria-hidden="true">
+                <span class="b2b-report-loading-halo halo-outer"></span>
+                <span class="b2b-report-loading-halo halo-inner"></span>
+
+                <span class="b2b-report-loading-ring ring-primary"></span>
+                <span class="b2b-report-loading-ring ring-secondary"></span>
+                <span class="b2b-report-loading-ring ring-tertiary"></span>
+
+                <span class="b2b-report-loading-core"></span>
+                <span class="b2b-report-loading-core-gloss"></span>
+
+                <span class="b2b-report-loading-particle particle-a"></span>
+                <span class="b2b-report-loading-particle particle-b"></span>
+                <span class="b2b-report-loading-particle particle-c"></span>
+              </div>
+
+              <div class="b2b-report-loading-copy">
+                <div class="b2b-report-loading-kicker">{{ loadingTheme.kicker }}</div>
+                <div class="b2b-report-loading-title">{{ loadingTheme.title }}</div>
+                <div class="b2b-report-loading-desc">{{ loadingTheme.desc }}</div>
+              </div>
+            </div>
+          </div>
+
+  <main :class="{ 'b2b-report-main-loading': loading }">
           <div class="store-banner b2b-company-banner">
             <div class="b2b-banner-logo" :style="{background:company.logoBg,color:company.logoColor}">
               {{company.logo}}
@@ -378,7 +498,7 @@ export const B2BReportPage = defineComponent({
               :tenant-id="company.tenant_id"
               :comp-id="company.id"
               :analysis-period="analysisPeriod"
-              @loading-change="setSectionLoading"
+              @loading-change="(loading) => setSectionLoading({ tabId: 'external', loading })"
             />
           </template>
 
@@ -419,7 +539,7 @@ export const B2BReportPage = defineComponent({
               :tenant-id="company.tenant_id"
               :comp-id="company.id"
               :analysis-period="analysisPeriod"
-              @loading-change="setSectionLoading"
+              @loading-change="(loading) => setSectionLoading({ tabId: 'competitive', loading })"
             />
           </template>
 
@@ -485,6 +605,7 @@ export const B2BReportPage = defineComponent({
             <B2BEmployeeEmotionSection
               :comp-id="company.id"
               :period-type="periodType"
+              @loading-change="(loading) => setSectionLoading({ tabId: 'internal', loading })"
             />
           </template>
         </main>

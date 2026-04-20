@@ -3,12 +3,57 @@ from __future__ import annotations
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy import text
+from sqlalchemy import bindparam, text
 from sqlalchemy.orm import Session
 
 from backend.db.session import get_db
 
 router = APIRouter(prefix="/notifications", tags=["notifications"])
+
+
+def _fetch_group_ids(db: Session, base_row: dict) -> list[int]:
+    if base_row["signal_id"] is not None:
+        rows = db.execute(
+            text(
+                """
+                SELECT id
+                FROM public.notifications
+                WHERE tenant_id = :tenant_id
+                  AND signal_id = :signal_id
+                ORDER BY id
+                """
+            ),
+            {
+                "tenant_id": base_row["tenant_id"],
+                "signal_id": base_row["signal_id"],
+            },
+        ).fetchall()
+        return [int(row[0]) for row in rows]
+
+    rows = db.execute(
+        text(
+            """
+            SELECT id
+            FROM public.notifications
+            WHERE tenant_id = :tenant_id
+              AND COALESCE(company_name, '') = COALESCE(:company_name, '')
+              AND COALESCE(category, '') = COALESCE(:category, '')
+              AND COALESCE(signal_type_label, '') = COALESCE(:signal_type_label, '')
+              AND COALESCE(message, '') = COALESCE(:message, '')
+              AND created_at::date = :created_date
+            ORDER BY id
+            """
+        ),
+        {
+            "tenant_id": base_row["tenant_id"],
+            "company_name": base_row["company_name"],
+            "category": base_row["category"],
+            "signal_type_label": base_row["signal_type_label"],
+            "message": base_row["message"],
+            "created_date": base_row["created_date"],
+        },
+    ).fetchall()
+    return [int(row[0]) for row in rows]
 
 
 @router.get("")
@@ -17,11 +62,9 @@ def get_notifications(
     is_read: Optional[bool] = Query(default=False),
     db: Session = Depends(get_db),
 ):
-    """
-    미읽음 알림 조회 (브라우저 열릴 때 호출)
-    """
     rows = db.execute(
-        text("""
+        text(
+            """
             SELECT
                 id,
                 company_name,
@@ -30,16 +73,17 @@ def get_notifications(
                 message,
                 link_url,
                 is_read,
-                created_at
+                created_at,
+                signal_id
             FROM public.notifications
             WHERE tenant_id = :tenant_id
               AND is_read = :is_read
-            ORDER BY created_at DESC
+            ORDER BY created_at DESC, id DESC
             LIMIT 500
-        """),
+            """
+        ),
         {"tenant_id": tenant_id, "is_read": is_read},
     ).mappings().all()
-
     return [dict(r) for r in rows]
 
 
@@ -48,16 +92,13 @@ def mark_notification_read(
     notification_id: int,
     db: Session = Depends(get_db),
 ):
-    """
-    단건 읽음 처리
-    - 같은 알림군 전체를 읽음 처리
-    - 그룹 기준: tenant_id + company_name + category + signal_type_label + message + created_at::date
-    """
-    row = db.execute(
-        text("""
+    base_row = db.execute(
+        text(
+            """
             SELECT
                 id,
                 tenant_id,
+                signal_id,
                 company_name,
                 category,
                 signal_type_label,
@@ -65,39 +106,48 @@ def mark_notification_read(
                 created_at::date AS created_date
             FROM public.notifications
             WHERE id = :id
-        """),
+            """
+        ),
         {"id": notification_id},
     ).mappings().first()
 
-    if not row:
+    if not base_row:
         raise HTTPException(status_code=404, detail="notification not found")
 
-    result = db.execute(
-        text("""
-            UPDATE public.notifications
-            SET is_read = TRUE
-            WHERE tenant_id = :tenant_id
-              AND COALESCE(company_name, '') = COALESCE(:company_name, '')
-              AND COALESCE(category, '') = COALESCE(:category, '')
-              AND COALESCE(signal_type_label, '') = COALESCE(:signal_type_label, '')
-              AND COALESCE(message, '') = COALESCE(:message, '')
-              AND created_at::date = :created_date
-              AND is_read = FALSE
-        """),
-        {
-            "tenant_id": row["tenant_id"],
-            "company_name": row["company_name"],
-            "category": row["category"],
-            "signal_type_label": row["signal_type_label"],
-            "message": row["message"],
-            "created_date": row["created_date"],
-        },
-    )
-    db.commit()
+    group_ids = _fetch_group_ids(db, base_row)
+    unread_ids = []
+    if group_ids:
+        unread_rows = db.execute(
+            text(
+                """
+                SELECT id
+                FROM public.notifications
+                WHERE id IN :ids
+                  AND is_read = FALSE
+                ORDER BY id
+                """
+            ).bindparams(bindparam("ids", expanding=True)),
+            {"ids": group_ids},
+        ).fetchall()
+        unread_ids = [int(row[0]) for row in unread_rows]
+
+    if unread_ids:
+        db.execute(
+            text(
+                """
+                UPDATE public.notifications
+                SET is_read = TRUE
+                WHERE id IN :ids
+                """
+            ).bindparams(bindparam("ids", expanding=True)),
+            {"ids": unread_ids},
+        )
+        db.commit()
 
     return {
         "status": "ok",
-        "updated": result.rowcount or 0,
+        "updated_ids": group_ids,
+        "updated_count": len(unread_ids),
     }
 
 
@@ -106,21 +156,48 @@ def mark_all_notifications_read(
     tenant_id: int = 7,
     db: Session = Depends(get_db),
 ):
-    """
-    전체 읽음 처리
-    """
-    result = db.execute(
-        text("""
-            UPDATE public.notifications
-            SET is_read = TRUE
+    all_rows = db.execute(
+        text(
+            """
+            SELECT id
+            FROM public.notifications
+            WHERE tenant_id = :tenant_id
+            ORDER BY id
+            """
+        ),
+        {"tenant_id": tenant_id},
+    ).fetchall()
+    all_ids = [int(row[0]) for row in all_rows]
+
+    unread_rows = db.execute(
+        text(
+            """
+            SELECT id
+            FROM public.notifications
             WHERE tenant_id = :tenant_id
               AND is_read = FALSE
-        """),
+            ORDER BY id
+            """
+        ),
         {"tenant_id": tenant_id},
-    )
-    db.commit()
+    ).fetchall()
+    unread_ids = [int(row[0]) for row in unread_rows]
+
+    if unread_ids:
+        db.execute(
+            text(
+                """
+                UPDATE public.notifications
+                SET is_read = TRUE
+                WHERE id IN :ids
+                """
+            ).bindparams(bindparam("ids", expanding=True)),
+            {"ids": unread_ids},
+        )
+        db.commit()
 
     return {
         "status": "ok",
-        "updated": result.rowcount or 0,
+        "updated_ids": all_ids,
+        "updated_count": len(unread_ids),
     }

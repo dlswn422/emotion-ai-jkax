@@ -1,5 +1,105 @@
 from backend.analysis.engine import call_llm
 
+def _normalize_keyword_items(items: list[dict], min_size: int = 10, max_size: int = 40) -> list[dict]:
+    """
+    키워드 리스트 후처리
+    - text 중복 제거
+    - 빈 text 제거
+    - size 범위 보정
+    """
+    if not isinstance(items, list):
+        return []
+
+    deduped = {}
+    order = []
+
+    for item in items:
+        if not isinstance(item, dict):
+            continue
+
+        text = str(item.get("text", "")).strip()
+        if not text:
+            continue
+
+        try:
+            size = int(item.get("size", min_size))
+        except Exception:
+            size = min_size
+
+        # size 보정
+        if size < min_size:
+            size = min_size
+        if size > max_size:
+            size = max_size
+
+        # 같은 text가 여러 번 나오면 더 큰 size 유지
+        if text not in deduped:
+            deduped[text] = {"text": text, "size": size}
+            order.append(text)
+        else:
+            if size > deduped[text]["size"]:
+                deduped[text]["size"] = size
+
+    return [deduped[text] for text in order]
+
+
+def _ensure_min_keywords(items: list[dict], fallback_source: list[dict], min_count: int = 3) -> list[dict]:
+    """
+    positive/negative/neutral 배열이 너무 적으면 all_keywords에서 보충
+    """
+    items = list(items or [])
+    existing = {str(x.get("text", "")).strip() for x in items if isinstance(x, dict)}
+
+    for kw in fallback_source or []:
+        if len(items) >= min_count:
+            break
+
+        if not isinstance(kw, dict):
+            continue
+
+        text = str(kw.get("text", "")).strip()
+        if not text or text in existing:
+            continue
+
+        items.append(kw)
+        existing.add(text)
+
+    return items
+
+
+def _post_process_cx_result(result: dict) -> dict:
+    """
+    LLM 결과 후처리
+    - all_keywords / positive / negative / neutral 중복 제거
+    - size 보정
+    - 감성 키워드가 너무 적으면 all_keywords 기반으로 최소 개수 보충
+    """
+    if not isinstance(result, dict):
+        return result
+
+    positive = _normalize_keyword_items(result.get("positive_keywords", []), min_size=10, max_size=40)
+    negative = _normalize_keyword_items(result.get("negative_keywords", []), min_size=10, max_size=40)
+    neutral = _normalize_keyword_items(result.get("neutral_keywords", []), min_size=10, max_size=40)
+    all_keywords = _normalize_keyword_items(result.get("all_keywords", []), min_size=10, max_size=40)
+
+    # 최소 개수 보정
+    positive = _ensure_min_keywords(positive, all_keywords, min_count=3)
+    negative = _ensure_min_keywords(negative, all_keywords, min_count=3)
+    neutral = _ensure_min_keywords(neutral, all_keywords, min_count=3)
+
+    # 다시 한 번 정리
+    positive = _normalize_keyword_items(positive, min_size=10, max_size=40)
+    negative = _normalize_keyword_items(negative, min_size=10, max_size=40)
+    neutral = _normalize_keyword_items(neutral, min_size=10, max_size=40)
+    all_keywords = _normalize_keyword_items(all_keywords, min_size=10, max_size=40)
+
+    result["positive_keywords"] = positive
+    result["negative_keywords"] = negative
+    result["neutral_keywords"] = neutral
+    result["all_keywords"] = all_keywords
+
+    return result
+
 
 def analyze_cx_dashboard(reviews: list[str]) -> dict:
     """
@@ -10,10 +110,10 @@ def analyze_cx_dashboard(reviews: list[str]) -> dict:
     if not reviews:
         return {}
 
-    sample_reviews = reviews[:80]
+    sample_reviews = reviews[:200]
 
     prompt = f"""
-너는 음식점 고객경험(CX) 분석 전문 컨설턴트다.
+너는 대량의 사용자 리뷰와 댓글에서 반복 주제와 감정 흐름을 분석하는 CX/여론 분석 전문 컨설턴트다.
 
 아래는 실제 고객이 작성한 Google 리뷰 텍스트 데이터이다.
 반드시 리뷰 텍스트에 직접 근거하여 분석하고,
@@ -217,7 +317,7 @@ negative
 - 세 값의 합은 반드시 100
 - executive_summary에서 불만이 분명한데 negative가 지나치게 낮으면 안 된다
 - 강한 칭찬이 많은데 positive가 지나치게 낮으면 안 된다
-
+- 리뷰/댓글이 특정 사회 이슈나 정책에 대한 의견 중심일 경우, 모든 데이터를 negative로 몰지 말고 neutral 비중도 적절히 반영하라.
 ==============================
 5️⃣ NPS (0~10)
 ==============================
@@ -379,18 +479,145 @@ Detractor (0~6)
 - 보고서 전체의 핵심 축과 멀면 안 된다
 
 ==============================
-🔟 키워드 워드클라우드
+🔟 키워드 워드클라우드 (충돌 방지 최종 버전)
 ==============================
-1. 리뷰 텍스트에서 반복 등장하는 대표 키워드를 추출하라.
-2. 반드시 positive_keywords, negative_keywords, all_keywords 3개 배열을 반환하라.
-3. 각 배열은 최대 12개까지 반환하라.
-4. 각 항목은 text, size 키를 가진 객체 형식으로 반환하라.
-5. positive_keywords는 긍정 맥락 키워드만, negative_keywords는 부정 맥락 키워드만 넣어라.
-6. all_keywords는 별도로 새로 추출하지 말고, positive_keywords와 negative_keywords에 포함된 항목만 합쳐서 구성하라.
-7. all_keywords에는 긍정 키워드와 부정 키워드가 원문 그대로 포함되어야 하며, text와 size 값도 각 원본 배열의 값을 그대로 유지하라.
-8. 동일한 text가 positive_keywords와 negative_keywords에 동시에 등장하는 경우는 허용하지 말고, 더 적절한 감성 한쪽에만 배치하라.
-9. all_keywords에서 표시 색상은 각 키워드의 감성 분류를 그대로 따라야 한다. positive_keywords에서 온 키워드는 전체에서도 동일한 초록색, negative_keywords에서 온 키워드는 전체에서도 동일한 빨간색으로 표시하라.
-10. 리뷰에 직접 없는 단어를 임의로 만들지 마라.
+
+목적
+- 리뷰에서 등장하는 핵심 키워드를
+  "긍정 문맥" / "부정 문맥" 기준으로 분리하여 생성한다.
+
+==============================
+핵심 출력 규칙
+==============================
+
+1. 반드시 아래 2개 배열만 반환하라.
+   - positive_keywords
+   - negative_keywords
+
+2. neutral_keywords, all_keywords는 절대 생성하지 마라.
+
+3. 키워드 개수 규칙 (엄격)
+   - positive_keywords: 최소 10개 이상 (가능하면 15개 이상)
+   - negative_keywords: 최소 10개 이상 (가능하면 15개 이상)
+
+==============================
+🔟 키워드 워드클라우드 (최종 개선 안정 버전)
+==============================
+
+목적
+- 리뷰에서 반복 등장하는 핵심 "의미 단위 키워드"를
+  positive / negative로 나누어 충분히 생성한다.
+
+==============================
+핵심 출력 규칙
+==============================
+
+1. 반드시 아래 2개 배열만 반환
+   - positive_keywords
+   - negative_keywords
+
+2. 각 배열은 최소 12개 이상 생성
+   - 부족할 경우 "하위 의미 키워드"로 확장해서 채워라
+   - 단순 반복 금지
+
+==============================
+핵심 정의 (가장 중요)
+==============================
+
+3. 키워드는 반드시 "의미 단위 명사구"여야 한다
+
+❌ 절대 금지 (단어만 있는 것)
+- 부족
+- 문제
+- 불만
+- 갈등
+- 실망
+
+⭕ 반드시 허용 (의미 포함)
+- 서비스 부족
+- 응대 부족
+- 정보 부족
+- 대기 시간
+- 가격 부담
+- 서비스 문제
+- 위생 문제
+
+👉 핵심 규칙:
+"무엇 + 상태" 구조가 반드시 있어야 한다
+
+==============================
+감성 기준
+==============================
+
+4. 감성은 단어가 아니라 "문맥 기준"
+
+positive_keywords:
+- 만족 / 칭찬 / 긍정 반응이 있는 문맥
+
+negative_keywords:
+- 불만 / 비판 / 문제 제기 문맥
+
+👉 동일 키워드라도 문맥에 따라 분리 가능
+
+==============================
+중복 규칙
+==============================
+
+5. 완전히 동일한 키워드만 양쪽 중복 금지
+   (의미가 다른 맥락이면 허용)
+
+==============================
+확장 규칙 (강제)
+==============================
+
+6. 주요 주제는 반드시 3개 이상 파생 확장
+
+예시:
+
+부동산 →
+- 부동산, 아파트, 전세, 월세, 집값, 매매, 공급
+
+정치 →
+- 대통령, 이재명, 민주당, 국민의힘, 정책, 선거
+
+기업 →
+- 삼성SDI, LG엔솔, 삼성전자, 배터리, 주가
+
+👉 단, 리뷰에 없는 키워드 억지 생성 금지
+
+==============================
+키워드 품질 규칙 (핵심 개선)
+==============================
+
+7. 아래 기준 만족 못하면 생성 금지
+
+- 의미 없는 단어 금지
+- 감정 단어 금지
+- 단독 추상어 금지
+
+예:
+❌ 문제
+❌ 부족
+❌ 상황
+❌ 느낌
+
+==============================
+중요도 (size)
+==============================
+
+8. size 범위: 10 ~ 40
+
+- 핵심 반복 키워드: 30~40
+- 일반 키워드: 20~30
+- 보조 키워드: 10~20
+
+==============================
+절대 금지
+==============================
+
+9. 리뷰에 없는 키워드 생성 금지
+10. 의미 없는 채우기 금지
+11. 감정 단어 단독 사용 금지
 
 ==============================
 최종 검증 규칙
@@ -481,6 +708,12 @@ JSON을 반환하기 전에 반드시 스스로 아래를 검증하라.
       "size": 34
     }}
   ],
+  "neutral_keywords": [
+    {{
+      "text": "대표 중립 키워드",
+      "size": 34
+    }}
+  ],
   "all_keywords": [
     {{
       "text": "대표 전체 키워드",
@@ -490,4 +723,6 @@ JSON을 반환하기 전에 반드시 스스로 아래를 검증하라.
 }}
 """
 
-    return call_llm(prompt)
+    result = call_llm(prompt)
+    result = _post_process_cx_result(result)
+    return result
