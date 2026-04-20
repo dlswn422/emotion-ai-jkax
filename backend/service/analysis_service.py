@@ -21,10 +21,10 @@ def analyze_store_cx_by_period(
     db: Session,
 ):
     """
-    1️⃣ DB에서 리뷰 조회
-    2️⃣ 텍스트만 추출
-    3️⃣ LLM 분석
-    4️⃣ 별점 분포 / 리뷰 수 추가 반환
+    1) DB에서 리뷰 조회
+    2) 텍스트만 추출
+    3) LLM 분석
+    4) DB 기준 정량값(review_count, rating_distribution, rating) 고정 반환
     """
 
     start_dt, end_dt = _parse_date_range(from_date, to_date)
@@ -48,32 +48,15 @@ def analyze_store_cx_by_period(
         if r.comment and len(r.comment.strip()) > 3
     ]
 
-    if not review_texts:
-        return {
-            "message": "분석할 리뷰가 없습니다.",
-            "total": 0,
-            "review_count": 0,
-            "rating_distribution": [
-                {"stars": 5, "count": 0},
-                {"stars": 4, "count": 0},
-                {"stars": 3, "count": 0},
-                {"stars": 2, "count": 0},
-                {"stars": 1, "count": 0},
-            ],
-        }
-
-    # 1) LLM 분석 결과
-    llm_result = analyze_cx_dashboard(review_texts)
-
-    # 2) 기간 내 전체 리뷰 수
-    review_count = len(reviews)
-
-    # 3) 별점 분포 계산
     rating_counter = {1: 0, 2: 0, 3: 0, 4: 0, 5: 0}
+    rating_values: list[float] = []
 
     for r in reviews:
         if r.rating in rating_counter:
             rating_counter[r.rating] += 1
+            rating_values.append(float(r.rating))
+
+    review_count = len(reviews)
 
     rating_distribution = [
         {"stars": 5, "count": rating_counter[5]},
@@ -83,19 +66,37 @@ def analyze_store_cx_by_period(
         {"stars": 1, "count": rating_counter[1]},
     ]
 
-    # 4) LLM 결과 + DB 집계값 합쳐서 반환
+    average_rating = _compute_average_rating(rating_values)
+
+    if not review_texts:
+        return {
+            "message": "분석할 리뷰가 없습니다.",
+            "total": 0,
+            "review_count": review_count,
+            "rating": average_rating,
+            "rating_distribution": rating_distribution,
+        }
+
+    llm_result = analyze_cx_dashboard(review_texts)
+
     return {
         **llm_result,
         "review_count": review_count,
         "rating_distribution": rating_distribution,
+        "rating": average_rating,
     }
+
+
+def _compute_average_rating(rating_values: list[float]) -> float:
+    if not rating_values:
+        return 0.0
+    return round(sum(rating_values) / len(rating_values), 1)
 
 
 def _parse_date_range(from_date: str, to_date: str):
     """
     프론트에서 받은 YYYY-MM-DD 기준
     [from 00:00:00, to 다음날 00:00:00) 범위 생성
-    (timezone-aware)
     """
     start = datetime.fromisoformat(from_date).replace(
         hour=0,
@@ -106,15 +107,13 @@ def _parse_date_range(from_date: str, to_date: str):
     )
 
     end = (
-        datetime.fromisoformat(to_date)
-        .replace(
+        datetime.fromisoformat(to_date).replace(
             hour=0,
             minute=0,
             second=0,
             microsecond=0,
             tzinfo=timezone.utc,
-        )
-        + timedelta(days=1)
+        ) + timedelta(days=1)
     )
 
     return start, end

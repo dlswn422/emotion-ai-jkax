@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from typing import Any
 import argparse
 from pathlib import Path
 
@@ -20,6 +21,51 @@ env_path = Path(__file__).resolve().parents[1] / ".env"
 load_dotenv(env_path)
 
 DEFAULT_PERIODS = ["1D", "7D", "30D", "90D", "365D"]
+MAX_ANALYZE_ATTEMPTS = 3
+EXCLUDED_STORE_IDS = {"store_7", "store_9", "store_10"}
+
+
+def _has_content(value: Any) -> bool:
+    if value is None:
+        return False
+    if isinstance(value, str):
+        return bool(value.strip())
+    if isinstance(value, (list, tuple, set, dict)):
+        return len(value) > 0
+    return True
+
+
+def _is_minimal_cx_payload(payload: Any) -> bool:
+    if not isinstance(payload, dict):
+        return False
+    return (
+        "review_count" in payload
+        and "rating" in payload
+        and isinstance(payload.get("rating_distribution"), list)
+    )
+
+
+def _is_usable_cx_payload(payload: Any) -> bool:
+    if not _is_minimal_cx_payload(payload):
+        return False
+
+    review_count = payload.get("review_count", 0)
+    if review_count == 0:
+        return True
+
+    rich_fields = [
+        payload.get("sentiment"),
+        payload.get("nps"),
+        payload.get("executive_summary"),
+        payload.get("action_plan"),
+        payload.get("drivers_of_satisfaction"),
+        payload.get("areas_for_improvement"),
+        payload.get("positive_keywords"),
+        payload.get("negative_keywords"),
+        payload.get("strategic_insights"),
+    ]
+
+    return any(_has_content(field) for field in rich_fields)
 
 
 def list_store_ids(db: Session) -> list[str]:
@@ -29,7 +75,11 @@ def list_store_ids(db: Session) -> list[str]:
         .distinct()
         .all()
     )
-    return sorted([row[0] for row in rows if row[0]])
+    return sorted([
+        row[0]
+        for row in rows
+        if row[0] and row[0] not in EXCLUDED_STORE_IDS
+    ])
 
 
 def run_store_analysis_batch(
@@ -42,7 +92,11 @@ def run_store_analysis_batch(
     batch_now = utc_now()
 
     period_types = period_types or DEFAULT_PERIODS
-    target_store_ids = store_ids or list_store_ids(db)
+
+    if store_ids:
+        target_store_ids = [store_id for store_id in store_ids if store_id not in EXCLUDED_STORE_IDS]
+    else:
+        target_store_ids = list_store_ids(db)
 
     if not target_store_ids:
         print("[store-batch] store_id가 없어 실행을 건너뜁니다.")
@@ -54,6 +108,7 @@ def run_store_analysis_batch(
     success = 0
     no_reviews = 0
     error = 0
+    skipped_low_quality = 0
 
     print(f"[store-batch] batch_run_id={batch_run_id}")
     print(f"[store-batch] stores={len(target_store_ids)} periods={period_types} total_jobs={total_jobs}")
@@ -73,17 +128,61 @@ def run_store_analysis_batch(
                     f"from={from_date} to={to_date}"
                 )
 
-                try:
-                    response_json = analyze_store_cx_by_period(
-                        store_id=store_id,
-                        from_date=from_date,
-                        to_date=to_date,
-                        db=db,
-                    )
-                    status = resolve_cx_status(response_json)
-                except Exception as exc:
+                response_json: dict[str, Any] | None = None
+                status = "ERROR"
+
+                for attempt in range(1, MAX_ANALYZE_ATTEMPTS + 1):
+                    try:
+                        candidate = analyze_store_cx_by_period(
+                            store_id=store_id,
+                            from_date=from_date,
+                            to_date=to_date,
+                            db=db,
+                        )
+                        candidate_status = resolve_cx_status(candidate)
+
+                        if candidate_status == "NO_REVIEWS":
+                            response_json = candidate
+                            status = candidate_status
+                            break
+
+                        if candidate_status == "SUCCESS" and not _is_usable_cx_payload(candidate):
+                            print(
+                                f"[store-batch] low-quality payload "
+                                f"store_id={store_id} period_type={period_type} "
+                                f"attempt={attempt}/{MAX_ANALYZE_ATTEMPTS} -> retry"
+                            )
+                            response_json = candidate
+                            status = candidate_status
+                            if attempt < MAX_ANALYZE_ATTEMPTS:
+                                continue
+                            break
+
+                        response_json = candidate
+                        status = candidate_status
+                        break
+
+                    except Exception as exc:
+                        print(
+                            f"[store-batch] analyze error "
+                            f"store_id={store_id} period_type={period_type} "
+                            f"attempt={attempt}/{MAX_ANALYZE_ATTEMPTS}: {exc}"
+                        )
+                        if attempt == MAX_ANALYZE_ATTEMPTS:
+                            response_json = make_error_response(str(exc))
+                            status = "ERROR"
+
+                if response_json is None:
+                    response_json = make_error_response("분석 결과가 생성되지 않았습니다.")
                     status = "ERROR"
-                    response_json = make_error_response(str(exc))
+
+                if status == "SUCCESS" and not _is_usable_cx_payload(response_json):
+                    skipped_low_quality += 1
+                    print(
+                        f"[store-batch] skip save low-quality payload "
+                        f"store_id={store_id} period_type={period_type}"
+                    )
+                    continue
 
                 save_cx_cache_result(
                     store_id=store_id,
@@ -112,7 +211,8 @@ def run_store_analysis_batch(
 
     print(
         f"[store-batch] done "
-        f"success={success} no_reviews={no_reviews} error={error}"
+        f"success={success} no_reviews={no_reviews} "
+        f"error={error} skipped_low_quality={skipped_low_quality}"
     )
 
 

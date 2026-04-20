@@ -1,7 +1,8 @@
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, HTTPException
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
+from backend.service.b2b_cache_service import get_b2b_cache_current
 from backend.db.session import get_db
 
 router = APIRouter(prefix="/dashboard", tags=["dashboard"])
@@ -135,3 +136,20 @@ def get_competitor_analysis_dashboard(
             for row in competitor_details
         ],
     }
+
+
+@router.get("/competitor-analysis/cache")
+def get_competitor_analysis_cache(
+    tenant_id: int = Query(...),
+    period_type: str = Query(..., description="1D | 7D | 30D | 90D | 365D"),
+):
+    cached = get_b2b_cache_current(
+        tenant_id=tenant_id,
+        analysis_type="COMPETITOR_ANALYSIS",
+        period_type=period_type,
+    )
+
+    if not cached:
+        raise HTTPException(status_code=404, detail="캐시 없음")
+
+    return cached
