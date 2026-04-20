@@ -296,7 +296,6 @@ export const B2BReportPage = defineComponent({
     <NavBar page="b2b-report"/>
     <AlertPanel/>
     <DateModal v-model="showPeriodModal" @confirm="onPeriodConfirm"/>
-    # 모바일 로딩창
     <div
       v-if="loading && isMobileStackMode"
       class="b2b-mobile-loading-screen"
@@ -406,28 +405,64 @@ export const B2BReportPage = defineComponent({
             <div class="b2b-report-loading-backdrop-grid"></div>
 
             <div class="b2b-report-loading-anchor">
-              <div class="b2b-report-loading-beam"></div>
+              <div class="b2b-report-signal-card">
+                <div class="b2b-report-signal-orbit" aria-hidden="true">
+                  <span class="b2b-report-signal-orbit-ring ring-main"></span>
+                  <span class="b2b-report-signal-orbit-ring ring-soft"></span>
 
-              <div class="b2b-report-loading-orb" aria-hidden="true">
-                <span class="b2b-report-loading-halo halo-outer"></span>
-                <span class="b2b-report-loading-halo halo-inner"></span>
+                  <span class="b2b-report-signal-orbit-dot dot-blue"></span>
+                  <span class="b2b-report-signal-orbit-dot dot-green"></span>
+                  <span class="b2b-report-signal-orbit-dot dot-purple"></span>
 
-                <span class="b2b-report-loading-ring ring-primary"></span>
-                <span class="b2b-report-loading-ring ring-secondary"></span>
-                <span class="b2b-report-loading-ring ring-tertiary"></span>
+                  <span class="b2b-report-signal-core">
+                    <span class="b2b-report-signal-core-disc"></span>
+                    <span class="b2b-report-signal-core-wave wave-1"></span>
+                    <span class="b2b-report-signal-core-wave wave-2"></span>
+                    <span class="b2b-report-signal-core-wave wave-3"></span>
+                  </span>
+                </div>
 
-                <span class="b2b-report-loading-core"></span>
-                <span class="b2b-report-loading-core-gloss"></span>
+                <div class="b2b-report-signal-kicker">{{ loadingTheme.kicker }}</div>
 
-                <span class="b2b-report-loading-particle particle-a"></span>
-                <span class="b2b-report-loading-particle particle-b"></span>
-                <span class="b2b-report-loading-particle particle-c"></span>
-              </div>
+                <div class="b2b-report-signal-title-row">
+                  <div class="b2b-report-signal-title">{{ loadingTheme.title }}</div>
+                  <div class="b2b-report-signal-title-dots" aria-hidden="true">
+                    <span></span><span></span>
+                  </div>
+                </div>
 
-              <div class="b2b-report-loading-copy">
-                <div class="b2b-report-loading-kicker">{{ loadingTheme.kicker }}</div>
-                <div class="b2b-report-loading-title">{{ loadingTheme.title }}</div>
-                <div class="b2b-report-loading-desc">{{ loadingTheme.desc }}</div>
+                <div class="b2b-report-signal-desc">{{ loadingTheme.desc }}</div>
+
+                <div class="b2b-report-signal-progress">
+                  <div class="b2b-report-signal-progress-bar">
+                    <span class="b2b-report-signal-progress-fill"></span>
+                  </div>
+
+                  <div class="b2b-report-signal-progress-meta">
+                    <span class="b2b-report-signal-progress-label">PROCESSING DATA</span>
+                    <span class="b2b-report-signal-progress-value">74%</span>
+                  </div>
+                </div>
+
+                <div class="b2b-report-signal-footer">
+                  <span class="b2b-report-signal-footer-item">
+                    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                      <path d="M12 3l7 4v5c0 5-3.5 8-7 9-3.5-1-7-4-7-9V7l7-4z"/>
+                      <path d="M9 12l2 2 4-4"/>
+                    </svg>
+                    보안 프로토콜 활성화됨
+                  </span>
+
+                  <span class="b2b-report-signal-footer-divider"></span>
+
+                  <span class="b2b-report-signal-footer-item">
+                    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                      <circle cx="12" cy="12" r="9"/>
+                      <path d="M12 7v5l3 2"/>
+                    </svg>
+                    예상 소요 시간: 3초
+                  </span>
+                </div>
               </div>
             </div>
           </div>
