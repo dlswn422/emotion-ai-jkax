@@ -378,7 +378,7 @@ export const StoreListPage = defineComponent({
           <section v-if="shouldShowStoreSection" class="page-section">
             <div class="section-head">
               <h2 class="section-title">매장</h2>
-              <p class="section-sub">.</p>
+              <p class="section-sub"></p>
             </div>
 
             <!-- 매장 검색 -->
