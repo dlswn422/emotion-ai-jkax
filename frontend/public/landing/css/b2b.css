@@ -3387,3 +3387,290 @@
   }
 }
 
+/* ============================================================
+   MOBILE FULLSCREEN LOADING — WHITE FULLBLEED
+   ============================================================ */
+.b2b-mobile-loading-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: block;
+  padding: 0;
+  background: #f7f8ff;
+  animation: b2bMobileOverlayFadeIn 0.28s ease-out;
+}
+
+.b2b-mobile-loading-panel {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 0;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 50% 56%, rgba(139, 92, 246, 0.10) 0%, rgba(99, 102, 241, 0.05) 24%, rgba(255,255,255,0) 62%),
+    linear-gradient(180deg, #fbfbff 0%, #f5f6ff 100%);
+  box-shadow: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding:
+    max(env(safe-area-inset-top), 28px)
+    28px
+    max(env(safe-area-inset-bottom), 32px);
+  box-sizing: border-box;
+}
+
+.b2b-mobile-loading-grid {
+  position: absolute;
+  inset: 0;
+  opacity: 0.22;
+  background-image: radial-gradient(rgba(99, 102, 241, 0.16) 1px, transparent 1px);
+  background-size: 36px 36px;
+  background-position: center;
+  pointer-events: none;
+}
+
+.b2b-mobile-loading-brand {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 72px;
+}
+
+.b2b-mobile-loading-logo {
+  width: 96px;
+  height: 96px;
+  border-radius: 28px;
+  display: grid;
+  place-items: center;
+  font-size: 42px;
+  font-weight: 900;
+  text-transform: lowercase;
+  color: #fff;
+  background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 55%, #7c3aed 100%);
+  box-shadow:
+    0 18px 44px rgba(99, 102, 241, 0.26),
+    inset 0 1px 0 rgba(255,255,255,0.24);
+}
+
+.b2b-mobile-loading-brand-title {
+  margin-top: 24px;
+  font-size: 34px;
+  font-weight: 900;
+  line-height: 1.06;
+  letter-spacing: -0.04em;
+  color: #161b35;
+}
+
+.b2b-mobile-loading-brand-title span {
+  background: linear-gradient(90deg, #6366f1 0%, #8b5cf6 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.b2b-mobile-loading-brand-sub {
+  margin-top: 10px;
+  font-size: 15px;
+  font-weight: 700;
+  color: #9aa0b3;
+  letter-spacing: 0.02em;
+}
+
+.b2b-mobile-loading-spinner-wrap {
+  position: relative;
+  z-index: 1;
+  margin-top: 92px;
+  margin-bottom: 34px;
+}
+
+.b2b-mobile-loading-spinner {
+  position: relative;
+  width: 78px;
+  height: 78px;
+}
+
+.b2b-mobile-loading-spinner-dot {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 16px;
+  height: 16px;
+  border-radius: 999px;
+  background: #2c2f58;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 0 18px rgba(99, 102, 241, 0.20);
+}
+
+.b2b-mobile-loading-spinner-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 999px;
+  border: 4px solid transparent;
+  border-top-color: #8b5cf6;
+  border-right-color: #6366f1;
+}
+
+.b2b-mobile-loading-spinner-ring.ring-a {
+  animation: b2bMobileSpinnerSpin 1.05s linear infinite;
+}
+
+.b2b-mobile-loading-spinner-ring.ring-b {
+  inset: 8px;
+  border-width: 3px;
+  border-top-color: rgba(99, 102, 241, 0.52);
+  border-right-color: rgba(139, 92, 246, 0.52);
+  animation: b2bMobileSpinnerSpinReverse 1.55s linear infinite;
+}
+
+.b2b-mobile-loading-spinner-ring.ring-c {
+  inset: 16px;
+  border-width: 3px;
+  border-top-color: rgba(99, 102, 241, 0.18);
+  border-right-color: rgba(139, 92, 246, 0.18);
+  animation: b2bMobileSpinnerSpin 2.2s linear infinite;
+}
+
+.b2b-mobile-loading-copy {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.b2b-mobile-loading-copy-title {
+  font-size: 20px;
+  font-weight: 900;
+  line-height: 1.35;
+  letter-spacing: -0.03em;
+  color: #1f2340;
+}
+
+.b2b-mobile-loading-copy-desc {
+  font-size: 15px;
+  font-weight: 600;
+  color: #9aa0b3;
+}
+
+.b2b-mobile-loading-progress {
+  position: relative;
+  z-index: 1;
+  width: min(72vw, 300px);
+  height: 6px;
+  margin-top: 34px;
+  border-radius: 999px;
+  background: rgba(99, 102, 241, 0.08);
+  overflow: hidden;
+}
+
+.b2b-mobile-loading-progress-bar {
+  display: block;
+  height: 100%;
+  width: 36%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #6366f1 0%, #8b5cf6 70%, #c4b5fd 100%);
+  animation: b2bMobileProgressSweep 1.85s ease-in-out infinite;
+}
+
+.b2b-mobile-loading-badge {
+  position: relative;
+  z-index: 1;
+  margin-top: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 18px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.72);
+  border: 1px solid rgba(228, 232, 244, 0.95);
+  color: #7c3aed;
+  font-size: 15px;
+  font-weight: 700;
+  box-shadow:
+    0 8px 24px rgba(15, 23, 42, 0.04),
+    inset 0 1px 0 rgba(255,255,255,0.45);
+}
+
+@keyframes b2bMobileOverlayFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes b2bMobileSpinnerSpin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes b2bMobileSpinnerSpinReverse {
+  to { transform: rotate(-360deg); }
+}
+
+@keyframes b2bMobileProgressSweep {
+  0% {
+    transform: translateX(-40%);
+    width: 24%;
+  }
+  50% {
+    transform: translateX(118%);
+    width: 42%;
+  }
+  100% {
+    transform: translateX(-40%);
+    width: 24%;
+  }
+}
+
+@media (max-width: 420px) {
+  .b2b-mobile-loading-panel {
+    padding:
+      max(env(safe-area-inset-top), 22px)
+      24px
+      max(env(safe-area-inset-bottom), 28px);
+  }
+
+  .b2b-mobile-loading-brand {
+    margin-top: 56px;
+  }
+
+  .b2b-mobile-loading-logo {
+    width: 86px;
+    height: 86px;
+    border-radius: 24px;
+    font-size: 38px;
+  }
+
+  .b2b-mobile-loading-brand-title {
+    font-size: 30px;
+  }
+
+  .b2b-mobile-loading-spinner-wrap {
+    margin-top: 84px;
+  }
+
+  .b2b-mobile-loading-copy-title {
+    font-size: 18px;
+  }
+
+  .b2b-mobile-loading-copy-desc {
+    font-size: 14px;
+  }
+
+  .b2b-mobile-loading-badge {
+    font-size: 14px;
+    padding: 11px 16px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .b2b-mobile-loading-screen,
+  .b2b-mobile-loading-spinner-ring,
+  .b2b-mobile-loading-progress-bar {
+    animation: none !important;
+    transition: none !important;
+  }
+}

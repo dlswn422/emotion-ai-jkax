@@ -296,7 +296,51 @@ export const B2BReportPage = defineComponent({
     <NavBar page="b2b-report"/>
     <AlertPanel/>
     <DateModal v-model="showPeriodModal" @confirm="onPeriodConfirm"/>
+    # 모바일 로딩창
+    <div
+      v-if="loading && isMobileStackMode"
+      class="b2b-mobile-loading-screen"
+      aria-live="polite"
+      aria-busy="true"
+    >
+      <div class="b2b-mobile-loading-panel">
+        <div class="b2b-mobile-loading-grid"></div>
 
+        <div class="b2b-mobile-loading-brand">
+          <div class="b2b-mobile-loading-logo">cx</div>
+          <div class="b2b-mobile-loading-brand-title">
+            <span>CX</span>넥서스
+          </div>
+          <div class="b2b-mobile-loading-brand-sub">JKAX 제작</div>
+        </div>
+
+        <div class="b2b-mobile-loading-spinner-wrap" aria-hidden="true">
+          <div class="b2b-mobile-loading-spinner">
+            <span class="b2b-mobile-loading-spinner-dot"></span>
+            <span class="b2b-mobile-loading-spinner-ring ring-a"></span>
+            <span class="b2b-mobile-loading-spinner-ring ring-b"></span>
+            <span class="b2b-mobile-loading-spinner-ring ring-c"></span>
+          </div>
+        </div>
+
+        <div class="b2b-mobile-loading-copy">
+          <div class="b2b-mobile-loading-copy-title">대시보드 데이터를 분석 중입니다</div>
+          <div class="b2b-mobile-loading-copy-desc">잠시만 기다려주세요</div>
+        </div>
+
+        <div class="b2b-mobile-loading-progress" aria-hidden="true">
+          <span class="b2b-mobile-loading-progress-bar"></span>
+        </div>
+
+        <div class="b2b-mobile-loading-badge">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path d="M12 3l7 4v5c0 5-3.5 8-7 9-3.5-1-7-4-7-9V7l7-4z"/>
+            <path d="M9 12l2 2 4-4"/>
+          </svg>
+          안전한 분석 환경
+        </div>
+      </div>
+    </div>
     <div class="report-shell">
       <div class="report-layout">
 
@@ -354,7 +398,7 @@ export const B2BReportPage = defineComponent({
 
         <div class="report-content" style="position:relative">
           <div
-            v-if="loading"
+            v-if="loading && !isMobileStackMode"
             :class="['b2b-report-loading', 'tone-' + loadingTheme.tone]"
             aria-live="polite"
             aria-busy="true"
