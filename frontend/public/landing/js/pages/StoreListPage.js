@@ -23,11 +23,7 @@ export const StoreListPage = defineComponent({
 
     // 안드로이드 기기 여부
     function isAndroidDevice() {
-      const ua = navigator.userAgent || "";
-      const isAndroid = /Android/i.test(ua);
-      const isWebView = /; wv\b| wv\)/i.test(ua);
-
-      return isAndroid && isWebView;
+      return /Android/i.test(navigator.userAgent || "");
     }
 
     // 기업 목록만 추출
