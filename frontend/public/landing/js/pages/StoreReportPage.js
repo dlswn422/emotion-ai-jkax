@@ -43,6 +43,14 @@ export const StoreReportPage = defineComponent({
     const viewportWidth = ref(window.innerWidth);
     const isMobileStackMode = computed(() => viewportWidth.value <= 600);
 
+    // 로딩 테마
+    const LOADING_THEME = {
+      tone: "external",
+      kicker: "AI REVIEW ANALYSIS",
+      title: "보고서 생성 중",
+      desc: "AI가 리뷰 데이터를 분석하고 있습니다.",
+    };
+
     function handleResize() {
       viewportWidth.value = window.innerWidth;
     }
@@ -856,6 +864,7 @@ export const StoreReportPage = defineComponent({
       viewportWidth,
       isMobileStackMode,
       isVisible,
+      loadingTheme: LOADING_THEME,
     };
   },
 
@@ -1518,13 +1527,45 @@ export const StoreReportPage = defineComponent({
           </div>
 
           <!-- 로딩 상태 -->
-          <div v-if="loading" class="report-content">
-            <div class="loading-overlay">
-              <div class="loader"></div>
-              <p class="loader-text">AI가 리뷰 데이터를 분석하고 있습니다...</p>
+          <div
+            v-if="loading"
+            class="report-content"
+            style="position:relative; min-height:calc(100vh - 120px);"
+          >
+            <div
+              :class="['b2b-report-loading', 'tone-' + loadingTheme.tone]"
+              aria-live="polite"
+              aria-busy="true"
+            >
+              <div class="b2b-report-loading-backdrop-grid"></div>
+
+              <div class="b2b-report-loading-anchor">
+                <div class="b2b-report-loading-beam"></div>
+
+                <div class="b2b-report-loading-orb" aria-hidden="true">
+                  <span class="b2b-report-loading-halo halo-outer"></span>
+                  <span class="b2b-report-loading-halo halo-inner"></span>
+
+                  <span class="b2b-report-loading-ring ring-primary"></span>
+                  <span class="b2b-report-loading-ring ring-secondary"></span>
+                  <span class="b2b-report-loading-ring ring-tertiary"></span>
+
+                  <span class="b2b-report-loading-core"></span>
+                  <span class="b2b-report-loading-core-gloss"></span>
+
+                  <span class="b2b-report-loading-particle particle-a"></span>
+                  <span class="b2b-report-loading-particle particle-b"></span>
+                  <span class="b2b-report-loading-particle particle-c"></span>
+                </div>
+
+                <div class="b2b-report-loading-copy">
+                  <div class="b2b-report-loading-kicker">{{ loadingTheme.kicker }}</div>
+                  <div class="b2b-report-loading-title">{{ loadingTheme.title }}</div>
+                  <div class="b2b-report-loading-desc">{{ loadingTheme.desc }}</div>
+                </div>
+              </div>
             </div>
           </div>
-        </div>
       </div>
     </div>
   `,
