@@ -21,9 +21,9 @@ export const StoreListPage = defineComponent({
     const showModal = ref(false);
     const selectedStore = ref(null);
 
-    // 안드로이드 기기 여부
+    // 안드로이드 앱 여부
     function isAndroidDevice() {
-      return /Android/i.test(navigator.userAgent || "");
+      return window.__ANDROID_APP__ === true;
     }
 
     // 기업 목록만 추출
