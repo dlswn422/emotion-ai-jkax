@@ -17,7 +17,23 @@
     width: 100%;
     overflow-x: hidden;
   }
+  .cdt-kw-table-desktop {
+    display: none !important;
+  }
 
+  .cdt-kw-mobile-list {
+    display: block !important;
+  }
+
+  .r-card:has(.cdt-kw-mobile-list) .r-card-body {
+    overflow: visible !important;
+    padding-bottom: 16px;
+  }
+
+  .cdt-kw-table {
+    min-width: 0 !important;
+    width: 100% !important;
+  }
   .page-body,
   .report-layout,
   .hero-section,
@@ -1184,7 +1200,23 @@
     width: 100%;
     overflow-x: hidden;
   }
+  .cdt-kw-table-desktop {
+    display: none !important;
+  }
 
+  .cdt-kw-mobile-list {
+    display: block !important;
+  }
+
+  .r-card:has(.cdt-kw-mobile-list) .r-card-body {
+    overflow: visible !important;
+    padding-bottom: 16px;
+  }
+
+  .cdt-kw-table {
+    min-width: 0 !important;
+    width: 100% !important;
+  }
   .landing-wrap,
   .page-shell,
   .report-shell,

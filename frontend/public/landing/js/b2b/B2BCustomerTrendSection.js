@@ -27,6 +27,14 @@ export const B2BCustomerTrendSection = defineComponent({
     const kwChartMode = ref("rank");
     const prospectFilter = ref("");
 
+    // 반응형 여부
+    const viewportWidth = ref(window.innerWidth);
+    const isMobileKeywordCard = computed(() => viewportWidth.value <= 600);
+
+    function handleResize() {
+      viewportWidth.value = window.innerWidth;
+    }
+
     // 실데이터 저장 상태
     const signalKeywords = ref([]);
     const prospects = ref([]);
@@ -74,6 +82,19 @@ export const B2BCustomerTrendSection = defineComponent({
           active: row.active,
         })),
     );
+
+    // 신호 강도 포맷터
+    function formatSignalLevel(level) {
+      const normalized = String(level || "medium").toLowerCase();
+      if (normalized === "high") return "HIGH";
+      if (normalized === "medium") return "MEDIUM";
+      return "LOW";
+    }
+
+    function formatLastHit(lastHit) {
+      if (!lastHit) return "최근 탐지 없음";
+      return `최근 탐지 ${lastHit}`;
+    }
 
     // 고객 후보 필터링
     const filteredProspects = computed(() => {
@@ -385,6 +406,8 @@ export const B2BCustomerTrendSection = defineComponent({
 
     // 최초 진입 시 데이터 로드
     onMounted(async () => {
+      window.addEventListener("resize", handleResize);
+
       await loadCustomerTrend();
       await nextTick();
       if (kwChartMode.value === "daily") await buildKwDailyChart();
@@ -393,6 +416,7 @@ export const B2BCustomerTrendSection = defineComponent({
 
     // 화면 이탈 시 차트 정리
     onUnmounted(() => {
+      window.removeEventListener("resize", handleResize);
       destroyChart(kwDailyChartInst);
       destroyChart(kwMonthlyChartInst);
     });
@@ -407,6 +431,9 @@ export const B2BCustomerTrendSection = defineComponent({
       filteredProspects,
       dailyTrend,
       dailyLegendRows,
+      formatSignalLevel,
+      formatLastHit,
+      isMobileKeywordCard,
     };
   },
 
@@ -490,80 +517,146 @@ export const B2BCustomerTrendSection = defineComponent({
             Admin에서 시그널 키워드를 등록하세요
           </div>
 
-          <table v-else class="cdt-kw-table">
-            <colgroup>
-              <col />
-              <col />
-              <col />
-              <col />
-              <col />
-              <col />
-            </colgroup>
+          <template v-else>
 
-            <thead>
-              <tr>
-                <th>#</th>
-                <th>키워드</th>
-                <th>유형</th>
-                <th>강도</th>
-                <th>히트수</th>
-                <th>최근 탐지</th>
-              </tr>
-            </thead>
 
-            <tbody>
-              <tr
+
+
+          <template v-if="isMobileKeywordCard">
+            <!-- 모바일 카드 -->
+            <div class="cdt-kw-mobile-list">
+              <div
                 v-for="(kw, idx) in externalKeywordRows.slice(0, 10)"
-                :key="kw._id || kw.keyword || idx"
-                :class="['cdt-kw-row', kw.active === false ? 'cdt-kw-inactive' : '']"
+                :key="'mobile-' + (kw._id || kw.keyword || idx)"
+                class="cdt-kw-mobile-card"
               >
-                <td>{{ idx + 1 }}</td>
+                <div class="cdt-kw-mobile-top">
+                  <div class="cdt-kw-mobile-rank">{{ idx + 1 }}</div>
 
-                <td>
                   <span class="cdt-kw-chip" :class="'cdt-kw-' + kw.signal_level">
                     {{ kw.keyword }}
                   </span>
-                </td>
 
-                <td>
-                  <span class="cdt-type-tag">{{ kw.kw_type || '이벤트' }}</span>
-                </td>
-
-                <td>
-                  <span
-                    class="cdt-signal-dot"
-                    :class="'cdt-sig-' + kw.signal_level"
-                  ></span>
-                  <span
-                    :style="{
-                      fontSize: '11px',
-                      fontWeight: '700',
-                      color:
+                  <div class="cdt-kw-mobile-level">
+                    <span
+                      class="cdt-signal-dot"
+                      :class="'cdt-sig-' + kw.signal_level"
+                    ></span>
+                    <span
+                      :style="{
+                        fontSize: '11px',
+                        fontWeight: '700',
+                        color:
+                          kw.signal_level === 'high'
+                            ? '#f43f5e'
+                            : kw.signal_level === 'medium'
+                            ? '#f59e0b'
+                            : '#94a3b8'
+                      }"
+                    >
+                      {{
                         kw.signal_level === 'high'
-                          ? '#f43f5e'
+                          ? 'HIGH'
                           : kw.signal_level === 'medium'
-                          ? '#f59e0b'
-                          : '#94a3b8'
-                    }"
-                  >
-                    {{
-                      kw.signal_level === 'high'
-                        ? 'HIGH'
-                        : kw.signal_level === 'medium'
-                        ? 'MED'
-                        : 'LOW'
-                    }}
+                          ? 'MED'
+                          : 'LOW'
+                      }}
+                    </span>
+                  </div>
+                </div>
+
+                <div class="cdt-kw-mobile-meta">
+                  <div class="cdt-kw-mobile-meta-left">
+                    <span class="cdt-type-tag">{{ kw.kw_type || '이벤트' }}</span>
+                    <span class="cdt-hit-badge">히트 {{ kw.hit_count || 0 }}</span>
+                  </div>
+
+                  <span class="cdt-kw-mobile-date">
+                    최근 탐지 {{ kw.last_hit || '—' }}
                   </span>
-                </td>
+                </div>
+              </div>
+            </div>
+          </template>
 
-                <td>
-                  <span class="cdt-hit-badge">{{ kw.hit_count || 0 }}</span>
-                </td>
+          <template v-else>
+            <!-- PC 테이블 -->
+            <table class="cdt-kw-table cdt-kw-table-desktop">
+              <colgroup>
+                <col />
+                <col />
+                <col />
+                <col />
+                <col />
+                <col />
+              </colgroup>
 
-                <td>{{ kw.last_hit || '—' }}</td>
-              </tr>
-            </tbody>
-          </table>
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>키워드</th>
+                  <th>유형</th>
+                  <th>강도</th>
+                  <th>히트수</th>
+                  <th>최근 탐지</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                <tr
+                  v-for="(kw, idx) in externalKeywordRows.slice(0, 10)"
+                  :key="kw._id || kw.keyword || idx"
+                  :class="['cdt-kw-row', kw.active === false ? 'cdt-kw-inactive' : '']"
+                >
+                  <td>{{ idx + 1 }}</td>
+
+                  <td>
+                    <span class="cdt-kw-chip" :class="'cdt-kw-' + kw.signal_level">
+                      {{ kw.keyword }}
+                    </span>
+                  </td>
+
+                  <td>
+                    <span class="cdt-type-tag">{{ kw.kw_type || '이벤트' }}</span>
+                  </td>
+
+                  <td>
+                    <span
+                      class="cdt-signal-dot"
+                      :class="'cdt-sig-' + kw.signal_level"
+                    ></span>
+                    <span
+                      :style="{
+                        fontSize: '11px',
+                        fontWeight: '700',
+                        color:
+                          kw.signal_level === 'high'
+                            ? '#f43f5e'
+                            : kw.signal_level === 'medium'
+                            ? '#f59e0b'
+                            : '#94a3b8'
+                      }"
+                    >
+                      {{
+                        kw.signal_level === 'high'
+                          ? 'HIGH'
+                          : kw.signal_level === 'medium'
+                          ? 'MED'
+                          : 'LOW'
+                      }}
+                    </span>
+                  </td>
+
+                  <td>
+                    <span class="cdt-hit-badge">{{ kw.hit_count || 0 }}</span>
+                  </td>
+
+                  <td>{{ kw.last_hit || '—' }}</td>
+                </tr>
+              </tbody>
+            </table>
+            </template>
+          </template>
         </template>
 
         <template v-else-if="kwChartMode==='daily'">
