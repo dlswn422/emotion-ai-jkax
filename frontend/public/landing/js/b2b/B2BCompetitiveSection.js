@@ -13,7 +13,7 @@ import { fetchDashboardCompetitorAnalysis } from "../api/dashboardCompetitorAnal
 
 export const B2BCompetitiveSection = defineComponent({
   name: "B2BCompetitiveSection",
-  emits: ["loading-change"],
+  emits: ["loading-progress"],
 
   props: {
     tenantId: { type: [String, Number], required: true },
@@ -22,6 +22,14 @@ export const B2BCompetitiveSection = defineComponent({
   },
 
   setup(props, { emit }) {
+    function emitProgress(progress, stage, loading = true) {
+      emit("loading-progress", {
+        tabId: "competitive",
+        loading,
+        progress,
+        stage,
+      });
+    }
     // 화면 토글 상태
     const compChartMode = ref("rank");
     const compDetailFilter = ref("all");
@@ -275,14 +283,18 @@ export const B2BCompetitiveSection = defineComponent({
 
     // API 호출부
     async function loadCompetitorAnalysis() {
-      emit("loading-change", true);
+      emitProgress(8, "경쟁사 이슈 데이터를 준비하는 중...");
 
       try {
+        emitProgress(18, "경쟁사 분석 API를 조회하는 중...");
+
         const result = await fetchDashboardCompetitorAnalysis(
           props.tenantId,
           props.analysisPeriod?.start,
           props.analysisPeriod?.end,
         );
+
+        emitProgress(55, "이슈 소스와 키워드를 정리하는 중...");
 
         issueSources.value = Array.isArray(result?.issueSources)
           ? result.issueSources
@@ -290,22 +302,38 @@ export const B2BCompetitiveSection = defineComponent({
         issueKeywords.value = Array.isArray(result?.issueKeywords)
           ? result.issueKeywords
           : [];
+
+        await nextTick();
+
+        emitProgress(82, "차트 데이터를 구성하는 중...");
+
+        if (compChartMode.value === "daily") {
+          await buildCompIssueDailyChart();
+        }
+
+        if (compChartMode.value === "monthly") {
+          await buildCompIssueMonthlyChart();
+        }
+
+        emitProgress(95, "화면에 반영하는 중...");
+
+        emit("loading-progress", {
+          tabId: "competitive",
+          loading: false,
+          progress: 100,
+          stage: "완료",
+        });
       } catch (error) {
         console.error(error);
         issueSources.value = [];
         issueKeywords.value = [];
-      } finally {
-        emit("loading-change", false);
-      }
 
-      await nextTick();
-
-      if (compChartMode.value === "daily") {
-        await buildCompIssueDailyChart();
-      }
-
-      if (compChartMode.value === "monthly") {
-        await buildCompIssueMonthlyChart();
+        emit("loading-progress", {
+          tabId: "competitive",
+          loading: false,
+          progress: 100,
+          stage: "오류로 종료됨",
+        });
       }
     }
 

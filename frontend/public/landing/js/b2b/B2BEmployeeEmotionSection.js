@@ -1,16 +1,17 @@
-const { defineComponent, computed } = Vue;
+const { defineComponent, computed, watch, onMounted } = Vue;
 
 import { B2B_EMPLOYEE_EMOTION_MOCK } from '../data/B2BEmployeeEmotionMock.js';
 
 export const B2BEmployeeEmotionSection = defineComponent({
   name: 'B2BEmployeeEmotionSection',
+  emits: ["loading-progress"],
 
   props: {
     compId: { type: String, required: true },
     analysisPeriod: { type: Object, required: false, default: () => ({}) },
   },
 
-  setup(props) {
+  setup(props, { emit }) {
     
     const report = computed(
       () =>
@@ -50,7 +51,41 @@ export const B2BEmployeeEmotionSection = defineComponent({
     function starsFillCount(val) {
       return Math.round(Number(val || 0));
     }
+    function emitProgress(progress, stage, loading = true) {
+      emit("loading-progress", {
+        tabId: "internal",
+        loading,
+        progress,
+        stage,
+      });
+    }
 
+    function runMockLoading() {
+      emitProgress(15, "직원 감정 데이터를 준비하는 중...");
+
+      requestAnimationFrame(() => {
+        emitProgress(55, "잡플래닛 지표를 계산하는 중...");
+
+        requestAnimationFrame(() => {
+          emit("loading-progress", {
+            tabId: "internal",
+            loading: false,
+            progress: 100,
+            stage: "완료",
+          });
+        });
+      });
+    }
+    onMounted(() => {
+      runMockLoading();
+    });
+
+    watch(
+      () => [props.compId, props.analysisPeriod?.start, props.analysisPeriod?.end],
+      () => {
+        runMockLoading();
+      },
+    );
     return {
       report,
       avgScore,

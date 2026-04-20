@@ -14,7 +14,7 @@ import { fetchDashboardCustomerTrend } from "../api/dashboardCustomerTrend.js";
 
 export const B2BCustomerTrendSection = defineComponent({
   name: "B2BCustomerTrendSection",
-  emits: ["loading-change"],
+  emits: ["loading-progress"],
 
   props: {
     tenantId: { type: [String, Number], required: true },
@@ -23,6 +23,14 @@ export const B2BCustomerTrendSection = defineComponent({
   },
 
   setup(props, { emit }) {
+    function emitProgress(progress, stage, loading = true) {
+      emit("loading-progress", {
+        tabId: "external",
+        loading,
+        progress,
+        stage,
+      });
+    }
     // 화면 토글 상태
     const kwChartMode = ref("rank");
     const prospectFilter = ref("");
@@ -325,14 +333,18 @@ export const B2BCustomerTrendSection = defineComponent({
 
     // API 호출부
     async function loadCustomerTrend() {
-      emit("loading-change", true);
+      emitProgress(8, "고객 동향 데이터를 준비하는 중...");
 
       try {
+        emitProgress(18, "고객 동향 API를 조회하는 중...");
+
         const result = await fetchDashboardCustomerTrend(
           props.tenantId,
           props.analysisPeriod?.start,
           props.analysisPeriod?.end,
         );
+
+        emitProgress(55, "시그널 키워드와 고객 후보를 정리하는 중...");
 
         signalKeywords.value = Array.isArray(result?.signalKeywords)
           ? result.signalKeywords
@@ -349,14 +361,35 @@ export const B2BCustomerTrendSection = defineComponent({
         monthlyTrend.value = Array.isArray(result?.monthlyTrend)
           ? result.monthlyTrend
           : [];
+
+        await nextTick();
+
+        emitProgress(82, "차트 데이터를 구성하는 중...");
+
+        if (kwChartMode.value === "daily") await buildKwDailyChart();
+        if (kwChartMode.value === "monthly") await buildKwMonthlyChart();
+
+        emitProgress(95, "화면에 반영하는 중...");
+
+        emit("loading-progress", {
+          tabId: "external",
+          loading: false,
+          progress: 100,
+          stage: "완료",
+        });
       } catch (e) {
         console.error(e);
         signalKeywords.value = [];
         prospects.value = [];
         dailyTrend.value = [];
         monthlyTrend.value = [];
-      } finally {
-        emit("loading-change", false);
+
+        emit("loading-progress", {
+          tabId: "external",
+          loading: false,
+          progress: 100,
+          stage: "오류로 종료됨",
+        });
       }
     }
 
@@ -376,19 +409,12 @@ export const B2BCustomerTrendSection = defineComponent({
       ],
       async () => {
         await loadCustomerTrend();
-        await nextTick();
-
-        if (kwChartMode.value === "daily") await buildKwDailyChart();
-        if (kwChartMode.value === "monthly") await buildKwMonthlyChart();
       },
     );
 
     // 최초 진입 시 데이터 로드
     onMounted(async () => {
       await loadCustomerTrend();
-      await nextTick();
-      if (kwChartMode.value === "daily") await buildKwDailyChart();
-      if (kwChartMode.value === "monthly") await buildKwMonthlyChart();
     });
 
     // 화면 이탈 시 차트 정리

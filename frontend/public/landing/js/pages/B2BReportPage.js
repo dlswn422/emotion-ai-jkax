@@ -100,8 +100,10 @@ export const B2BReportPage = defineComponent({
     );
 
     const loading = ref(false);
-    const loadingCount = ref(0);
     const loadingSource = ref("external");
+    const loadingProgress = ref(0);
+    const loadingStage = ref("데이터를 준비하고 있습니다.");
+    const loadingHideTimer = ref(null);
     const activeTab = ref("external");
     const showPeriodModal = ref(false);
 
@@ -130,28 +132,66 @@ export const B2BReportPage = defineComponent({
       () => LOADING_THEMES[loadingSource.value] || LOADING_THEMES.external,
     );
 
-    function setSectionLoading(payload) {
-      const next =
-        typeof payload === "object" && payload !== null
-          ? payload.loading
-          : payload;
+    function clampProgress(value) {
+      const n = Number(value);
+      if (!Number.isFinite(n)) return 0;
+      return Math.max(0, Math.min(100, n));
+    }
 
-      const nextTabId =
-        typeof payload === "object" && payload !== null
-          ? payload.tabId
-          : null;
+    function clearLoadingHideTimer() {
+      if (loadingHideTimer.value) {
+        clearTimeout(loadingHideTimer.value);
+        loadingHideTimer.value = null;
+      }
+    }
 
-      if (nextTabId && LOADING_THEMES[nextTabId]) {
-        loadingSource.value = nextTabId;
+    /**
+     * payload 예시:
+     * { tabId: "external", loading: true, progress: 15, stage: "신호 데이터 조회 중..." }
+     * { tabId: "external", loading: true, progress: 65, stage: "키워드 통계 계산 중..." }
+     * { tabId: "external", loading: false, progress: 100, stage: "완료" }
+     */
+    function setSectionProgress(payload) {
+      if (!payload || typeof payload !== "object") return;
+
+      const { tabId, loading: isLoading, progress, stage } = payload;
+
+      if (tabId && LOADING_THEMES[tabId]) {
+        loadingSource.value = tabId;
       }
 
-      if (next) {
-        loadingCount.value += 1;
-      } else {
-        loadingCount.value = Math.max(0, loadingCount.value - 1);
+      if (typeof stage === "string" && stage.trim()) {
+        loadingStage.value = stage.trim();
       }
 
-      loading.value = loadingCount.value > 0;
+      if (typeof isLoading === "boolean" && isLoading) {
+        clearLoadingHideTimer();
+        loading.value = true;
+
+        if (typeof progress === "number") {
+          loadingProgress.value = clampProgress(progress);
+        } else if (loadingProgress.value === 0) {
+          loadingProgress.value = 8;
+        }
+        return;
+      }
+
+      if (typeof progress === "number") {
+        loadingProgress.value = clampProgress(progress);
+      }
+
+      if (typeof isLoading === "boolean" && !isLoading) {
+        loadingProgress.value = 100;
+        loadingStage.value = "완료";
+
+        clearLoadingHideTimer();
+        loadingHideTimer.value = setTimeout(() => {
+          loading.value = false;
+          loadingProgress.value = 0;
+          loadingStage.value = "데이터를 준비하고 있습니다.";
+          loadingHideTimer.value = null;
+        }, 180);
+      }
     }
 
     // 600px 이하에서는 상위 탭 대신 세로 스택 모드
@@ -265,6 +305,7 @@ export const B2BReportPage = defineComponent({
 
     onUnmounted(() => {
       window.removeEventListener("resize", handleResize);
+      clearLoadingHideTimer();
     });
 
     return {
@@ -272,6 +313,8 @@ export const B2BReportPage = defineComponent({
       company,
       report,
       loading,
+      loadingProgress,
+      loadingStage,
       activeTab,
       B2B_TABS,
       periodType,
@@ -286,7 +329,7 @@ export const B2BReportPage = defineComponent({
       isMobileStackMode,
       isVisibleTab,
       analysisPeriod,
-      setSectionLoading,
+      setSectionProgress,
       loadingTheme,
     };
   },
@@ -296,6 +339,7 @@ export const B2BReportPage = defineComponent({
     <NavBar page="b2b-report"/>
     <AlertPanel/>
     <DateModal v-model="showPeriodModal" @confirm="onPeriodConfirm"/>
+
     <div
       v-if="loading && isMobileStackMode"
       class="b2b-mobile-loading-screen"
@@ -327,8 +371,22 @@ export const B2BReportPage = defineComponent({
           <div class="b2b-mobile-loading-copy-desc">잠시만 기다려주세요</div>
         </div>
 
-        <div class="b2b-mobile-loading-progress" aria-hidden="true">
-          <span class="b2b-mobile-loading-progress-bar"></span>
+        <div class="b2b-mobile-loading-progress">
+          <span class="b2b-mobile-loading-progress-bar">
+            <span
+              class="b2b-mobile-loading-progress-fill"
+              :style="{ width: loadingProgress + '%' }"
+            ></span>
+          </span>
+
+          <div class="b2b-mobile-loading-progress-meta">
+            <span>PROCESSING DATA</span>
+            <span>{{ Math.round(loadingProgress) }}%</span>
+          </div>
+
+          <div class="b2b-mobile-loading-progress-stage">
+            {{ loadingStage }}
+          </div>
         </div>
 
         <div class="b2b-mobile-loading-badge">
@@ -340,6 +398,87 @@ export const B2BReportPage = defineComponent({
         </div>
       </div>
     </div>
+
+    <div
+      v-if="loading && !isMobileStackMode"
+      :class="['b2b-report-loading', 'tone-' + loadingTheme.tone]"
+      aria-live="polite"
+      aria-busy="true"
+    >
+      <div class="b2b-report-loading-backdrop-grid"></div>
+
+      <div class="b2b-report-loading-anchor">
+        <div class="b2b-report-signal-card">
+          <div class="b2b-report-signal-scan" aria-hidden="true"></div>
+
+          <div class="b2b-report-signal-orbit" aria-hidden="true">
+            <span class="b2b-report-signal-orbit-ring ring-main"></span>
+            <span class="b2b-report-signal-orbit-ring ring-soft"></span>
+
+            <span class="b2b-report-signal-orbit-dot dot-blue"></span>
+            <span class="b2b-report-signal-orbit-dot dot-green"></span>
+            <span class="b2b-report-signal-orbit-dot dot-purple"></span>
+
+            <span class="b2b-report-signal-core">
+              <span class="b2b-report-signal-core-disc"></span>
+              <span class="b2b-report-signal-core-wave wave-1"></span>
+              <span class="b2b-report-signal-core-wave wave-2"></span>
+              <span class="b2b-report-signal-core-wave wave-3"></span>
+            </span>
+          </div>
+
+          <div class="b2b-report-signal-kicker">{{ loadingTheme.kicker }}</div>
+
+          <div class="b2b-report-signal-title-row">
+            <div class="b2b-report-signal-title">{{ loadingTheme.title }}</div>
+            <div class="b2b-report-signal-title-dots" aria-hidden="true">
+              <span></span><span></span>
+            </div>
+          </div>
+
+          <div class="b2b-report-signal-desc">{{ loadingTheme.desc }}</div>
+
+          <div class="b2b-report-signal-progress">
+            <div class="b2b-report-signal-progress-bar">
+              <span
+                class="b2b-report-signal-progress-fill"
+                :style="{ width: loadingProgress + '%' }"
+              ></span>
+            </div>
+
+            <div class="b2b-report-signal-progress-meta">
+              <span class="b2b-report-signal-progress-label">PROCESSING DATA</span>
+              <span class="b2b-report-signal-progress-value">{{ Math.round(loadingProgress) }}%</span>
+            </div>
+
+            <div class="b2b-report-signal-progress-stage">
+              {{ loadingStage }}
+            </div>
+          </div>
+
+          <div class="b2b-report-signal-footer">
+            <span class="b2b-report-signal-footer-item">
+              <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path d="M12 3l7 4v5c0 5-3.5 8-7 9-3.5-1-7-4-7-9V7l7-4z"/>
+                <path d="M9 12l2 2 4-4"/>
+              </svg>
+              보안 프로토콜 활성화됨
+            </span>
+
+            <span class="b2b-report-signal-footer-divider"></span>
+
+            <span class="b2b-report-signal-footer-item">
+              <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <circle cx="12" cy="12" r="9"/>
+                <path d="M12 7v5l3 2"/>
+              </svg>
+              예상 소요 시간: 3초
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <div class="report-shell">
       <div class="report-layout">
 
@@ -396,254 +535,184 @@ export const B2BReportPage = defineComponent({
         </aside>
 
         <div class="report-content" style="position:relative">
-          <div
-            v-if="loading && !isMobileStackMode"
-            :class="['b2b-report-loading', 'tone-' + loadingTheme.tone]"
-            aria-live="polite"
-            aria-busy="true"
-          >
-            <div class="b2b-report-loading-backdrop-grid"></div>
-
-            <div class="b2b-report-loading-anchor">
-              <div class="b2b-report-signal-card">
-                <div class="b2b-report-signal-orbit" aria-hidden="true">
-                  <span class="b2b-report-signal-orbit-ring ring-main"></span>
-                  <span class="b2b-report-signal-orbit-ring ring-soft"></span>
-
-                  <span class="b2b-report-signal-orbit-dot dot-blue"></span>
-                  <span class="b2b-report-signal-orbit-dot dot-green"></span>
-                  <span class="b2b-report-signal-orbit-dot dot-purple"></span>
-
-                  <span class="b2b-report-signal-core">
-                    <span class="b2b-report-signal-core-disc"></span>
-                    <span class="b2b-report-signal-core-wave wave-1"></span>
-                    <span class="b2b-report-signal-core-wave wave-2"></span>
-                    <span class="b2b-report-signal-core-wave wave-3"></span>
+          <main :class="{ 'b2b-report-main-loading': loading }">
+            <div class="store-banner b2b-company-banner">
+              <div class="b2b-banner-logo" :style="{background:company.logoBg,color:company.logoColor}">
+                {{company.logo}}
+              </div>
+              <div class="sb-info">
+                <div class="sb-name">{{company.name}}</div>
+                <div class="sb-meta">
+                  <span class="sb-chip sb-chip-active">
+                    <svg width="6" height="6" viewBox="0 0 6 6" fill="currentColor"><circle cx="3" cy="3" r="3"/></svg>
+                    Active
                   </span>
-                </div>
-
-                <div class="b2b-report-signal-kicker">{{ loadingTheme.kicker }}</div>
-
-                <div class="b2b-report-signal-title-row">
-                  <div class="b2b-report-signal-title">{{ loadingTheme.title }}</div>
-                  <div class="b2b-report-signal-title-dots" aria-hidden="true">
-                    <span></span><span></span>
-                  </div>
-                </div>
-
-                <div class="b2b-report-signal-desc">{{ loadingTheme.desc }}</div>
-
-                <div class="b2b-report-signal-progress">
-                  <div class="b2b-report-signal-progress-bar">
-                    <span class="b2b-report-signal-progress-fill"></span>
-                  </div>
-
-                  <div class="b2b-report-signal-progress-meta">
-                    <span class="b2b-report-signal-progress-label">PROCESSING DATA</span>
-                    <span class="b2b-report-signal-progress-value">74%</span>
-                  </div>
-                </div>
-
-                <div class="b2b-report-signal-footer">
-                  <span class="b2b-report-signal-footer-item">
-                    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                      <path d="M12 3l7 4v5c0 5-3.5 8-7 9-3.5-1-7-4-7-9V7l7-4z"/>
-                      <path d="M9 12l2 2 4-4"/>
-                    </svg>
-                    보안 프로토콜 활성화됨
+                  <span class="sb-chip">{{company.industry}}</span>
+                  <span class="sb-chip">{{company.size}}</span>
+                  <span class="sb-chip">{{company.country}}</span>
+                  <span class="sb-chip" :style="{color:company.hasOwnReview?'#10b981':'#94a3b8'}">
+                    {{company.hasOwnReview ? '자사리뷰 연동됨' : '자사리뷰 미설정'}}
                   </span>
-
-                  <span class="b2b-report-signal-footer-divider"></span>
-
-                  <span class="b2b-report-signal-footer-item">
-                    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                      <circle cx="12" cy="12" r="9"/>
-                      <path d="M12 7v5l3 2"/>
-                    </svg>
-                    예상 소요 시간: 3초
+                  <template v-if="company.id==='shinilpharm'">
+                    <span class="sb-chip" style="color:#0369a1">ISO 15378 인증</span>
+                    <span class="sb-chip" style="color:#7c3aed">수출 40개국+</span>
+                  </template>
+                  <span class="sb-chip" style="color:#6366f1;font-weight:700">
+                    {{ periodLabel }}
                   </span>
                 </div>
               </div>
-            </div>
-          </div>
-
-  <main :class="{ 'b2b-report-main-loading': loading }">
-          <div class="store-banner b2b-company-banner">
-            <div class="b2b-banner-logo" :style="{background:company.logoBg,color:company.logoColor}">
-              {{company.logo}}
-            </div>
-            <div class="sb-info">
-              <div class="sb-name">{{company.name}}</div>
-              <div class="sb-meta">
-                <span class="sb-chip sb-chip-active">
-                  <svg width="6" height="6" viewBox="0 0 6 6" fill="currentColor"><circle cx="3" cy="3" r="3"/></svg>
-                  Active
-                </span>
-                <span class="sb-chip">{{company.industry}}</span>
-                <span class="sb-chip">{{company.size}}</span>
-                <span class="sb-chip">{{company.country}}</span>
-                <span class="sb-chip" :style="{color:company.hasOwnReview?'#10b981':'#94a3b8'}">
-                  {{company.hasOwnReview ? '자사리뷰 연동됨' : '자사리뷰 미설정'}}
-                </span>
-                <template v-if="company.id==='shinilpharm'">
-                  <span class="sb-chip" style="color:#0369a1">ISO 15378 인증</span>
-                  <span class="sb-chip" style="color:#7c3aed">수출 40개국+</span>
-                </template>
-                <span class="sb-chip" style="color:#6366f1;font-weight:700">
-                  {{ periodLabel }}
-                </span>
-              </div>
-            </div>
-            <div class="sb-actions">
-              <button class="sb-btn sb-btn-glass" @click="router.push('/B2B')">
-                <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                  <path d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/>
-                </svg>
-                기업 변경
-              </button>
-              <button class="sb-btn sb-btn-glass" @click="showPeriodModal=true">
-                <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                  <rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>
-                </svg>
-                기간 변경
-              </button>
-              <button class="sb-btn sb-btn-solid" @click="printReport">
-                <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                  <path d="M12 10v6m0 0l-3-3m3 3l3-3M3 17V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
-                </svg>
-                PDF 출력
-              </button>
-            </div>
-          </div>
-
-          <template v-if="isVisibleTab('external')">
-            <div v-if="isMobileStackMode" class="b2b-mobile-section-marker">
-              <div class="b2b-mobile-section-marker-icon">
-                <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                  <path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7"/>
-                </svg>
-              </div>
-              <div class="b2b-mobile-section-marker-text">
-                <div class="b2b-mobile-section-marker-title">고객 동향 분석</div>
-                <div class="b2b-mobile-section-marker-sub">리스크 키워드 · 기회 고객 · 추이 분석</div>
+              <div class="sb-actions">
+                <button class="sb-btn sb-btn-glass" @click="router.push('/B2B')">
+                  <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/>
+                  </svg>
+                  기업 변경
+                </button>
+                <button class="sb-btn sb-btn-glass" @click="showPeriodModal=true">
+                  <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>
+                  </svg>
+                  기간 변경
+                </button>
+                <button class="sb-btn sb-btn-solid" @click="printReport">
+                  <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path d="M12 10v6m0 0l-3-3m3 3l3-3M3 17V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
+                  </svg>
+                  PDF 출력
+                </button>
               </div>
             </div>
 
-            <B2BCustomerTrendSection
-              :tenant-id="company.tenant_id"
-              :comp-id="company.id"
-              :analysis-period="analysisPeriod"
-              @loading-change="(loading) => setSectionLoading({ tabId: 'external', loading })"
-            />
-          </template>
-
-          <template v-if="isVisibleTab('ownreview')">
-            <div v-if="isMobileStackMode" class="b2b-mobile-section-marker">
-              <div class="b2b-mobile-section-marker-icon">
-                <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                  <circle cx="12" cy="12" r="10"/>
-                  <path d="M12 6v6l4 2"/>
-                </svg>
-              </div>
-              <div class="b2b-mobile-section-marker-text">
-                <div class="b2b-mobile-section-marker-title">리뷰 감정 분석</div>
-                <div class="b2b-mobile-section-marker-sub">현재 작업중인 섹션</div>
-              </div>
-            </div>
-
-            <div class="tab-status-screen wip" :style="isMobileStackMode ? 'margin-top:0' : 'margin-top:18px'">
-              <div class="tab-screen-badge wip">작업중</div>
-              <h2 class="tab-screen-title">리뷰 감정 분석 탭은 다음 단계에서 맞출 예정</h2>
-            </div>
-          </template>
-
-          <template v-if="isVisibleTab('competitive')">
-            <div v-if="isMobileStackMode" class="b2b-mobile-section-marker">
-              <div class="b2b-mobile-section-marker-icon">
-                <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                  <path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
-                </svg>
-              </div>
-              <div class="b2b-mobile-section-marker-text">
-                <div class="b2b-mobile-section-marker-title">경쟁사 분석</div>
-                <div class="b2b-mobile-section-marker-sub">이슈 히트 · 감지 키워드 · 상세 현황</div>
-              </div>
-            </div>
-
-            <B2BCompetitiveSection
-              :tenant-id="company.tenant_id"
-              :comp-id="company.id"
-              :analysis-period="analysisPeriod"
-              @loading-change="(loading) => setSectionLoading({ tabId: 'competitive', loading })"
-            />
-          </template>
-
-          <template v-if="isVisibleTab('internal')">
-            <div v-if="isMobileStackMode" class="b2b-mobile-section-marker">
-              <div class="b2b-mobile-section-marker-icon">
-                <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                  <path d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0"/>
-                </svg>
-              </div>
-              <div class="b2b-mobile-section-marker-text">
-                <div class="b2b-mobile-section-marker-title">직원 감정 분석</div>
-                <div class="b2b-mobile-section-marker-sub">직원 리뷰 · 감정 점수 · 조직 이슈</div>
-              </div>
-            </div>
-
-            <div class="b2b-top-kpi" style="margin-bottom:20px">
-              <div class="b2b-tkpi">
-                <div class="b2b-tkpi-icon" style="background:linear-gradient(135deg,#8b5cf6,#a78bfa)">
-                  <svg width="15" height="15" fill="none" stroke="#fff" stroke-width="2" viewBox="0 0 24 24"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+            <template v-if="isVisibleTab('external')">
+              <div v-if="isMobileStackMode" class="b2b-mobile-section-marker">
+                <div class="b2b-mobile-section-marker-icon">
+                  <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7"/>
+                  </svg>
                 </div>
-                <div>
-                  <div class="b2b-tkpi-label">고객 동향 신호</div>
-                  <div class="b2b-tkpi-val" style="color:#8b5cf6">{{ internalTopKpis.signalCount }}<span class="b2b-tkpi-unit">개</span></div>
-                  <div class="b2b-tkpi-trend">모니터링 키워드</div>
+                <div class="b2b-mobile-section-marker-text">
+                  <div class="b2b-mobile-section-marker-title">고객 동향 분석</div>
+                  <div class="b2b-mobile-section-marker-sub">리스크 키워드 · 기회 고객 · 추이 분석</div>
                 </div>
               </div>
 
-              <div class="b2b-tkpi">
-                <div class="b2b-tkpi-icon" style="background:linear-gradient(135deg,#94a3b8,#cbd5e1)">
-                  <svg width="15" height="15" fill="none" stroke="#fff" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+              <B2BCustomerTrendSection
+                :tenant-id="company.tenant_id"
+                :comp-id="company.id"
+                :analysis-period="analysisPeriod"
+                @loading-progress="setSectionProgress"
+              />
+            </template>
+
+            <template v-if="isVisibleTab('ownreview')">
+              <div v-if="isMobileStackMode" class="b2b-mobile-section-marker">
+                <div class="b2b-mobile-section-marker-icon">
+                  <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <circle cx="12" cy="12" r="10"/>
+                    <path d="M12 6v6l4 2"/>
+                  </svg>
                 </div>
-                <div>
-                  <div class="b2b-tkpi-label">리뷰 감정 평점</div>
-                  <div class="b2b-tkpi-val" style="color:#94a3b8">{{ internalTopKpis.reviewRating }}</div>
-                  <div class="b2b-tkpi-trend" style="color:#94a3b8">{{ internalTopKpis.reviewSub }}</div>
+                <div class="b2b-mobile-section-marker-text">
+                  <div class="b2b-mobile-section-marker-title">리뷰 감정 분석</div>
+                  <div class="b2b-mobile-section-marker-sub">현재 작업중인 섹션</div>
                 </div>
               </div>
 
-              <div class="b2b-tkpi">
-                <div class="b2b-tkpi-icon" style="background:linear-gradient(135deg,#f59e0b,#fbbf24)">
-                  <svg width="15" height="15" fill="none" stroke="#fff" stroke-width="2" viewBox="0 0 24 24"><path d="M12 20V10M18 20V4M6 20v-6"/></svg>
+              <div class="tab-status-screen wip" :style="isMobileStackMode ? 'margin-top:0' : 'margin-top:18px'">
+                <div class="tab-screen-badge wip">작업중</div>
+                <h2 class="tab-screen-title">리뷰 감정 분석 탭은 다음 단계에서 맞출 예정</h2>
+              </div>
+            </template>
+
+            <template v-if="isVisibleTab('competitive')">
+              <div v-if="isMobileStackMode" class="b2b-mobile-section-marker">
+                <div class="b2b-mobile-section-marker-icon">
+                  <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                  </svg>
                 </div>
-                <div>
-                  <div class="b2b-tkpi-label">경쟁사 대비 순위</div>
-                  <div class="b2b-tkpi-val" style="color:#f59e0b">{{ internalTopKpis.competitiveRank }}위<span class="b2b-tkpi-unit">/ {{ internalTopKpis.competitorCount }}개사</span></div>
-                  <div class="b2b-tkpi-trend">점수 {{ internalTopKpis.competitiveScore }}점</div>
+                <div class="b2b-mobile-section-marker-text">
+                  <div class="b2b-mobile-section-marker-title">경쟁사 분석</div>
+                  <div class="b2b-mobile-section-marker-sub">이슈 히트 · 감지 키워드 · 상세 현황</div>
                 </div>
               </div>
 
-              <div class="b2b-tkpi">
-                <div class="b2b-tkpi-icon" style="background:linear-gradient(135deg,#8b5cf6,#a78bfa)">
-                  <svg width="15" height="15" fill="none" stroke="#fff" stroke-width="2" viewBox="0 0 24 24"><path d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0"/></svg>
+              <B2BCompetitiveSection
+                :tenant-id="company.tenant_id"
+                :comp-id="company.id"
+                :analysis-period="analysisPeriod"
+                @loading-progress="setSectionProgress"
+              />
+            </template>
+
+            <template v-if="isVisibleTab('internal')">
+              <div v-if="isMobileStackMode" class="b2b-mobile-section-marker">
+                <div class="b2b-mobile-section-marker-icon">
+                  <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0"/>
+                  </svg>
                 </div>
-                <div>
-                  <div class="b2b-tkpi-label">직원 감정 분석</div>
-                  <div class="b2b-tkpi-val" style="color:#8b5cf6">{{ internalTopKpis.employeeScore }}</div>
-                  <div class="b2b-tkpi-trend">▲ {{ internalTopKpis.employeeTrend }}p 전월 대비</div>
+                <div class="b2b-mobile-section-marker-text">
+                  <div class="b2b-mobile-section-marker-title">직원 감정 분석</div>
+                  <div class="b2b-mobile-section-marker-sub">직원 리뷰 · 감정 점수 · 조직 이슈</div>
                 </div>
               </div>
-            </div>
 
-            <B2BEmployeeEmotionSection
-              :comp-id="company.id"
-              :period-type="periodType"
-              @loading-change="(loading) => setSectionLoading({ tabId: 'internal', loading })"
-            />
-          </template>
-        </main>
+              <div class="b2b-top-kpi" style="margin-bottom:20px">
+                <div class="b2b-tkpi">
+                  <div class="b2b-tkpi-icon" style="background:linear-gradient(135deg,#8b5cf6,#a78bfa)">
+                    <svg width="15" height="15" fill="none" stroke="#fff" stroke-width="2" viewBox="0 0 24 24"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                  </div>
+                  <div>
+                    <div class="b2b-tkpi-label">고객 동향 신호</div>
+                    <div class="b2b-tkpi-val" style="color:#8b5cf6">{{ internalTopKpis.signalCount }}<span class="b2b-tkpi-unit">개</span></div>
+                    <div class="b2b-tkpi-trend">모니터링 키워드</div>
+                  </div>
+                </div>
+
+                <div class="b2b-tkpi">
+                  <div class="b2b-tkpi-icon" style="background:linear-gradient(135deg,#94a3b8,#cbd5e1)">
+                    <svg width="15" height="15" fill="none" stroke="#fff" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+                  </div>
+                  <div>
+                    <div class="b2b-tkpi-label">리뷰 감정 평점</div>
+                    <div class="b2b-tkpi-val" style="color:#94a3b8">{{ internalTopKpis.reviewRating }}</div>
+                    <div class="b2b-tkpi-trend" style="color:#94a3b8">{{ internalTopKpis.reviewSub }}</div>
+                  </div>
+                </div>
+
+                <div class="b2b-tkpi">
+                  <div class="b2b-tkpi-icon" style="background:linear-gradient(135deg,#f59e0b,#fbbf24)">
+                    <svg width="15" height="15" fill="none" stroke="#fff" stroke-width="2" viewBox="0 0 24 24"><path d="M12 20V10M18 20V4M6 20v-6"/></svg>
+                  </div>
+                  <div>
+                    <div class="b2b-tkpi-label">경쟁사 대비 순위</div>
+                    <div class="b2b-tkpi-val" style="color:#f59e0b">{{ internalTopKpis.competitiveRank }}위<span class="b2b-tkpi-unit">/ {{ internalTopKpis.competitorCount }}개사</span></div>
+                    <div class="b2b-tkpi-trend">점수 {{ internalTopKpis.competitiveScore }}점</div>
+                  </div>
+                </div>
+
+                <div class="b2b-tkpi">
+                  <div class="b2b-tkpi-icon" style="background:linear-gradient(135deg,#8b5cf6,#a78bfa)">
+                    <svg width="15" height="15" fill="none" stroke="#fff" stroke-width="2" viewBox="0 0 24 24"><path d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0"/></svg>
+                  </div>
+                  <div>
+                    <div class="b2b-tkpi-label">직원 감정 분석</div>
+                    <div class="b2b-tkpi-val" style="color:#8b5cf6">{{ internalTopKpis.employeeScore }}</div>
+                    <div class="b2b-tkpi-trend">▲ {{ internalTopKpis.employeeTrend }}p 전월 대비</div>
+                  </div>
+                </div>
+              </div>
+
+              <B2BEmployeeEmotionSection
+                :comp-id="company.id"
+                :analysis-period="analysisPeriod"
+                @loading-progress="setSectionProgress"
+              />
+            </template>
+          </main>
+        </div>
       </div>
     </div>
   </div>
