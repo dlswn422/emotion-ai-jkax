@@ -223,7 +223,7 @@ export const StoreListPage = defineComponent({
           <section class="page-section">
             <div class="section-head">
               <h2 class="section-title">기업</h2>
-              <p class="section-sub">현재 아래 기업 데이터는 데모용 목데이터입니다.</p>
+              <p class="section-sub"></p>
             </div>
 
             <!-- 기업 검색 -->
@@ -378,7 +378,7 @@ export const StoreListPage = defineComponent({
           <section v-if="shouldShowStoreSection" class="page-section">
             <div class="section-head">
               <h2 class="section-title">매장</h2>
-              <p class="section-sub">현재 아래 매장 데이터는 데모용 목데이터입니다.</p>
+              <p class="section-sub"></p>
             </div>
 
             <!-- 매장 검색 -->
