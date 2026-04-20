@@ -587,9 +587,9 @@ export const B2BCompetitiveSection = defineComponent({
             </div>
 
             <div class="ci-detail-col ci-dc-src">
-              <template v-if="kw.source_url">
+              <template v-if="dbCompIssueSources.find(s => s.site_name === kw.source_name)">
                 <a
-                  :href="kw.source_url"
+                  :href="dbCompIssueSources.find(s => s.site_name === kw.source_name).url"
                   target="_blank"
                   rel="noopener"
                   class="ci-detail-src-link"
@@ -597,7 +597,7 @@ export const B2BCompetitiveSection = defineComponent({
                   <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                     <path d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
                   </svg>
-                  {{kw.source_name || '원문 보기'}}
+                  {{kw.source_name}}
                 </a>
               </template>
 

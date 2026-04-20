@@ -1,77 +1,102 @@
-const { defineComponent, ref, computed } = Vue;
+const { defineComponent, ref } = Vue;
 import { ALERT_STORE, ALERT_SEVERITY } from "../b2b/shared.js";
-
-const BACKEND_URL = "https://emotion-ai-backend-bfdc.onrender.com";
-const TENANT_ID = 7;
-const SOCKET_BUFFER_MS = 800;
-
-const SEVERITY_MAP = {
-  긴급: "critical",
-  주의: "warning",
-  신호: "notice",
-  일반: "info",
-  정보: "info",
-};
-
-function mapServerRowToAlert(row) {
-  const dbId = row?.id ?? row?.db_id ?? null;
-  const signalId = row?.signal_id ?? null;
-  const category = row?.category ?? "정보";
-  return {
-    severity: SEVERITY_MAP[category] || "info",
-    dbId,
-    dbIds: dbId != null ? [Number(dbId)] : [],
-    signalId,
-    systemSummary: !!row?.systemSummary,
-    title: row?.message || "새 알림이 감지되었습니다.",
-    companyName: row?.company_name || "",
-    tabLabel: row?.signal_type_label || "",
-    keyword: row?.keyword || "",
-    desc: row?.message || "",
-    linkUrl: row?.link_url || "",
-    dupKey: signalId != null ? `signal-${signalId}` : dbId != null ? `notification-${dbId}` : null,
-    read: !!row?.read,
-  };
-}
 
 export const AlertPanel = defineComponent({
   name: "AlertPanel",
   setup() {
+    /* 수신자 목록 (Admin에서 확장 가능) */
     const RECIPIENTS = [
-      { id: "ceo", name: "대표이사 (CEO)", email: "ceo@company.com", checked: ref(true) },
-      { id: "coo", name: "최고운영책임자 (COO)", email: "coo@company.com", checked: ref(false) },
-      { id: "cmo", name: "마케팅총괄 (CMO)", email: "cmo@company.com", checked: ref(false) },
-      { id: "cso", name: "전략기획실장 (CSO)", email: "strategy@company.com", checked: ref(false) },
-      { id: "cs", name: "CS팀장", email: "cs@company.com", checked: ref(false) },
+      {
+        id: "ceo",
+        name: "대표이사 (CEO)",
+        email: "ceo@company.com",
+        checked: ref(true),
+      },
+      {
+        id: "coo",
+        name: "최고운영책임자 (COO)",
+        email: "coo@company.com",
+        checked: ref(false),
+      },
+      {
+        id: "cmo",
+        name: "마케팅총괄 (CMO)",
+        email: "cmo@company.com",
+        checked: ref(false),
+      },
+      {
+        id: "cso",
+        name: "전략기획실장 (CSO)",
+        email: "strategy@company.com",
+        checked: ref(false),
+      },
+      {
+        id: "cs",
+        name: "CS팀장",
+        email: "cs@company.com",
+        checked: ref(false),
+      },
     ];
 
     const store = ALERT_STORE;
-    const sendStep = ref(1);
+    const sendStep = ref(1); // 1: 수신자 선택 2: 메시지 편집 3: 발송 완료
     const editMsg = ref("");
     const sending = ref(false);
-    const socketBuffer = ref([]);
-    let socketBufferTimer = null;
 
-    const visibleAlerts = computed(() => store.visibleAlerts);
-    const visibleUnreadCount = computed(() => store.unread);
-    const visibleNotificationCount = computed(
-      () => visibleAlerts.value.filter((alert) => !alert.systemSummary).length,
-    );
+    // ── 백엔드 URL ──
+    const BACKEND_URL = "https://emotion-ai-backend-bfdc.onrender.com";
 
-    function updateSummary() {
-      store.upsertSummary(visibleNotificationCount.value);
-    }
+    // ── 브라우저 열릴 때 미읽음 알림 조회 + 완료 후 소켓 연결 ──
+    const severityMap = {
+      긴급: "critical",
+      주의: "warning",
+      신호: "notice",
+      일반: "info",
+      정보: "info",
+    };
 
     async function loadUnreadNotifications() {
-      const res = await fetch(`${BACKEND_URL}/notifications?tenant_id=${TENANT_ID}&is_read=false`);
+      const res = await fetch(
+        `${BACKEND_URL}/notifications?tenant_id=7&is_read=false`,
+      );
       if (!res.ok) {
         throw new Error(`HTTP ${res.status}`);
       }
-      const rows = await res.json();
+
+      const data = await res.json();
+
       window._cxDBLoading = true;
-      store.replaceFromServer(rows, (row) => mapServerRowToAlert(row));
-      updateSummary();
-      console.log(`[Notification] 미읽음 알림 ${rows.length}건 로드 완료`);
+      store.alerts.splice(0);
+      store._save();
+
+      [...data].reverse().forEach((row) => {
+        store.add({
+          severity: severityMap[row.category] || "info",
+          dbId: row.id,
+          title: row.message,
+          companyName: row.company_name || "",
+          tabLabel: row.signal_type_label || "",
+          keyword: "",
+          desc: row.message,
+          dupKey: `notification-${row.id}`,
+        });
+      });
+
+      if (data.length > 0) {
+        const summaryText = `오늘 알림 ${data.length}건이 감지되었습니다.`;
+        store.add({
+          severity: "info",
+          dbId: null,
+          title: summaryText,
+          companyName: "",
+          tabLabel: "시스템 알림",
+          keyword: "",
+          desc: summaryText,
+          dupKey: "summary-load",
+        });
+      }
+
+      console.log(`[Notification] 미읽음 알림 ${data.length}건 로드 완료`);
     }
 
     async function requestMarkRead(dbId) {
@@ -79,45 +104,12 @@ export const AlertPanel = defineComponent({
         method: "PATCH",
         keepalive: true,
       });
+
       if (!res.ok) {
         throw new Error(`HTTP ${res.status}`);
       }
+
       return res.json();
-    }
-
-    function flushSocketBuffer() {
-      if (socketBufferTimer) {
-        clearTimeout(socketBufferTimer);
-        socketBufferTimer = null;
-      }
-      const queued = socketBuffer.value.splice(0, socketBuffer.value.length);
-      if (!queued.length) return;
-
-      queued.forEach((data) => {
-        store.add(mapServerRowToAlert(data));
-      });
-      updateSummary();
-    }
-
-    function scheduleSocketFlush() {
-      if (socketBufferTimer) return;
-      socketBufferTimer = setTimeout(() => {
-        flushSocketBuffer();
-      }, SOCKET_BUFFER_MS);
-    }
-
-    function handleIncomingSocketAlert(data) {
-      const isSummary = !!data?.open_panel || data?.signal_type_label === "시스템 알림" || !data?.db_id;
-
-      if (isSummary) {
-        flushSocketBuffer();
-        updateSummary();
-        store.showPanel = true;
-        return;
-      }
-
-      socketBuffer.value.push(data);
-      scheduleSocketFlush();
     }
 
     function initSocket() {
@@ -129,12 +121,27 @@ export const AlertPanel = defineComponent({
 
         socket.on("connect", () => {
           console.log("[Socket.io] AlertPanel 연결 완료:", socket.id);
-          socket.emit("join_room", { tenant_id: TENANT_ID });
+          socket.emit("join_room", { tenant_id: 7 });
         });
 
         socket.on("new_alert", (data) => {
+          // DB 로드 중이면 소켓 수신 차단
           if (window._cxDBLoading) return;
-          handleIncomingSocketAlert(data || {});
+          console.log("[Socket.io] 새 알림 수신:", data);
+          const severity = severityMap[data.category] || "info";
+          store.add({
+            severity,
+            dbId: data.db_id || null,
+            title: data.message || "새 알림이 감지되었습니다.",
+            companyName: data.company_name || "",
+            tabLabel: data.signal_type_label || "",
+            keyword: data.keyword || "",
+            desc: data.message || "",
+            dupKey: `notification-${data.db_id || data.message || Date.now()}`,
+          });
+          if (data.open_panel) {
+            store.showPanel = true;
+          }
         });
 
         socket.on("disconnect", () => {
@@ -142,6 +149,60 @@ export const AlertPanel = defineComponent({
           window._cxSocketInitialized = false;
         });
       }
+    }
+
+    function bindResumeHandlers() {
+      if (window._cxResumeHandlersBound) return;
+      window._cxResumeHandlersBound = true;
+
+      // 안드로이드 네이티브(MainActivity onResume)에서 호출
+      window.onAppResume = async function () {
+        try {
+          await loadUnreadNotifications();
+        } catch (e) {
+          console.warn("[Notification] onAppResume 재조회 실패:", e);
+        } finally {
+          window._cxDBLoading = false;
+          initSocket();
+        }
+      };
+
+      // 웹 환경 보조: 탭 복귀 시 재조회
+      document.addEventListener("visibilitychange", async () => {
+        if (document.visibilityState === "visible") {
+          try {
+            await loadUnreadNotifications();
+          } catch (e) {
+            console.warn("[Notification] visibility 재조회 실패:", e);
+          } finally {
+            window._cxDBLoading = false;
+            initSocket();
+          }
+        }
+      });
+
+      window.addEventListener("focus", async () => {
+        try {
+          await loadUnreadNotifications();
+        } catch (e) {
+          console.warn("[Notification] focus 재조회 실패:", e);
+        } finally {
+          window._cxDBLoading = false;
+          initSocket();
+        }
+      });
+
+      // 수동 호출용
+      window.refreshCxNotifications = async function () {
+        try {
+          await loadUnreadNotifications();
+        } catch (e) {
+          console.warn("[Notification] 수동 재조회 실패:", e);
+        } finally {
+          window._cxDBLoading = false;
+          initSocket();
+        }
+      };
     }
 
     if (!window._cxNotificationsLoaded) {
@@ -154,10 +215,13 @@ export const AlertPanel = defineComponent({
         } finally {
           window._cxDBLoading = false;
           initSocket();
+          bindResumeHandlers();
         }
       })();
     } else {
+      // 이미 로드됐으면 바로 소켓 연결
       initSocket();
+      bindResumeHandlers();
     }
 
     function openSend(alert) {
@@ -171,7 +235,10 @@ export const AlertPanel = defineComponent({
     }
 
     function buildDefaultMsg(a) {
-      const now = new Date().toLocaleString("ko-KR", { timeZone: "Asia/Seoul" });
+      const now = new Date().toLocaleString("ko-KR", {
+        timeZone: "Asia/Seoul",
+      });
+
       return `[CXNexus 경영진 Alert — ${
         a.severity === "critical"
           ? "🔴 긴급"
@@ -199,11 +266,16 @@ ${a.desc}
 
     async function sendAlert() {
       sending.value = true;
-      await new Promise((r) => setTimeout(r, 1200));
-      const recipients = RECIPIENTS.filter((r) => r.checked.value).map((r) => r.name);
+      await new Promise((r) => setTimeout(r, 1200)); // 전송 시뮬레이션
+
+      const recipients = RECIPIENTS.filter((r) => r.checked.value).map(
+        (r) => r.name,
+      );
+
       if (store.pendingAlert) {
         store.markSent(store.pendingAlert.id, recipients);
       }
+
       sending.value = false;
       sendStep.value = 3;
     }
@@ -215,38 +287,36 @@ ${a.desc}
     }
 
     async function removeAlert(alert) {
-      if (!alert.dbId) {
-        store.remove(alert.id);
-        updateSummary();
+      if (alert.dbId) {
+        try {
+          await requestMarkRead(alert.dbId);
+          await loadUnreadNotifications();
+        } catch (e) {
+          console.warn("[Notification] 삭제 처리 실패:", e);
+          return;
+        }
         return;
       }
 
-      store.setPending([alert.id], true);
-      try {
-        const result = await requestMarkRead(alert.dbId);
-        const updatedIds = Array.isArray(result.updated_ids) ? result.updated_ids : [alert.dbId];
-        store.removeByDbIds(updatedIds);
-        updateSummary();
-      } catch (e) {
-        store.setPending([alert.id], false);
-        console.warn("[Notification] 삭제 처리 실패:", e);
-      }
+      // 요약 알림 같은 dbId 없는 로컬 알림
+      store.remove(alert.id);
     }
 
     async function markRead(alert) {
-      if (alert.read || !alert.dbId) return;
-      const previous = alert.read;
-      alert.read = true;
-      store._save();
-      try {
-        const result = await requestMarkRead(alert.dbId);
-        const updatedIds = Array.isArray(result.updated_ids) ? result.updated_ids : [alert.dbId];
-        store.markReadByDbIds(updatedIds);
-      } catch (e) {
-        alert.read = previous;
-        store._save();
-        console.warn("[Notification] 읽음 처리 실패:", e);
+      if (alert.read) return;
+
+      if (alert.dbId) {
+        try {
+          await requestMarkRead(alert.dbId);
+          await loadUnreadNotifications();
+        } catch (e) {
+          console.warn("[Notification] 읽음 처리 실패:", e);
+          return;
+        }
+        return;
       }
+
+      store.markRead(alert.id);
     }
 
     async function markAllRead() {
@@ -255,13 +325,12 @@ ${a.desc}
           method: "PATCH",
           keepalive: true,
         });
+
         if (!res.ok) {
           throw new Error(`HTTP ${res.status}`);
         }
+
         store.alerts.splice(0);
-        store.pendingHidden = {};
-        socketBuffer.value = [];
-        updateSummary();
         store._save();
       } catch (e) {
         console.warn("[Notification] 전체 읽음 처리 실패:", e);
@@ -296,9 +365,6 @@ ${a.desc}
       markRead,
       markAllRead,
       removeAlert,
-      visibleAlerts,
-      visibleUnreadCount,
-      visibleNotificationCount,
     };
   },
 
@@ -316,11 +382,11 @@ ${a.desc}
                 </svg>
               </div>
               <span class="alp-hd-title">경영진 Alert</span>
-              <span v-if="visibleUnreadCount > 0" class="alp-unread-badge">{{visibleUnreadCount}}</span>
+              <span v-if="store.unread > 0" class="alp-unread-badge">{{store.unread}}</span>
             </div>
 
             <div class="alp-hd-right">
-              <button v-if="visibleAlerts.length" class="alp-read-all" @click="markAllRead()">전체 읽음</button>
+              <button v-if="store.alerts.length" class="alp-read-all" @click="markAllRead()">전체 읽음</button>
               <button class="alp-close-btn" @click="store.showPanel=false">
                 <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
                   <path d="M18 6L6 18M6 6l12 12"/>
@@ -329,7 +395,7 @@ ${a.desc}
             </div>
           </div>
 
-          <div v-if="!visibleAlerts.length" class="alp-empty">
+          <div v-if="!store.alerts.length" class="alp-empty">
             <div class="alp-empty-icon">
               <svg width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
                 <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0"/>
@@ -340,7 +406,7 @@ ${a.desc}
 
           <div class="alp-list">
             <div
-              v-for="alert in visibleAlerts"
+              v-for="alert in store.alerts"
               :key="alert.id"
               :class="['alp-item', 'alp-sev-'+alert.severity, { unread: !alert.read }]"
               @click="markRead(alert)"
@@ -489,7 +555,11 @@ ${a.desc}
 
             <div class="alp-recip-preview">
               발송 대상:
-              <span v-for="r in RECIPIENTS.filter(r=>r.checked.value)" :key="r.id" class="alp-recip-chip">
+              <span
+                v-for="r in RECIPIENTS.filter(r=>r.checked.value)"
+                :key="r.id"
+                class="alp-recip-chip"
+              >
                 {{r.name}}
               </span>
             </div>
@@ -518,7 +588,11 @@ ${a.desc}
               <p class="alp-success-desc">경영진에게 Alert가 성공적으로 발송되었습니다.</p>
 
               <div class="alp-success-recipients">
-                <span v-for="r in RECIPIENTS.filter(r=>r.checked.value)" :key="r.id" class="alp-recip-chip sent">
+                <span
+                  v-for="r in RECIPIENTS.filter(r=>r.checked.value)"
+                  :key="r.id"
+                  class="alp-recip-chip sent"
+                >
                   <svg width="9" height="9" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
                     <path d="M5 13l4 4L19 7"/>
                   </svg>
