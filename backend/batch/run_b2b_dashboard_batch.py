@@ -52,14 +52,18 @@ def fetch_signals(
 ) -> list[dict]:
     from sqlalchemy import text
 
-    where_clauses = ["tenant_id = :tenant_id"]
+    where_clauses = [
+        "tenant_id = :tenant_id",
+        "detected_at IS NOT NULL",
+    ]
     params: dict[str, Any] = {"tenant_id": tenant_id}
 
     if from_date:
-        where_clauses.append("(detected_at >= :from_date OR detected_at IS NULL)")
+        where_clauses.append("detected_at >= CAST(:from_date AS DATE)")
         params["from_date"] = from_date
+
     if to_date:
-        where_clauses.append("(detected_at <= :to_date OR detected_at IS NULL)")
+        where_clauses.append("detected_at < (CAST(:to_date AS DATE) + INTERVAL '1 day')")
         params["to_date"] = to_date
 
     where_sql = " AND ".join(where_clauses)
@@ -99,6 +103,7 @@ def build_customer_trend_json(
         keyword = signal.get("signal_keyword") or ""
         if not keyword:
             continue
+
         if keyword not in kw_map:
             kw_map[keyword] = {
                 "keyword": keyword,
@@ -107,6 +112,7 @@ def build_customer_trend_json(
                 "last_hit": None,
                 "source_name": signal.get("source") or "",
             }
+
         kw_map[keyword]["hit_count"] += 1
         detected_at = signal.get("detected_at")
         if detected_at:
@@ -122,6 +128,7 @@ def build_customer_trend_json(
         company = signal.get("company_name") or ""
         if not company or company in seen_companies:
             continue
+
         seen_companies.add(company)
         level = _level_lower(signal.get("signal_level", "medium"))
         detected_at = signal.get("detected_at")
@@ -130,6 +137,7 @@ def build_customer_trend_json(
             if detected_at and hasattr(detected_at, "isoformat")
             else str(detected_at or "")[:10]
         )
+
         prospects.append(
             {
                 "prospect_name": company,
@@ -162,6 +170,7 @@ def build_competitor_analysis_json(
         map_key = f"{keyword}||{company}"
         if not keyword:
             continue
+
         if map_key not in kw_map:
             kw_map[map_key] = {
                 "keyword": keyword,
@@ -172,6 +181,7 @@ def build_competitor_analysis_json(
                 "source_name": signal.get("source") or "",
                 "opportunity": signal.get("summary") or "",
             }
+
         kw_map[map_key]["hit_count"] += 1
         detected_at = signal.get("detected_at")
         if detected_at:
