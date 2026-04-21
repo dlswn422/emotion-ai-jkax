@@ -26,6 +26,42 @@ export const B2BCompetitiveSection = defineComponent({
     const compChartMode = ref("rank");
     const compDetailFilter = ref("all");
 
+    // 반응형 처리
+    const viewportWidth = ref(window.innerWidth);
+    const isMobileCompetitive = computed(() => viewportWidth.value <= 600);
+
+    function handleResize() {
+      viewportWidth.value = window.innerWidth;
+    }
+
+    function ciLevelLabel(level) {
+      return level === "high" ? "HIGH" : level === "medium" ? "MED" : "LOW";
+    }
+    // 모바일 카드 클래스 계산
+    function ciKeywordCardClass(kw) {
+      return [
+        "ci-mobile-card",
+        kw.signal_level === "high"
+          ? "ci-mobile-card-high"
+          : kw.signal_level === "medium"
+            ? "ci-mobile-card-med"
+            : "",
+      ];
+    }
+
+    // 모바일 카드 클래스 계산 (상세)
+    function ciDetailCardClass(kw) {
+      return [
+        "ci-mobile-card",
+        "ci-mobile-detail-card",
+        kw.signal_level === "high"
+          ? "ci-mobile-card-high"
+          : kw.signal_level === "medium"
+            ? "ci-mobile-card-med"
+            : "",
+        !kw.active ? "ci-mobile-card-inactive" : "",
+      ];
+    }
     // 실데이터 저장 상태
     const issueSources = ref([]);
     const issueKeywords = ref([]);
@@ -329,10 +365,13 @@ export const B2BCompetitiveSection = defineComponent({
 
     // 최초 진입 시 데이터 로드
     onMounted(async () => {
+      window.addEventListener("resize", handleResize);
+      handleResize();
       await loadCompetitorAnalysis();
     });
 
     onUnmounted(() => {
+      window.removeEventListener("resize", handleResize);
       destroyChart(compIssueDailyChartInst);
       destroyChart(compIssueMonthlyChartInst);
     });
@@ -346,6 +385,11 @@ export const B2BCompetitiveSection = defineComponent({
       sortedKeywords,
       filteredDetailRows,
       topKpis,
+      viewportWidth,
+      isMobileCompetitive,
+      ciLevelLabel,
+      ciKeywordCardClass,
+      ciDetailCardClass,
     };
   },
 
@@ -429,62 +473,194 @@ export const B2BCompetitiveSection = defineComponent({
             Admin → 이슈 키워드 탭에서 감지 키워드를 등록하세요
           </div>
 
-          <div v-else class="ci-kw-table-wrap">
-            <div class="ci-kw-thead">
-              <span class="ci-kw-col ci-kw-col-rank">#</span>
-              <span class="ci-kw-col ci-kw-col-kw">키워드</span>
-              <span class="ci-kw-col ci-kw-col-type">유형</span>
-              <span class="ci-kw-col ci-kw-col-lv">강도</span>
-              <span class="ci-kw-col ci-kw-col-hit">히트수</span>
-              <span class="ci-kw-col ci-kw-col-date">최근 탐지</span>
-            </div>
+          <template v-else>
+            <template v-if="isMobileCompetitive">
+              <div class="ci-mobile-list">
+                <div
+                  v-for="(kw, idx) in sortedKeywords"
+                  :key="kw._id || idx"
+                  :class="ciKeywordCardClass(kw)"
+                >
+                  <!-- 1줄: 순위 / 키워드 / 강도 -->
+                <div
+                  style="
+                    display:grid;
+                    grid-template-columns: 30px minmax(0,1fr) 56px;
+                    align-items:center;
+                    column-gap:6px;
+                    margin-bottom:12px;
+                  "
+                >
+                    <div style="display:flex; justify-content:flex-start;">
+                      <span
+                        class="ci-kw-rank-badge"
+                        :class="idx===0?'ci-rank-gold':idx===1?'ci-rank-silver':idx===2?'ci-rank-bronze':''"
+                      >
+                        {{ idx + 1 }}
+                      </span>
+                    </div>
 
-            <div
-              v-for="(kw, idx) in sortedKeywords"
-              :key="kw._id || idx"
-              :class="['ci-kw-row', kw.signal_level==='high' ? 'ci-kw-row-high' : kw.signal_level==='medium' ? 'ci-kw-row-med' : '']"
-            >
-              <div class="ci-kw-col ci-kw-col-rank">
-                <span class="ci-kw-rank-badge" :class="idx===0?'ci-rank-gold':idx===1?'ci-rank-silver':idx===2?'ci-rank-bronze':''">{{idx+1}}</span>
-              </div>
+                    <div style="display:flex; justify-content:center; min-width:0; overflow:hidden;">
+                      <span
+                        class="cdt-kw-chip"
+                        :class="'cdt-kw-'+kw.signal_level"
+                        style="
+                          display:inline-flex;
+                          max-width:100%;
+                          overflow:hidden;
+                          text-overflow:ellipsis;
+                          white-space:nowrap;
+                        "
+                        :title="kw.keyword"
+                      >
+                        {{ kw.keyword }}
+                      </span>
+                    </div>
 
-              <div class="ci-kw-col ci-kw-col-kw">
-                <span class="cdt-kw-chip" :class="'cdt-kw-'+kw.signal_level">{{kw.keyword}}</span>
-              </div>
+                    <div style="display:flex; justify-content:flex-end;">
+                      <span class="ci-lv-pill" :class="'ci-lv-'+kw.signal_level">
+                        <span class="ci-lv-dot"></span>
+                        {{ ciLevelLabel(kw.signal_level) }}
+                      </span>
+                    </div>
+                  </div>
 
-              <div class="ci-kw-col ci-kw-col-type">
-                <span class="ci-kw-type-tag">{{kw.source_name || '—'}}</span>
-              </div>
+                  <!-- 2줄: 유형 / 히트수+바 / 날짜 -->
+                  <div
+                    style="
+                      display:grid;
+                      grid-template-columns: 46px minmax(0,1fr) 78px;
+                      align-items:center;
+                      column-gap:8px;
+                    "
+                  >
+                    <div style="display:flex; justify-content:flex-start;">
+                      <span class="ci-kw-type-tag">
+                        {{ kw.source_name || '—' }}
+                      </span>
+                    </div>
 
-              <div class="ci-kw-col ci-kw-col-lv">
-                <span class="ci-lv-pill" :class="'ci-lv-'+kw.signal_level">
-                  <span class="ci-lv-dot"></span>
-                  {{kw.signal_level==='high'?'HIGH':kw.signal_level==='medium'?'MED':'LOW'}}
-                </span>
-              </div>
-
-              <div class="ci-kw-col ci-kw-col-hit">
-                <div class="ci-hit-wrap">
-                  <span class="ci-hit-num" :style="{color:kw.signal_level==='high'?'#f43f5e':kw.signal_level==='medium'?'#f59e0b':'#64748b'}">{{kw.hit_count||0}}</span>
-                  <div class="ci-hit-bar-bg">
                     <div
-                      class="ci-hit-bar-fill"
-                      :style="{
-                        width: sortedKeywords.length
-                          ? Math.min(100, Math.round(((kw.hit_count||0) / Math.max(...sortedKeywords.map(k=>k.hit_count||0), 1)) * 100)) + '%'
-                          : '0%',
-                        background: kw.signal_level==='high'?'#f43f5e':kw.signal_level==='medium'?'#f59e0b':'#94a3b8'
-                      }"
-                    ></div>
+                      style="
+                        display:flex;
+                        align-items:center;
+                        justify-content:center;
+                        gap:8px;
+                        min-width:0;
+                      "
+                    >
+                      <span
+                        class="ci-hit-num"
+                        :style="{
+                          color:
+                            kw.signal_level==='high'
+                              ? '#f43f5e'
+                              : kw.signal_level==='medium'
+                                ? '#f59e0b'
+                                : '#64748b',
+                          fontWeight: '800',
+                          flex: '0 0 auto'
+                        }"
+                      >
+                        {{ kw.hit_count || 0 }}
+                      </span>
+
+                      <div
+                        class="ci-hit-bar-bg"
+                        style="
+                          width:100%;
+                          max-width:140px;
+                          min-width:72px;
+                          flex:0 1 140px;
+                        "
+                      >
+                        <div
+                          class="ci-hit-bar-fill"
+                          :style="{
+                            width: sortedKeywords.length
+                              ? Math.min(100, Math.round(((kw.hit_count||0) / Math.max(...sortedKeywords.map(k=>k.hit_count||0), 1)) * 100)) + '%'
+                              : '0%',
+                            background:
+                              kw.signal_level==='high'
+                                ? 'linear-gradient(90deg,#f43f5e,#fb7185)'
+                                : kw.signal_level==='medium'
+                                  ? 'linear-gradient(90deg,#f59e0b,#fbbf24)'
+                                  : 'linear-gradient(90deg,#94a3b8,#cbd5e1)'
+                          }"
+                        ></div>
+                      </div>
+                    </div>
+
+                    <div style="display:flex; justify-content:flex-end;">
+                      <span
+                        class="ci-date-text"
+                        style="white-space:nowrap; font-size:12px;"
+                      >
+                        {{ kw.last_hit || '—' }}
+                      </span>
+                    </div>
                   </div>
                 </div>
               </div>
+            </template>
 
-              <div class="ci-kw-col ci-kw-col-date">
-                <span class="ci-date-text">{{kw.last_hit || '—'}}</span>
+            <div v-else class="ci-kw-table-wrap">
+              <div class="ci-kw-thead">
+                <span class="ci-kw-col ci-kw-col-rank">#</span>
+                <span class="ci-kw-col ci-kw-col-kw">키워드</span>
+                <span class="ci-kw-col ci-kw-col-type">유형</span>
+                <span class="ci-kw-col ci-kw-col-lv">강도</span>
+                <span class="ci-kw-col ci-kw-col-hit">히트수</span>
+                <span class="ci-kw-col ci-kw-col-date">최근 탐지</span>
+              </div>
+
+              <div
+                v-for="(kw, idx) in sortedKeywords"
+                :key="kw._id || idx"
+                :class="['ci-kw-row', kw.signal_level==='high' ? 'ci-kw-row-high' : kw.signal_level==='medium' ? 'ci-kw-row-med' : '']"
+              >
+                <div class="ci-kw-col ci-kw-col-rank">
+                  <span class="ci-kw-rank-badge" :class="idx===0?'ci-rank-gold':idx===1?'ci-rank-silver':idx===2?'ci-rank-bronze':''">{{idx+1}}</span>
+                </div>
+
+                <div class="ci-kw-col ci-kw-col-kw">
+                  <span class="cdt-kw-chip" :class="'cdt-kw-'+kw.signal_level">{{kw.keyword}}</span>
+                </div>
+
+                <div class="ci-kw-col ci-kw-col-type">
+                  <span class="ci-kw-type-tag">{{kw.source_name || '—'}}</span>
+                </div>
+
+                <div class="ci-kw-col ci-kw-col-lv">
+                  <span class="ci-lv-pill" :class="'ci-lv-'+kw.signal_level">
+                    <span class="ci-lv-dot"></span>
+                    {{kw.signal_level==='high'?'HIGH':kw.signal_level==='medium'?'MED':'LOW'}}
+                  </span>
+                </div>
+
+                <div class="ci-kw-col ci-kw-col-hit">
+                  <div class="ci-hit-wrap">
+                    <span class="ci-hit-num" :style="{color:kw.signal_level==='high'?'#f43f5e':kw.signal_level==='medium'?'#f59e0b':'#64748b'}">{{kw.hit_count||0}}</span>
+                    <div class="ci-hit-bar-bg">
+                      <div
+                        class="ci-hit-bar-fill"
+                        :style="{
+                          width: sortedKeywords.length
+                            ? Math.min(100, Math.round(((kw.hit_count||0) / Math.max(...sortedKeywords.map(k=>k.hit_count||0), 1)) * 100)) + '%'
+                            : '0%',
+                          background: kw.signal_level==='high'?'#f43f5e':kw.signal_level==='medium'?'#f59e0b':'#94a3b8'
+                        }"
+                      ></div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="ci-kw-col ci-kw-col-date">
+                  <span class="ci-date-text">{{kw.last_hit || '—'}}</span>
+                </div>
               </div>
             </div>
-          </div>
+          </template>
         </template>
 
         <template v-else-if="compChartMode==='daily'">
@@ -562,59 +738,163 @@ export const B2BCompetitiveSection = defineComponent({
           등록된 키워드가 없습니다
         </div>
 
-        <div v-else class="ci-detail-table-wrap">
-          <div class="ci-detail-thead">
-            <span class="ci-detail-col ci-dc-kw">키워드</span>
-            <span class="ci-detail-col ci-dc-comp">경쟁사명</span>
-            <span class="ci-detail-col ci-dc-src">출처 링크</span>
-            <span class="ci-detail-col ci-dc-opp">기회 내용</span>
-            <span class="ci-detail-col ci-dc-date">최근 탐지</span>
-          </div>
-
-          <div
-            v-for="kw in [...filteredDetailRows].sort((a,b)=>(b.hit_count||0)-(a.hit_count||0))"
-            :key="'det-'+(kw._id || kw.keyword)"
-            :class="['ci-detail-row', !kw.active ? 'ci-detail-inactive' : '']"
-          >
-            <div class="ci-detail-col ci-dc-kw">
-              <span class="cdt-kw-chip" :class="'cdt-kw-'+kw.signal_level">{{kw.keyword}}</span>
-              <span class="ci-hit-badge-sm">{{kw.hit_count||0}}건</span>
-            </div>
-
-            <div class="ci-detail-col ci-dc-comp">
-              <span v-if="kw.competitor_name" class="ci-comp-name-tag">{{kw.competitor_name}}</span>
-              <span v-else class="ci-null-text">—</span>
-            </div>
-
-            <div class="ci-detail-col ci-dc-src">
-              <template v-if="kw.source_url">
-                <a
-                  :href="kw.source_url"
-                  target="_blank"
-                  rel="noopener"
-                  class="ci-detail-src-link"
+        <template v-else>
+          <template v-if="isMobileCompetitive">
+            <div class="ci-mobile-list ci-mobile-detail-list">
+              <div
+                v-for="kw in [...filteredDetailRows].sort((a,b)=>(b.hit_count||0)-(a.hit_count||0))"
+                :key="'det-'+(kw._id || kw.keyword)"
+                :class="ciDetailCardClass(kw)"
+              >
+                <!-- 1줄: 키워드+1건 / 뉴스 -->
+                <div
+                  style="
+                    display:grid;
+                    grid-template-columns: minmax(0,1fr) 56px;
+                    align-items:center;
+                    column-gap:8px;
+                    margin-bottom:12px;
+                  "
                 >
-                  <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                    <path d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
-                  </svg>
-                  {{kw.source_name || '원문 보기'}}
-                </a>
-              </template>
+                  <div
+                    style="
+                      display:flex;
+                      align-items:center;
+                      justify-content:flex-start;
+                      gap:6px;
+                      min-width:0;
+                      overflow:hidden;
+                    "
+                  >
+                    <span
+                      class="cdt-kw-chip"
+                      :class="'cdt-kw-'+kw.signal_level"
+                      style="
+                        display:inline-flex;
+                        max-width:100%;
+                        overflow:hidden;
+                        text-overflow:ellipsis;
+                        white-space:nowrap;
+                        flex:0 1 auto;
+                      "
+                      :title="kw.keyword"
+                    >
+                      {{ kw.keyword }}
+                    </span>
 
-              <span v-else-if="kw.source_name" class="ci-src-tag">{{kw.source_name}}</span>
-              <span v-else class="ci-null-text">—</span>
+                    <span class="ci-hit-badge-sm" style="flex:0 0 auto;">
+                      {{ kw.hit_count || 0 }}건
+                    </span>
+                  </div>
+
+                  <div style="display:flex; justify-content:flex-end; min-width:0;">
+                    <template v-if="kw.source_url">
+                      <a
+                        :href="kw.source_url"
+                        target="_blank"
+                        rel="noopener"
+                        class="ci-detail-src-link"
+                      >
+                        <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                          <path d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+                        </svg>
+                        {{ kw.source_name || '원문 보기' }}
+                      </a>
+                    </template>
+
+                    <span v-else-if="kw.source_name" class="ci-src-tag">
+                      {{ kw.source_name }}
+                    </span>
+
+                    <span v-else class="ci-null-text">—</span>
+                  </div>
+                </div>
+
+                <!-- 2줄: 기회 내용 -->
+                <div class="ci-mobile-detail-body" style="margin-bottom:12px;">
+                  <div class="ci-mobile-detail-summary">
+                    {{ kw.opportunity || '—' }}
+                  </div>
+                </div>
+
+                <!-- 3줄: 경쟁사명 / 날짜 -->
+                <div
+                  style="
+                    display:grid;
+                    grid-template-columns: minmax(0,1fr) 88px;
+                    align-items:center;
+                    column-gap:8px;
+                  "
+                >
+                  <div style="display:flex; justify-content:flex-start; min-width:0;">
+                    <span v-if="kw.competitor_name" class="ci-comp-name-tag">
+                      {{ kw.competitor_name }}
+                    </span>
+                    <span v-else class="ci-null-text">—</span>
+                  </div>
+
+                  <div style="display:flex; justify-content:flex-end;">
+                    <span class="ci-date-text">{{ kw.last_hit || '—' }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </template>
+
+          <div v-else class="ci-detail-table-wrap">
+            <div class="ci-detail-thead">
+              <span class="ci-detail-col ci-dc-kw">키워드</span>
+              <span class="ci-detail-col ci-dc-comp">경쟁사명</span>
+              <span class="ci-detail-col ci-dc-src">출처 링크</span>
+              <span class="ci-detail-col ci-dc-opp">기회 내용</span>
+              <span class="ci-detail-col ci-dc-date">최근 탐지</span>
             </div>
 
-            <div class="ci-detail-col ci-dc-opp">
-              <span v-if="kw.opportunity" class="ci-opp-text">{{kw.opportunity}}</span>
-              <span v-else class="ci-null-text">—</span>
-            </div>
+            <div
+              v-for="kw in [...filteredDetailRows].sort((a,b)=>(b.hit_count||0)-(a.hit_count||0))"
+              :key="'det-'+(kw._id || kw.keyword)"
+              :class="['ci-detail-row', !kw.active ? 'ci-detail-inactive' : '']"
+            >
+              <div class="ci-detail-col ci-dc-kw">
+                <span class="cdt-kw-chip" :class="'cdt-kw-'+kw.signal_level">{{ kw.keyword }}</span>
+                <span class="ci-hit-badge-sm">{{ kw.hit_count || 0 }}건</span>
+              </div>
 
-            <div class="ci-detail-col ci-dc-date">
-              <span class="ci-date-text">{{kw.last_hit || '—'}}</span>
+              <div class="ci-detail-col ci-dc-comp">
+                <span v-if="kw.competitor_name" class="ci-comp-name-tag">{{ kw.competitor_name }}</span>
+                <span v-else class="ci-null-text">—</span>
+              </div>
+
+              <div class="ci-detail-col ci-dc-src">
+                <template v-if="kw.source_url">
+                  <a
+                    :href="kw.source_url"
+                    target="_blank"
+                    rel="noopener"
+                    class="ci-detail-src-link"
+                  >
+                    <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                      <path d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+                    </svg>
+                    {{ kw.source_name || '원문 보기' }}
+                  </a>
+                </template>
+
+                <span v-else-if="kw.source_name" class="ci-src-tag">{{ kw.source_name }}</span>
+                <span v-else class="ci-null-text">—</span>
+              </div>
+
+              <div class="ci-detail-col ci-dc-opp">
+                <span v-if="kw.opportunity" class="ci-opp-text">{{ kw.opportunity }}</span>
+                <span v-else class="ci-null-text">—</span>
+              </div>
+
+              <div class="ci-detail-col ci-dc-date">
+                <span class="ci-date-text">{{ kw.last_hit || '—' }}</span>
+              </div>
             </div>
           </div>
-        </div>
+        </template>
       </div>
     </div>
   </div>
