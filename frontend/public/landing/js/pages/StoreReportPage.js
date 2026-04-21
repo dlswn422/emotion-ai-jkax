@@ -14,7 +14,7 @@ import { STORES } from "../data/storesMock.js";
 import { fmtDate, starsStr } from "../utils/helpers.js";
 import { destroyChart } from "../utils/charts.js";
 import { NavBar } from "../components/NavBar.js";
-import { analyzeCx, getRatingTrend } from "../api/reports.js";
+import { analyzeCx } from "../api/reports.js";
 import { getCustomers } from "../api/customers.js";
 import { CustomerPage } from "./StoreCustomerAnalysisPage.js";
 
@@ -36,6 +36,8 @@ export const StoreReportPage = defineComponent({
     // 로딩 / 에러 / 활성 탭 / 차트 모드 상태
     const loading = ref(true);
     const error = ref("");
+    const reportStatus = ref("IDLE");
+    const reportStatusMessage = ref("");
     const activeTab = ref("summary");
     const chartMode = ref("daily");
 
@@ -361,8 +363,6 @@ export const StoreReportPage = defineComponent({
 
     function adaptCxReport(
       cxJson,
-      trendDaily,
-      trendMonthly,
       currentStore,
       from,
       to,
@@ -418,11 +418,11 @@ export const StoreReportPage = defineComponent({
           stars: Number(item.stars),
           count: Number(item.count),
         })),
-        dailyRatings: (trendDaily || []).map((d) => ({
+        dailyRatings: (cxJson.rating_trend_daily || []).map((d) => ({
           d: d.date,
           r: Number(d.avg_rating ?? 0),
         })),
-        monthlyRatings: (trendMonthly || []).map((d) => ({
+        monthlyRatings: (cxJson.rating_trend_monthly || []).map((d) => ({
           d: d.date,
           r: Number(d.avg_rating ?? 0),
         })),
@@ -735,18 +735,15 @@ export const StoreReportPage = defineComponent({
         const defaults = getDefaultDateRange();
         const from = route.query.from || route.query.start || defaults.from;
         const to = route.query.to || route.query.end || defaults.to;
-        const [cxJson, trendDaily, trendMonthly, customerJson] =
-          await Promise.all([
-            analyzeCx(storeId, from, to),
-            getRatingTrend(storeId, "day", from, to),
-            getRatingTrend(storeId, "month", from, to),
-            getCustomers(storeId, from, to),
-          ]);
+        const periodType = route.query.periodType || null;
+
+        const [cxJson, customerJson] = await Promise.all([
+          analyzeCx(storeId, from, to, periodType),
+          getCustomers(storeId, from, to),
+        ]);
 
         report.value = adaptCxReport(
           cxJson,
-          trendDaily,
-          trendMonthly,
           store,
           from,
           to,

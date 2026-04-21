@@ -141,6 +141,30 @@ export const StoreListPage = defineComponent({
       ];
     }
 
+    function resolvePeriodType(start, end) {
+      if (!start || !end) return null;
+
+      const fromDate = new Date(`${start}T00:00:00`);
+      const toDate = new Date(`${end}T00:00:00`);
+
+      if (Number.isNaN(fromDate.getTime()) || Number.isNaN(toDate.getTime())) {
+        return null;
+      }
+
+      const diffMs = toDate.getTime() - fromDate.getTime();
+      const days = Math.floor(diffMs / (1000 * 60 * 60 * 24)) + 1;
+
+      const mapping = {
+        1: "1D",
+        7: "7D",
+        30: "30D",
+        90: "90D",
+        365: "365D",
+      };
+
+      return mapping[days] || null;
+    }
+
     /**
      * 분석 시작 버튼 클릭
      * 선택한 기업/매장을 모달 대상으로 저장하고 날짜 모달 오픈
@@ -156,6 +180,8 @@ export const StoreListPage = defineComponent({
     function onConfirm(dates) {
       if (!selectedStore.value) return;
 
+      const periodType = resolvePeriodType(dates.start, dates.end);
+
       // 신일팜글래스만 B2B 리포트로 보냄
       if (selectedStore.value.id === "store_7") {
         router.push({
@@ -163,6 +189,7 @@ export const StoreListPage = defineComponent({
           query: {
             start: dates.start,
             end: dates.end,
+            ...(periodType ? { periodType } : {}),
           },
         });
         return;
@@ -171,7 +198,11 @@ export const StoreListPage = defineComponent({
       // 나머지는 기존 매장/기업 리포트 흐름 유지
       router.push({
         path: `/report/${selectedStore.value.id}`,
-        query: dates,
+        query: {
+          start: dates.start,
+          end: dates.end,
+          ...(periodType ? { periodType } : {}),
+        },
       });
     }
 

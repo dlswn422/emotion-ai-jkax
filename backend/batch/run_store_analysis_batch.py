@@ -20,7 +20,7 @@ from backend.service.cx_cache_service import (
 env_path = Path(__file__).resolve().parents[1] / ".env"
 load_dotenv(env_path)
 
-DEFAULT_PERIODS = ["1D", "7D", "30D", "90D", "365D"]
+DEFAULT_PERIODS = ["7D", "30D", "90D", "365D"]
 MAX_ANALYZE_ATTEMPTS = 3
 EXCLUDED_STORE_IDS = {"store_7", "store_9", "store_10"}
 
@@ -42,6 +42,8 @@ def _is_minimal_cx_payload(payload: Any) -> bool:
         "review_count" in payload
         and "rating" in payload
         and isinstance(payload.get("rating_distribution"), list)
+        and isinstance(payload.get("rating_trend_daily"), list)
+        and isinstance(payload.get("rating_trend_monthly"), list)
     )
 
 
@@ -54,8 +56,7 @@ def _is_usable_cx_payload(payload: Any) -> bool:
         return True
 
     rich_fields = [
-        payload.get("sentiment"),
-        payload.get("nps"),
+        payload.get("kpi"),
         payload.get("executive_summary"),
         payload.get("action_plan"),
         payload.get("drivers_of_satisfaction"),
@@ -106,9 +107,9 @@ def run_store_analysis_batch(
     total_jobs = len(target_store_ids) * len(period_types)
     done = 0
     success = 0
+    partial_success = 0
     no_reviews = 0
     error = 0
-    skipped_low_quality = 0
 
     print(f"[store-batch] batch_run_id={batch_run_id}")
     print(f"[store-batch] stores={len(target_store_ids)} periods={period_types} total_jobs={total_jobs}")
@@ -177,12 +178,11 @@ def run_store_analysis_batch(
                     status = "ERROR"
 
                 if status == "SUCCESS" and not _is_usable_cx_payload(response_json):
-                    skipped_low_quality += 1
+                    status = "PARTIAL_SUCCESS"
                     print(
-                        f"[store-batch] skip save low-quality payload "
+                        f"[store-batch] degrade status to PARTIAL_SUCCESS "
                         f"store_id={store_id} period_type={period_type}"
                     )
-                    continue
 
                 save_cx_cache_result(
                     store_id=store_id,
@@ -197,6 +197,8 @@ def run_store_analysis_batch(
 
                 if status == "SUCCESS":
                     success += 1
+                elif status == "PARTIAL_SUCCESS":
+                    partial_success += 1
                 elif status == "NO_REVIEWS":
                     no_reviews += 1
                 else:
@@ -211,8 +213,8 @@ def run_store_analysis_batch(
 
     print(
         f"[store-batch] done "
-        f"success={success} no_reviews={no_reviews} "
-        f"error={error} skipped_low_quality={skipped_low_quality}"
+        f"success={success} partial_success={partial_success} "
+        f"no_reviews={no_reviews} error={error}"
     )
 
 

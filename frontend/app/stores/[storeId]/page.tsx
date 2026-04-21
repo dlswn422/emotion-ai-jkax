@@ -92,18 +92,19 @@ const MOCK_STORES: Record<string, any> = {
   },
 };
 
-
+type PresetRange = "7d" | "30d" | "90d" | "365d" | "all";
 
 /* ================= Date Utils ================= */
-function formatDate(date: Date) {
-  return date.toISOString().split("T")[0];
+function formatDateLocal(date: Date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
 }
 
-function getDateRange(
-  type: "7d" | "30d" | "3m" | "6m" | "all"
-): { from: string; to: string } {
+function getDateRange(type: PresetRange): { from: string; to: string } {
   const today = new Date();
-  const end = formatDate(today);
+  const end = formatDateLocal(today);
 
   if (type === "all") {
     return { from: "2000-01-01", to: end };
@@ -113,20 +114,44 @@ function getDateRange(
 
   switch (type) {
     case "7d":
-      start.setDate(today.getDate() - 7);
+      start.setDate(today.getDate() - 6);
       break;
     case "30d":
-      start.setDate(today.getDate() - 30);
+      start.setDate(today.getDate() - 29);
       break;
-    case "3m":
-      start.setMonth(today.getMonth() - 3);
+    case "90d":
+      start.setDate(today.getDate() - 89);
       break;
-    case "6m":
-      start.setMonth(today.getMonth() - 6);
+    case "365d":
+      start.setDate(today.getDate() - 364);
       break;
   }
 
-  return { from: formatDate(start), to: end };
+  return { from: formatDateLocal(start), to: end };
+}
+
+function resolvePeriodType(from: string, to: string): string | null {
+  if (!from || !to) return null;
+
+  const fromDate = new Date(`${from}T00:00:00`);
+  const toDate = new Date(`${to}T00:00:00`);
+
+  if (Number.isNaN(fromDate.getTime()) || Number.isNaN(toDate.getTime())) {
+    return null;
+  }
+
+  const diffMs = toDate.getTime() - fromDate.getTime();
+  const days = Math.floor(diffMs / (1000 * 60 * 60 * 24)) + 1;
+
+  const mapping: Record<number, string> = {
+    1: "1D",
+    7: "7D",
+    30: "30D",
+    90: "90D",
+    365: "365D",
+  };
+
+  return mapping[days] ?? null;
 }
 
 /* ================= Main ================= */
@@ -149,39 +174,38 @@ export default function StoreDetailPage() {
   const [analyzing, setAnalyzing] = useState(false);
   const [navigatingCustomers, setNavigatingCustomers] = useState(false);
 
-/* ================= MOCK 로드 ================= */
-useEffect(() => {
-  let cancelled = false;
+  /* ================= MOCK 로드 ================= */
+  useEffect(() => {
+    let cancelled = false;
 
-  const load = async () => {
-    try {
-      const mock = MOCK_STORES[decodedStoreId];
-      if (!mock) throw new Error("not_found");
+    const load = async () => {
+      try {
+        const mock = MOCK_STORES[decodedStoreId];
+        if (!mock) throw new Error("not_found");
 
-      if (!cancelled) setStore(mock);
-    } catch {
-      if (!cancelled) {
-        setError(
-          "매장 정보를 불러오는 데 실패했습니다.\n잠시 후 다시 시도해주세요."
-        );
+        if (!cancelled) setStore(mock);
+      } catch {
+        if (!cancelled) {
+          setError(
+            "매장 정보를 불러오는 데 실패했습니다.\n잠시 후 다시 시도해주세요."
+          );
+        }
       }
-    }
-  };
+    };
 
-  load();
-  return () => {
-    cancelled = true;
-  };
-}, [decodedStoreId]);
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, [decodedStoreId]);
 
-  /* ✅ 모달 열릴 때 기본값: 최근 6개월 */
+  /* ✅ 모달 열릴 때 기본값: 최근 90일 */
   useEffect(() => {
     if (!showAnalyzeModal) return;
-    const { from, to } = getDateRange("6m");
+    const { from, to } = getDateRange("90d");
     setFromDate(from);
     setToDate(to);
   }, [showAnalyzeModal]);
-
 
   const handleAnalyze = () => {
     if (!fromDate || !toDate || analyzing) return;
@@ -189,22 +213,27 @@ useEffect(() => {
     setAnalyzing(true);
     setShowAnalyzeModal(false);
 
+    const query = new URLSearchParams({
+      storeId: decodedStoreId,
+      from: fromDate,
+      to: toDate,
+    });
+
+    const periodType = resolvePeriodType(fromDate, toDate);
+    if (periodType) {
+      query.append("periodType", periodType);
+    }
+
     setTimeout(() => {
-      router.push(
-        `/cx-dashboard?storeId=${encodeURIComponent(
-          decodedStoreId
-        )}&from=${fromDate}&to=${toDate}`
-      );
+      router.push(`/cx-dashboard?${query.toString()}`);
     }, 400);
   };
 
   /* ================= Render ================= */
   return (
     <main className="min-h-screen flex flex-col bg-slate-50 relative">
-      {/* ✅ 공통 헤더 */}
       <AppHeader variant="app" />
 
-      {/* 고객 분석 이동 오버레이 */}
       {navigatingCustomers && (
         <div className="absolute inset-0 z-50 bg-white/70 backdrop-blur flex flex-col items-center justify-center">
           <Loader2 className="w-10 h-10 text-purple-600 animate-spin mb-4" />
@@ -214,7 +243,6 @@ useEffect(() => {
         </div>
       )}
 
-      {/* 리뷰 분석 이동 오버레이 */}
       {analyzing && (
         <div className="absolute inset-0 z-50 bg-white/70 backdrop-blur flex flex-col items-center justify-center">
           <Loader2 className="w-10 h-10 text-blue-600 animate-spin mb-4" />
@@ -241,7 +269,6 @@ useEffect(() => {
 
         return (
           <section className="max-w-6xl mx-auto px-6 py-16 space-y-16 flex-1">
-            {/* STORE OVERVIEW */}
             <section className="relative bg-white rounded-3xl p-10 shadow-sm">
               <div className="absolute left-0 top-0 h-full w-1.5 bg-blue-600 rounded-l-3xl" />
               <div className="flex gap-6">
@@ -276,7 +303,6 @@ useEffect(() => {
               </div>
             </section>
 
-            {/* KPI */}
             <section className="grid grid-cols-1 md:grid-cols-3 gap-8">
               <Metric
                 icon={<Star className="w-6 h-6 text-yellow-400" />}
@@ -306,7 +332,6 @@ useEffect(() => {
               />
             </section>
 
-            {/* CTA */}
             <section className="bg-white rounded-3xl p-12 shadow-md text-center">
               {!hasReviews ? (
                 <>
@@ -365,7 +390,6 @@ useEffect(() => {
         );
       })()}
 
-      {/* ================= 분석 기간 모달 ================= */}
       {showAnalyzeModal && (
         <Modal onClose={() => setShowAnalyzeModal(false)}>
           <h3 className="text-xl font-extrabold mb-4 flex items-center gap-2">
@@ -374,31 +398,46 @@ useEffect(() => {
           </h3>
 
           <div className="grid grid-cols-2 gap-3 mb-6">
-            <QuickButton label="최근 7일" onClick={() => {
-              const r = getDateRange("7d");
-              setFromDate(r.from);
-              setToDate(r.to);
-            }} />
-            <QuickButton label="최근 30일" onClick={() => {
-              const r = getDateRange("30d");
-              setFromDate(r.from);
-              setToDate(r.to);
-            }} />
-            <QuickButton label="최근 3개월" onClick={() => {
-              const r = getDateRange("3m");
-              setFromDate(r.from);
-              setToDate(r.to);
-            }} />
-            <QuickButton label="최근 6개월" onClick={() => {
-              const r = getDateRange("6m");
-              setFromDate(r.from);
-              setToDate(r.to);
-            }} />
-            <QuickButton label="전체" onClick={() => {
-              const r = getDateRange("all");
-              setFromDate(r.from);
-              setToDate(r.to);
-            }} />
+            <QuickButton
+              label="최근 7일"
+              onClick={() => {
+                const r = getDateRange("7d");
+                setFromDate(r.from);
+                setToDate(r.to);
+              }}
+            />
+            <QuickButton
+              label="최근 30일"
+              onClick={() => {
+                const r = getDateRange("30d");
+                setFromDate(r.from);
+                setToDate(r.to);
+              }}
+            />
+            <QuickButton
+              label="최근 90일"
+              onClick={() => {
+                const r = getDateRange("90d");
+                setFromDate(r.from);
+                setToDate(r.to);
+              }}
+            />
+            <QuickButton
+              label="최근 365일"
+              onClick={() => {
+                const r = getDateRange("365d");
+                setFromDate(r.from);
+                setToDate(r.to);
+              }}
+            />
+            <QuickButton
+              label="전체"
+              onClick={() => {
+                const r = getDateRange("all");
+                setFromDate(r.from);
+                setToDate(r.to);
+              }}
+            />
           </div>
 
           <div className="space-y-4 mb-8">
