@@ -29,7 +29,12 @@ function mapServerRowToAlert(row) {
     keyword: row?.keyword || "",
     desc: row?.message || "",
     linkUrl: row?.link_url || "",
-    dupKey: signalId != null ? `signal-${signalId}` : dbId != null ? `notification-${dbId}` : null,
+    dupKey:
+      signalId != null
+        ? `signal-${signalId}`
+        : dbId != null
+          ? `notification-${dbId}`
+          : null,
     read: !!row?.read,
   };
 }
@@ -38,11 +43,36 @@ export const AlertPanel = defineComponent({
   name: "AlertPanel",
   setup() {
     const RECIPIENTS = [
-      { id: "ceo", name: "대표이사 (CEO)", email: "ceo@company.com", checked: ref(true) },
-      { id: "coo", name: "최고운영책임자 (COO)", email: "coo@company.com", checked: ref(false) },
-      { id: "cmo", name: "마케팅총괄 (CMO)", email: "cmo@company.com", checked: ref(false) },
-      { id: "cso", name: "전략기획실장 (CSO)", email: "strategy@company.com", checked: ref(false) },
-      { id: "cs", name: "CS팀장", email: "cs@company.com", checked: ref(false) },
+      {
+        id: "ceo",
+        name: "대표이사 (CEO)",
+        email: "ceo@company.com",
+        checked: ref(true),
+      },
+      {
+        id: "coo",
+        name: "최고운영책임자 (COO)",
+        email: "coo@company.com",
+        checked: ref(false),
+      },
+      {
+        id: "cmo",
+        name: "마케팅총괄 (CMO)",
+        email: "cmo@company.com",
+        checked: ref(false),
+      },
+      {
+        id: "cso",
+        name: "전략기획실장 (CSO)",
+        email: "strategy@company.com",
+        checked: ref(false),
+      },
+      {
+        id: "cs",
+        name: "CS팀장",
+        email: "cs@company.com",
+        checked: ref(false),
+      },
     ];
 
     const store = ALERT_STORE;
@@ -63,7 +93,9 @@ export const AlertPanel = defineComponent({
     }
 
     async function loadUnreadNotifications() {
-      const res = await fetch(`${BACKEND_URL}/notifications?tenant_id=${TENANT_ID}&is_read=false`);
+      const res = await fetch(
+        `${BACKEND_URL}/notifications?tenant_id=${TENANT_ID}&is_read=false`,
+      );
       if (!res.ok) {
         throw new Error(`HTTP ${res.status}`);
       }
@@ -107,7 +139,10 @@ export const AlertPanel = defineComponent({
     }
 
     function handleIncomingSocketAlert(data) {
-      const isSummary = !!data?.open_panel || data?.signal_type_label === "시스템 알림" || !data?.db_id;
+      const isSummary =
+        !!data?.open_panel ||
+        data?.signal_type_label === "시스템 알림" ||
+        !data?.db_id;
 
       if (isSummary) {
         flushSocketBuffer();
@@ -143,6 +178,43 @@ export const AlertPanel = defineComponent({
         });
       }
     }
+    // resume 때 기존 소켓 상태를 한번 정리
+    function resetSocketState() {
+      try {
+        if (
+          window._cxSocket &&
+          typeof window._cxSocket.disconnect === "function"
+        ) {
+          window._cxSocket.disconnect();
+        }
+      } catch (e) {
+        console.warn("[Socket.io] 소켓 정리 중 오류:", e);
+      } finally {
+        window._cxSocket = null;
+        window._cxSocketInitialized = false;
+      }
+    }
+
+    // 안드로이드 MainActivity.onResume()가 호출할 함수
+    async function handleAppResume() {
+      console.log("[Notification] onAppResume 호출됨");
+
+      try {
+        // 1) 현재 DB 기준으로 알림 목록 다시 맞춤
+        await loadUnreadNotifications();
+      } catch (e) {
+        console.warn("[Notification] onAppResume 재조회 실패:", e);
+      } finally {
+        window._cxDBLoading = false;
+      }
+
+      // 2) 실시간 소켓도 다시 맞춤
+      resetSocketState();
+      initSocket();
+    }
+
+    // WebView 바깥(안드로이드)에서 호출할 수 있게 전역 등록
+    window.onAppResume = handleAppResume;
 
     if (!window._cxNotificationsLoaded) {
       window._cxNotificationsLoaded = true;
@@ -171,7 +243,9 @@ export const AlertPanel = defineComponent({
     }
 
     function buildDefaultMsg(a) {
-      const now = new Date().toLocaleString("ko-KR", { timeZone: "Asia/Seoul" });
+      const now = new Date().toLocaleString("ko-KR", {
+        timeZone: "Asia/Seoul",
+      });
       return `[CXNexus 경영진 Alert — ${
         a.severity === "critical"
           ? "🔴 긴급"
@@ -200,7 +274,9 @@ ${a.desc}
     async function sendAlert() {
       sending.value = true;
       await new Promise((r) => setTimeout(r, 1200));
-      const recipients = RECIPIENTS.filter((r) => r.checked.value).map((r) => r.name);
+      const recipients = RECIPIENTS.filter((r) => r.checked.value).map(
+        (r) => r.name,
+      );
       if (store.pendingAlert) {
         store.markSent(store.pendingAlert.id, recipients);
       }
@@ -224,7 +300,9 @@ ${a.desc}
       store.setPending([alert.id], true);
       try {
         const result = await requestMarkRead(alert.dbId);
-        const updatedIds = Array.isArray(result.updated_ids) ? result.updated_ids : [alert.dbId];
+        const updatedIds = Array.isArray(result.updated_ids)
+          ? result.updated_ids
+          : [alert.dbId];
         store.removeByDbIds(updatedIds);
         updateSummary();
       } catch (e) {
@@ -240,7 +318,9 @@ ${a.desc}
       store._save();
       try {
         const result = await requestMarkRead(alert.dbId);
-        const updatedIds = Array.isArray(result.updated_ids) ? result.updated_ids : [alert.dbId];
+        const updatedIds = Array.isArray(result.updated_ids)
+          ? result.updated_ids
+          : [alert.dbId];
         store.markReadByDbIds(updatedIds);
       } catch (e) {
         alert.read = previous;
