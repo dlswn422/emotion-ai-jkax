@@ -137,9 +137,7 @@ export const B2BReportPage = defineComponent({
           : payload;
 
       const nextTabId =
-        typeof payload === "object" && payload !== null
-          ? payload.tabId
-          : null;
+        typeof payload === "object" && payload !== null ? payload.tabId : null;
 
       if (nextTabId && LOADING_THEMES[nextTabId]) {
         loadingSource.value = nextTabId;
@@ -500,26 +498,6 @@ export const B2BReportPage = defineComponent({
               :analysis-period="analysisPeriod"
               @loading-change="(loading) => setSectionLoading({ tabId: 'external', loading })"
             />
-          </template>
-
-          <template v-if="isVisibleTab('ownreview')">
-            <div v-if="isMobileStackMode" class="b2b-mobile-section-marker">
-              <div class="b2b-mobile-section-marker-icon">
-                <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                  <circle cx="12" cy="12" r="10"/>
-                  <path d="M12 6v6l4 2"/>
-                </svg>
-              </div>
-              <div class="b2b-mobile-section-marker-text">
-                <div class="b2b-mobile-section-marker-title">리뷰 감정 분석</div>
-                <div class="b2b-mobile-section-marker-sub">현재 작업중인 섹션</div>
-              </div>
-            </div>
-
-            <div class="tab-status-screen wip" :style="isMobileStackMode ? 'margin-top:0' : 'margin-top:18px'">
-              <div class="tab-screen-badge wip">작업중</div>
-              <h2 class="tab-screen-title">리뷰 감정 분석 탭은 다음 단계에서 맞출 예정</h2>
-            </div>
           </template>
 
           <template v-if="isVisibleTab('competitive')">
