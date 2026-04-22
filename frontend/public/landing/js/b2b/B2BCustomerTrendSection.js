@@ -27,12 +27,114 @@ export const B2BCustomerTrendSection = defineComponent({
     const kwChartMode = ref("rank");
     const prospectFilter = ref("");
 
-    // 반응형 여부
+    // 뷰포트 너비 및 모바일 키워드 카드 여부
     const viewportWidth = ref(window.innerWidth);
     const isMobileKeywordCard = computed(() => viewportWidth.value <= 600);
 
     function handleResize() {
       viewportWidth.value = window.innerWidth;
+    }
+
+    // 모바일 키워드 카드 확장 상태
+    const expandedKeywordCard = ref(null);
+    const overflowKeywordMap = ref({});
+    let keywordResizeObserver = null;
+
+    function getKeywordCardKey(kw, idx) {
+      return String(kw?._id || kw?.keyword || idx);
+    }
+
+    function toggleKeywordCard(cardKey) {
+      if (!overflowKeywordMap.value[cardKey]) return;
+
+      expandedKeywordCard.value =
+        expandedKeywordCard.value === cardKey ? null : cardKey;
+    }
+
+    function measureKeywordOverflow() {
+      nextTick(() => {
+        const rows = document.querySelectorAll(".cdt-kw-mobile-top");
+        const nextMap = {};
+
+        rows.forEach((rowEl) => {
+          const cardKey = rowEl.dataset.cardKey;
+          if (!cardKey) return;
+
+          const rankEl = rowEl.querySelector(".cdt-kw-mobile-rank");
+          const levelEl = rowEl.querySelector(".cdt-kw-mobile-level");
+          const chipEl = rowEl.querySelector(".cdt-kw-chip");
+          const measureEl = rowEl.querySelector(
+            ".cdt-kw-mobile-keyword-measure",
+          );
+
+          if (!rankEl || !levelEl || !chipEl || !measureEl) {
+            nextMap[cardKey] = false;
+            return;
+          }
+
+          const rowStyle = window.getComputedStyle(rowEl);
+          const gap =
+            parseFloat(rowStyle.columnGap || rowStyle.gap || "0") || 0;
+
+          const rowWidth = rowEl.clientWidth;
+          const rankWidth = rankEl.getBoundingClientRect().width;
+          const levelWidth = levelEl.getBoundingClientRect().width;
+
+          const chipStyle = window.getComputedStyle(chipEl);
+          const chipPaddingLeft = parseFloat(chipStyle.paddingLeft || "0") || 0;
+          const chipPaddingRight =
+            parseFloat(chipStyle.paddingRight || "0") || 0;
+          const chipBorderLeft =
+            parseFloat(chipStyle.borderLeftWidth || "0") || 0;
+          const chipBorderRight =
+            parseFloat(chipStyle.borderRightWidth || "0") || 0;
+
+          const reservedWidth =
+            rankWidth +
+            levelWidth +
+            gap * 2 +
+            chipPaddingLeft +
+            chipPaddingRight +
+            chipBorderLeft +
+            chipBorderRight +
+            2;
+
+          const availableTextWidth = Math.max(0, rowWidth - reservedWidth);
+          const textWidth = Math.ceil(measureEl.getBoundingClientRect().width);
+
+          nextMap[cardKey] = textWidth > availableTextWidth;
+        });
+
+        overflowKeywordMap.value = nextMap;
+
+        if (expandedKeywordCard.value && !nextMap[expandedKeywordCard.value]) {
+          expandedKeywordCard.value = null;
+        }
+      });
+    }
+
+    function setupKeywordResizeObserver() {
+      if (keywordResizeObserver) {
+        keywordResizeObserver.disconnect();
+        keywordResizeObserver = null;
+      }
+
+      if (
+        typeof window === "undefined" ||
+        typeof window.ResizeObserver === "undefined"
+      ) {
+        return;
+      }
+
+      keywordResizeObserver = new ResizeObserver(() => {
+        measureKeywordOverflow();
+      });
+
+      nextTick(() => {
+        document.querySelectorAll(".cdt-kw-mobile-top").forEach((el) => {
+          keywordResizeObserver?.observe(el);
+        });
+      });
     }
 
     // 실데이터 저장 상태
@@ -387,6 +489,24 @@ export const B2BCustomerTrendSection = defineComponent({
       if (mode === "monthly") await buildKwMonthlyChart();
     });
 
+    // 모바일 키워드 카드 여부 변경 시 오버플로우 재측정
+    watch(isMobileKeywordCard, async () => {
+      expandedKeywordCard.value = null;
+      await nextTick();
+      measureKeywordOverflow();
+      setupKeywordResizeObserver();
+    });
+
+    watch(
+      externalKeywordRows,
+      async () => {
+        expandedKeywordCard.value = null;
+        await nextTick();
+        measureKeywordOverflow();
+        setupKeywordResizeObserver();
+      },
+      { deep: true },
+    );
     // 기업 / 기간 변경 시 API 재호출
     watch(
       () => [
@@ -401,6 +521,9 @@ export const B2BCustomerTrendSection = defineComponent({
 
         if (kwChartMode.value === "daily") await buildKwDailyChart();
         if (kwChartMode.value === "monthly") await buildKwMonthlyChart();
+        // 키워드 데이터 변경 시 오버플로우 재측정
+        measureKeywordOverflow();
+        setupKeywordResizeObserver();
       },
     );
 
@@ -412,11 +535,19 @@ export const B2BCustomerTrendSection = defineComponent({
       await nextTick();
       if (kwChartMode.value === "daily") await buildKwDailyChart();
       if (kwChartMode.value === "monthly") await buildKwMonthlyChart();
+      measureKeywordOverflow();
+      setupKeywordResizeObserver();
     });
 
-    // 화면 이탈 시 차트 정리
+    // 언마운트 시 리스너 제거 및 차트 인스턴스 정리
     onUnmounted(() => {
       window.removeEventListener("resize", handleResize);
+
+      if (keywordResizeObserver) {
+        keywordResizeObserver.disconnect();
+        keywordResizeObserver = null;
+      }
+
       destroyChart(kwDailyChartInst);
       destroyChart(kwMonthlyChartInst);
     });
@@ -434,6 +565,10 @@ export const B2BCustomerTrendSection = defineComponent({
       formatSignalLevel,
       formatLastHit,
       isMobileKeywordCard,
+      expandedKeywordCard,
+      overflowKeywordMap,
+      getKeywordCardKey,
+      toggleKeywordCard,
     };
   },
 
@@ -522,62 +657,95 @@ export const B2BCustomerTrendSection = defineComponent({
 
 
 
-          <template v-if="isMobileKeywordCard">
-            <!-- 모바일 카드 -->
-            <div class="cdt-kw-mobile-list">
-              <div
-                v-for="(kw, idx) in externalKeywordRows.slice(0, 10)"
-                :key="'mobile-' + (kw._id || kw.keyword || idx)"
-                class="cdt-kw-mobile-card"
-              >
-                <div class="cdt-kw-mobile-top">
-                  <div class="cdt-kw-mobile-rank">{{ idx + 1 }}</div>
+      <template v-if="isMobileKeywordCard">
+        <div class="cdt-kw-mobile-list">
+          <div
+            v-for="(kw, idx) in externalKeywordRows.slice(0, 10)"
+            :key="'mobile-' + (kw._id || kw.keyword || idx)"
+            class="cdt-kw-mobile-card"
+            :class="{
+              'cdt-kw-mobile-card-expandable':
+                overflowKeywordMap[getKeywordCardKey(kw, idx)],
+              'cdt-kw-mobile-card-expanded':
+                expandedKeywordCard === getKeywordCardKey(kw, idx)
+            }"
+          >
+            <div
+              class="cdt-kw-mobile-top"
+              :data-card-key="getKeywordCardKey(kw, idx)"
+            >
+              <div class="cdt-kw-mobile-rank">{{ idx + 1 }}</div>
 
+              <div class="cdt-kw-mobile-keyword-wrap">
+                <button
+                  type="button"
+                  class="cdt-kw-mobile-chip-btn"
+                  :class="{
+                    'is-expandable': overflowKeywordMap[getKeywordCardKey(kw, idx)],
+                    'is-expanded': expandedKeywordCard === getKeywordCardKey(kw, idx)
+                  }"
+                  :disabled="!overflowKeywordMap[getKeywordCardKey(kw, idx)]"
+                  @click.stop="toggleKeywordCard(getKeywordCardKey(kw, idx))"
+                >
                   <span class="cdt-kw-chip" :class="'cdt-kw-' + kw.signal_level">
-                    {{ kw.keyword }}
-                  </span>
-
-                  <div class="cdt-kw-mobile-level">
                     <span
-                      class="cdt-signal-dot"
-                      :class="'cdt-sig-' + kw.signal_level"
-                    ></span>
-                    <span
-                      :style="{
-                        fontSize: '11px',
-                        fontWeight: '700',
-                        color:
-                          kw.signal_level === 'high'
-                            ? '#f43f5e'
-                            : kw.signal_level === 'medium'
-                            ? '#f59e0b'
-                            : '#94a3b8'
+                      class="cdt-kw-mobile-keyword-text"
+                      :class="{
+                        expanded: expandedKeywordCard === getKeywordCardKey(kw, idx)
                       }"
+                      :title="kw.keyword"
                     >
-                      {{
-                        kw.signal_level === 'high'
-                          ? 'HIGH'
-                          : kw.signal_level === 'medium'
-                          ? 'MED'
-                          : 'LOW'
-                      }}
+                      {{ kw.keyword }}
                     </span>
-                  </div>
-                </div>
 
-                <div class="cdt-kw-mobile-meta">
-                  <div class="cdt-kw-mobile-meta-left">
-                    <span class="cdt-type-tag">{{ kw.kw_type || '이벤트' }}</span>
-                    <span class="cdt-hit-badge">히트 {{ kw.hit_count || 0 }}</span>
-                  </div>
-
-                  <span class="cdt-kw-mobile-date">
-                    최근 탐지 {{ kw.last_hit || '—' }}
+                    <span class="cdt-kw-mobile-keyword-measure">
+                      {{ kw.keyword }}
+                    </span>
                   </span>
-                </div>
+                </button>
+              </div>
+
+              <div class="cdt-kw-mobile-level">
+                <span
+                  class="cdt-signal-dot"
+                  :class="'cdt-sig-' + kw.signal_level"
+                ></span>
+                <span
+                  :style="{
+                    fontSize: '11px',
+                    fontWeight: '700',
+                    color:
+                      kw.signal_level === 'high'
+                        ? '#f43f5e'
+                        : kw.signal_level === 'medium'
+                        ? '#f59e0b'
+                        : '#94a3b8'
+                  }"
+                >
+                  {{
+                    kw.signal_level === 'high'
+                      ? 'HIGH'
+                      : kw.signal_level === 'medium'
+                      ? 'MED'
+                      : 'LOW'
+                  }}
+                </span>
               </div>
             </div>
-          </template>
+
+            <div class="cdt-kw-mobile-meta">
+              <div class="cdt-kw-mobile-meta-left">
+                <span class="cdt-type-tag">{{ kw.kw_type || '이벤트' }}</span>
+                <span class="cdt-hit-badge">히트 {{ kw.hit_count || 0 }}</span>
+              </div>
+
+              <span class="cdt-kw-mobile-date">
+                최근 탐지 {{ kw.last_hit || '—' }}
+              </span>
+            </div>
+          </div>
+        </div>
+      </template>
 
           <template v-else>
             <!-- PC 테이블 -->
