@@ -919,20 +919,91 @@
   }
 
   .cdt-kw-mobile-top {
-    display: flex;
+    display: grid;
+    grid-template-columns: 20px minmax(0, 1fr) auto;
     align-items: center;
-    gap: 8px;
+    column-gap: 8px;
     margin-bottom: 10px;
+    min-width: 0;
+  }
+
+  .cdt-kw-mobile-rank {
+    min-width: 0;
+  }
+
+  .cdt-kw-mobile-keyword-wrap {
+    min-width: 0;
+  }
+
+  .cdt-kw-mobile-chip-btn {
+    display: block;
+    width: 100%;
+    padding: 0;
+    margin: 0;
+    border: 0;
+    background: transparent;
+    text-align: left;
+    font: inherit;
+    color: inherit;
+    cursor: default;
+  }
+
+  .cdt-kw-mobile-chip-btn.is-expandable {
+    cursor: pointer;
+  }
+
+  .cdt-kw-mobile-chip-btn:disabled {
+    opacity: 1;
+  }
+
+  .cdt-kw-mobile-chip-btn .cdt-kw-chip {
+    display: inline-flex;
+    align-items: center;
+    justify-content: flex-start;
+    min-width: 0;
+    max-width: 100%;
+    text-align: left;
+  }
+
+  .cdt-kw-mobile-keyword-text {
+    display: inline-block;
+    min-width: 0;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    vertical-align: top;
+  }
+
+  .cdt-kw-mobile-keyword-text.expanded {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+    line-height: 1.35;
+    overflow-wrap: anywhere;
+    word-break: keep-all;
+  }
+
+  .cdt-kw-mobile-keyword-measure {
+    position: absolute;
+    visibility: hidden;
+    pointer-events: none;
+    white-space: nowrap;
+    height: 0;
+    overflow: hidden;
   }
 
   .cdt-kw-mobile-level {
-    margin-left: auto;
+    display: inline-flex;
+    align-items: center;
+    white-space: nowrap;
+    justify-self: end;
+    margin-left: 0;
+    flex-shrink: 0;
   }
 
-  .cdt-kw-mobile-top .cdt-kw-chip {
-    width: auto;
-    max-width: fit-content;
-    flex: 0 0 auto;
+  .cdt-kw-mobile-card-expanded .cdt-kw-mobile-top {
+    align-items: start;
   }
 
   .cdt-kw-mobile-meta {
