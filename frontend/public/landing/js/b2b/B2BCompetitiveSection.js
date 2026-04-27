@@ -531,7 +531,7 @@ export const B2BCompetitiveSection = defineComponent({
                       display: grid;
                       grid-template-columns: 46px 24px minmax(0, 1fr) 78px;
                       align-items: center;
-                      column-gap: 9px;
+                      column-gap: 4px;
                     "
                   >
                     <div style="display:flex; justify-content:flex-start;">
@@ -550,7 +550,9 @@ export const B2BCompetitiveSection = defineComponent({
                               ? '#f59e0b'
                               : '#64748b',
                         fontWeight: '800',
-                        flex: '0 0 auto'
+                        flex: '0 0 auto',
+                        minWidth: '10px',
+                        textAlign: 'center'
                       }"
                     >
                       {{ kw.hit_count || 0 }}
@@ -558,7 +560,7 @@ export const B2BCompetitiveSection = defineComponent({
 
                     <div
                       class="ci-hit-bar-bg"
-                      style="width: 100%; max-width: 110px; min-width: 90px;"
+                      style="width: 100%; max-width: 110px; min-width: 90px; transform: translateX(4px);"
                     >
                       <div
                         class="ci-hit-bar-fill"
