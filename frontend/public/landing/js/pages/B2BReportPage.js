@@ -294,7 +294,7 @@ export const B2BReportPage = defineComponent({
     <NavBar page="b2b-report"/>
     <AlertPanel/>
     <DateModal v-model="showPeriodModal" @confirm="onPeriodConfirm"/>
-    # 모바일 로딩창
+    <!-- 모바일 로딩창 -->
     <div
       v-if="loading && isMobileStackMode"
       class="b2b-mobile-loading-screen"
