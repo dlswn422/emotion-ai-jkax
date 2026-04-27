@@ -525,13 +525,13 @@ export const B2BCompetitiveSection = defineComponent({
                     </div>
                   </div>
 
-                  <!-- 2줄: 유형 / 히트수 / 바 / 날짜 -->
+                  <!-- 2줄: 유형 / 히트수+바 / 날짜 -->
                   <div
                     style="
                       display: grid;
-                      grid-template-columns: 46px 24px minmax(0, 1fr) 78px;
+                      grid-template-columns: 46px minmax(0, 1fr) 78px;
                       align-items: center;
-                      column-gap: 4px;
+                      column-gap: 8px;
                     "
                   >
                     <div style="display:flex; justify-content:flex-start;">
@@ -540,51 +540,57 @@ export const B2BCompetitiveSection = defineComponent({
                       </span>
                     </div>
 
-                    <span
-                      class="ci-hit-num"
-                      :style="{
-                        color:
-                          kw.signal_level==='high'
-                            ? '#f43f5e'
-                            : kw.signal_level==='medium'
-                              ? '#f59e0b'
-                              : '#64748b',
-                        fontWeight: '800',
-                        flex: '0 0 auto',
-                        minWidth: '10px',
-                        textAlign: 'center'
-                      }"
-                    >
-                      {{ kw.hit_count || 0 }}
-                    </span>
-
                     <div
-                      class="ci-hit-bar-bg"
-                      style="width: 100%; max-width: 110px; min-width: 90px; transform: translateX(4px);"
+                      style="
+                        display: grid;
+                        grid-template-columns: 16px minmax(90px, 110px);
+                        align-items: center;
+                        column-gap: 8px;
+                        min-width: 0;
+                        justify-content: center;
+                      "
                     >
-                      <div
-                        class="ci-hit-bar-fill"
+                      <span
+                        class="ci-hit-num"
                         :style="{
-                          width: sortedKeywords.length
-                            ? Math.min(100, Math.round(((kw.hit_count||0) / Math.max(...sortedKeywords.map(k=>k.hit_count||0), 1)) * 100)) + '%'
-                            : '0%',
-                          background:
+                          color:
                             kw.signal_level==='high'
-                              ? 'linear-gradient(90deg,#f43f5e,#fb7185)'
+                              ? '#f43f5e'
                               : kw.signal_level==='medium'
-                                ? 'linear-gradient(90deg,#f59e0b,#fbbf24)'
-                                : 'linear-gradient(90deg,#94a3b8,#cbd5e1)'
+                                ? '#f59e0b'
+                                : '#64748b',
+                          fontWeight: '800',
+                          flex: '0 0 auto',
+                          minWidth: '14px',
+                          textAlign: 'center'
                         }"
-                      ></div>
+                      >
+                        {{ kw.hit_count || 0 }}
+                      </span>
+
+                      <div
+                        class="ci-hit-bar-bg"
+                        style="width: 110px; max-width: 110px; min-width: 90px; flex: 0 0 110px;"
+                      >
+                        <div
+                          class="ci-hit-bar-fill"
+                          :style="{
+                            width: sortedKeywords.length
+                              ? Math.min(100, Math.round(((kw.hit_count||0) / Math.max(...sortedKeywords.map(k=>k.hit_count||0), 1)) * 100)) + '%'
+                              : '0%',
+                            background:
+                              kw.signal_level==='high'
+                                ? 'linear-gradient(90deg,#f43f5e,#fb7185)'
+                                : kw.signal_level==='medium'
+                                  ? 'linear-gradient(90deg,#f59e0b,#fbbf24)'
+                                  : 'linear-gradient(90deg,#94a3b8,#cbd5e1)'
+                          }"
+                        ></div>
+                      </div>
                     </div>
-                  
-                    
 
                     <div style="display:flex; justify-content:flex-end;">
-                      <span
-                        class="ci-date-text"
-                        style="white-space:nowrap; font-size:12px;"
-                      >
+                      <span class="ci-mobile-date">
                         {{ kw.last_hit || '—' }}
                       </span>
                     </div>
