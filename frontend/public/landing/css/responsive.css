@@ -22,7 +22,8 @@
   }
 
   .cdt-kw-mobile-list {
-    display: block !important;
+    display: flex !important;
+    flex-direction: column;
   }
 
   .r-card:has(.cdt-kw-mobile-list) .r-card-body {
@@ -957,12 +958,6 @@
     overflow-y: hidden;
     -webkit-overflow-scrolling: touch;
   }
-
-  .cdt-kw-table {
-    display: table !important;
-    min-width: 760px !important;
-    width: max-content;
-  }
   .r-card:has(.cdt-kw-table) .r-card-body {
     overflow-x: auto !important;
     overflow-y: hidden !important;
@@ -1013,10 +1008,6 @@
     min-width: 880px !important;
   }
 
-  .ci-kw-thead,
-  .ci-kw-row {
-    min-width: 900px !important;
-  }
   .ci-kw-thead,
   .ci-kw-row {
     min-width: 900px !important;
@@ -1205,7 +1196,8 @@
   }
 
   .cdt-kw-mobile-list {
-    display: block !important;
+    display: flex !important;
+    flex-direction: column;
   }
 
   .r-card:has(.cdt-kw-mobile-list) .r-card-body {
@@ -2154,11 +2146,6 @@
     -webkit-overflow-scrolling: touch;
   }
 
-  .cdt-kw-table {
-    display: table !important;
-    min-width: 780px !important;
-    width: max-content;
-  }
   .r-card:has(.cdt-kw-table) .r-card-body {
     overflow-x: auto !important;
     overflow-y: hidden !important;
@@ -2206,11 +2193,6 @@
 
   .ci-detail-thead,
   .ci-detail-row {
-    min-width: 900px !important;
-  }
-
-  .ci-kw-thead,
-  .ci-kw-row {
     min-width: 900px !important;
   }
 
@@ -3412,12 +3394,6 @@
     border-radius: 999px;
   }
 
-  .cdt-kw-table {
-    display: table;
-    min-width: 860px;
-    width: max-content;
-  }
-
   .ci-detail-thead,
   .ci-detail-row {
     min-width: 920px;
@@ -3428,10 +3404,6 @@
     min-width: 920px;
   }
 
-  .ci-kw-thead,
-  .ci-kw-row {
-    min-width: 920px;
-  }
   .ci-hr-header,
   .ci-hr-row {
     min-width: 940px;
@@ -3767,5 +3739,496 @@
     display: flex;
     flex-direction: column;
     gap: 14px;
+  }
+}
+/* ------------------------------------------------------------
+   B2B REPORT - 고객 동향 / 상단 KPI / 잠재고객 반응형
+------------------------------------------------------------ */
+@media (max-width: 1200px) {
+  .b2b-top-kpi {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  .b2b-top-kpi-external {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 900px) {
+  .b2b-hero-bar {
+    flex-direction: column;
+    padding: 28px 24px;
+  }
+  .b2b-kpi-strip {
+    width: 100%;
+  }
+  .b2b-company-grid {
+    grid-template-columns: 1fr;
+  }
+  .b2b-top-kpi {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .b2b-top-kpi-external {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  .cdt-prospect-grid {
+    grid-template-columns: 1fr;
+  }
+  .cdt-trend-chart-area {
+    height: 200px;
+  }
+}
+
+@media (max-width: 600px) {
+  .b2b-top-kpi {
+    grid-template-columns: 1fr;
+  }
+  .b2b-top-kpi-external {
+    grid-template-columns: 1fr;
+  }
+}
+/* ------------------------------------------------------------
+   B2B REPORT - 고객 동향 키워드 모바일 카드
+------------------------------------------------------------ */
+@media (max-width: 600px) {
+  .cdt-kw-mobile-list {
+    display: flex !important;
+    flex-direction: column;
+    gap: 12px;
+    padding: 14px 14px 16px;
+  }
+
+  .cdt-kw-table-desktop {
+    display: none !important;
+  }
+
+  .cdt-kw-mobile-card {
+    background: #fff;
+    border: 1px solid var(--border-base);
+    border-radius: 16px;
+    padding: 14px 16px;
+  }
+
+  .cdt-kw-mobile-top {
+    display: grid;
+    grid-template-columns: 20px minmax(0, 1fr) auto;
+    align-items: center;
+    column-gap: 8px;
+    margin-bottom: 10px;
+    min-width: 0;
+  }
+
+  .cdt-kw-mobile-rank {
+    min-width: 0;
+  }
+
+  .cdt-kw-mobile-keyword-wrap {
+    min-width: 0;
+  }
+
+  .cdt-kw-mobile-chip-btn {
+    display: block;
+    width: 100%;
+    padding: 0;
+    margin: 0;
+    border: 0;
+    background: transparent;
+    text-align: left;
+    font: inherit;
+    color: inherit;
+    cursor: default;
+  }
+
+  .cdt-kw-mobile-chip-btn.is-expandable {
+    cursor: pointer;
+  }
+
+  .cdt-kw-mobile-chip-btn:disabled {
+    opacity: 1;
+  }
+
+  .cdt-kw-mobile-chip-btn .cdt-kw-chip {
+    display: inline-flex;
+    align-items: center;
+    justify-content: flex-start;
+    min-width: 0;
+    max-width: 100%;
+    text-align: left;
+  }
+
+  .cdt-kw-mobile-keyword-text {
+    display: inline-block;
+    min-width: 0;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    vertical-align: top;
+  }
+
+  .cdt-kw-mobile-keyword-text.expanded {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+    line-height: 1.35;
+    overflow-wrap: anywhere;
+    word-break: keep-all;
+  }
+
+  .cdt-kw-mobile-keyword-measure {
+    position: absolute;
+    visibility: hidden;
+    pointer-events: none;
+    white-space: nowrap;
+    height: 0;
+    overflow: hidden;
+  }
+
+  .cdt-kw-mobile-level {
+    display: inline-flex;
+    align-items: center;
+    white-space: nowrap;
+    justify-self: end;
+    margin-left: 0;
+    flex-shrink: 0;
+  }
+
+  .cdt-kw-mobile-card-expanded .cdt-kw-mobile-top {
+    align-items: start;
+  }
+
+  .cdt-kw-mobile-meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+  }
+
+  .cdt-kw-mobile-meta-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    min-width: 0;
+  }
+
+  .cdt-kw-mobile-date {
+    margin-left: auto;
+    flex-shrink: 0;
+  }
+
+  .cdt-kw-mobile-meta .cdt-hit-badge {
+    min-width: auto;
+    padding: 0 10px;
+  }
+}
+
+/* ------------------------------------------------------------
+    B2B REPORT - 경쟁사 모바일 카드
+------------------------------------------------------------ */
+.ci-mobile-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px 16px 16px;
+}
+
+.ci-mobile-card {
+  background: #fff;
+  border: 1.5px solid var(--border-base);
+  border-radius: 16px;
+  padding: 14px;
+}
+
+.ci-mobile-card-high {
+  background: #fff8f8;
+  border-color: #fecdd3;
+}
+
+.ci-mobile-card-med {
+  background: #fffdf6;
+  border-color: #fde68a;
+}
+
+.ci-mobile-card-inactive {
+  opacity: 0.5;
+}
+
+.ci-mobile-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.ci-mobile-left {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.ci-mobile-left .cdt-kw-chip,
+.ci-mobile-detail-keyword-row .cdt-kw-chip {
+  max-width: 100%;
+  white-space: normal;
+  word-break: keep-all;
+  line-height: 1.3;
+}
+
+.ci-mobile-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.ci-mobile-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.ci-mobile-date {
+  font-size: 11px;
+  color: var(--text-4);
+  white-space: nowrap;
+  margin-left: auto;
+}
+
+.ci-mobile-detail-left {
+  align-items: center;
+}
+
+.ci-mobile-detail-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.ci-mobile-detail-keyword-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.ci-mobile-detail-summary {
+  font-size: 12px;
+  color: var(--text-2);
+  line-height: 1.55;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+
+.ci-mobile-detail-bottom {
+  padding-top: 10px;
+  border-top: 1px solid var(--border-light);
+}
+
+.ci-mobile-detail-bottom .ci-detail-src-link {
+  max-width: 100%;
+  justify-content: flex-start;
+}
+
+/* ------------------------------------------------------------
+   B2B REPORT - 잡플래닛 요약 카드 반응형
+------------------------------------------------------------ */
+@media (max-width: 700px) {
+  .jp-summary-card {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 20px;
+  }
+
+  .jp-summary-score-wrap {
+    flex-direction: row;
+    align-items: flex-end;
+    gap: 8px;
+  }
+}
+/* ------------------------------------------------------------
+   ALERT PANEL - 모바일 반응형
+------------------------------------------------------------ */
+@media (max-width: 480px) {
+  .alp-panel {
+    width: 100vw;
+  }
+
+  .alp-send-modal {
+    width: 100vw;
+    border-radius: 20px 20px 0 0;
+  }
+}
+
+/* ------------------------------------------------------------
+   B2B REPORT LOADING - 반응형
+------------------------------------------------------------ */
+@media (max-width: 768px) {
+  .b2b-report-loading {
+    background: rgba(248, 250, 252, 0.18);
+    backdrop-filter: blur(2px) saturate(108%);
+    -webkit-backdrop-filter: blur(2px) saturate(108%);
+  }
+
+  .b2b-report-loading-anchor {
+    top: 138px;
+    gap: 14px;
+    max-width: calc(100% - 28px);
+  }
+
+  .b2b-report-loading-beam {
+    left: 36px;
+    right: 0;
+  }
+
+  .b2b-report-loading-orb {
+    width: 68px;
+    height: 68px;
+    flex-basis: 68px;
+  }
+
+  .b2b-report-loading-core {
+    inset: 18px;
+  }
+
+  .b2b-report-loading-core-gloss {
+    inset: 20px;
+  }
+
+  .b2b-report-loading-title {
+    font-size: 21px;
+  }
+
+  .b2b-report-loading-desc {
+    font-size: 12px;
+    line-height: 1.42;
+    white-space: normal;
+    max-width: 220px;
+  }
+}
+/* ------------------------------------------------------------
+   MOBILE FULLSCREEN LOADING - 반응형
+------------------------------------------------------------ */
+@media (max-width: 420px) {
+  .b2b-mobile-loading-panel {
+    padding: max(env(safe-area-inset-top), 22px) 24px
+      max(env(safe-area-inset-bottom), 28px);
+  }
+
+  .b2b-mobile-loading-brand {
+    margin-top: 56px;
+  }
+
+  .b2b-mobile-loading-logo {
+    width: 86px;
+    height: 86px;
+    border-radius: 24px;
+    font-size: 38px;
+  }
+
+  .b2b-mobile-loading-brand-title {
+    font-size: 30px;
+  }
+
+  .b2b-mobile-loading-spinner-wrap {
+    margin-top: 84px;
+  }
+
+  .b2b-mobile-loading-copy-title {
+    font-size: 18px;
+  }
+
+  .b2b-mobile-loading-copy-desc {
+    font-size: 14px;
+  }
+
+  .b2b-mobile-loading-badge {
+    font-size: 14px;
+    padding: 11px 16px;
+  }
+}
+/* ------------------------------------------------------------
+   B2B REPORT - 경쟁사 키워드 모바일 카드
+------------------------------------------------------------ */
+.ci-mobile-keyword-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px 16px 16px;
+}
+
+.ci-mobile-kw-head {
+  margin-bottom: 12px;
+}
+
+.ci-mobile-kw-rank-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.ci-mobile-kw-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px 12px;
+}
+
+.ci-mobile-kw-item {
+  min-width: 0;
+}
+
+.ci-mobile-kw-item-hit {
+  grid-column: 1 / -1;
+}
+
+.ci-mobile-kw-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-4);
+  margin-bottom: 6px;
+}
+
+.ci-mobile-kw-value {
+  min-width: 0;
+}
+
+.ci-mobile-hit-value {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ci-mobile-hit-bar-bg {
+  flex: 1;
+}
+
+@media (max-width: 600px) {
+  .ci-mobile-kw-rank-wrap .cdt-kw-chip {
+    max-width: 100%;
+    white-space: normal;
+    word-break: keep-all;
+    line-height: 1.3;
+  }
+
+  .ci-mobile-kw-grid .ci-date-text,
+  .ci-mobile-kw-grid .ci-kw-type-tag,
+  .ci-mobile-kw-grid .ci-lv-pill {
+    max-width: 100%;
+  }
+}
+
+@media (min-width: 601px) {
+  .ci-mobile-list,
+  .ci-mobile-keyword-list {
+    display: none;
   }
 }
