@@ -3810,9 +3810,9 @@
 
   .cdt-kw-mobile-top {
     display: grid;
-    grid-template-columns: 20px minmax(0, 1fr) auto;
+    grid-template-columns: 14px minmax(0, 1fr) auto;
     align-items: center;
-    column-gap: 8px;
+    column-gap: 2px;
     margin-bottom: 10px;
     min-width: 0;
   }
