@@ -112,7 +112,8 @@ const _savedAlerts = (() => {
     return raw.map((alert, index) => ({
       id:
         alert?.id ||
-        (globalThis.crypto?.randomUUID?.() ?? `ALT-SAVED-${Date.now()}-${index}`),
+        (globalThis.crypto?.randomUUID?.() ??
+          `ALT-SAVED-${Date.now()}-${index}`),
       read: !!alert?.read,
       createdAt: alert?.createdAt || new Date().toISOString(),
       sentAt: alert?.sentAt || null,
@@ -142,7 +143,9 @@ function createClientAlertId() {
 
 function normalizeServerIds(alert) {
   if (Array.isArray(alert?.dbIds)) {
-    return [...new Set(alert.dbIds.filter((v) => v != null).map((v) => Number(v)))];
+    return [
+      ...new Set(alert.dbIds.filter((v) => v != null).map((v) => Number(v))),
+    ];
   }
   if (alert?.dbId != null) {
     return [Number(alert.dbId)];
@@ -152,7 +155,7 @@ function normalizeServerIds(alert) {
 
 function getAlertDupKey(alert) {
   if (alert?.dupKey) return alert.dupKey;
-  if (alert?.systemSummary) return 'summary-load';
+  if (alert?.systemSummary) return "summary-load";
   if (alert?.signalId != null) return `signal-${alert.signalId}`;
   if (alert?.dbId != null) return `notification-${alert.dbId}`;
   return `client-${createClientAlertId()}`;
@@ -169,14 +172,14 @@ function mergeAlert(existing, incoming) {
   existing.dbIds = [...mergedDbIds];
   existing.signalId = incoming.signalId ?? existing.signalId ?? null;
   existing.systemSummary = !!(incoming.systemSummary || existing.systemSummary);
-  existing.title = incoming.title ?? existing.title ?? '';
-  existing.desc = incoming.desc ?? existing.desc ?? '';
-  existing.companyName = incoming.companyName ?? existing.companyName ?? '';
-  existing.tab = incoming.tab ?? existing.tab ?? '';
-  existing.tabLabel = incoming.tabLabel ?? existing.tabLabel ?? '';
-  existing.keyword = incoming.keyword ?? existing.keyword ?? '';
-  existing.severity = incoming.severity ?? existing.severity ?? 'info';
-  existing.linkUrl = incoming.linkUrl ?? existing.linkUrl ?? '';
+  existing.title = incoming.title ?? existing.title ?? "";
+  existing.desc = incoming.desc ?? existing.desc ?? "";
+  existing.companyName = incoming.companyName ?? existing.companyName ?? "";
+  existing.tab = incoming.tab ?? existing.tab ?? "";
+  existing.tabLabel = incoming.tabLabel ?? existing.tabLabel ?? "";
+  existing.keyword = incoming.keyword ?? existing.keyword ?? "";
+  existing.severity = incoming.severity ?? existing.severity ?? "info";
+  existing.linkUrl = incoming.linkUrl ?? existing.linkUrl ?? "";
   existing.compId = incoming.compId ?? existing.compId ?? existing.compId;
   existing.read = incoming.read ?? false;
   existing.sentAt = incoming.sentAt ?? existing.sentAt ?? null;
@@ -185,7 +188,8 @@ function mergeAlert(existing, incoming) {
     : Array.isArray(existing.sentTo)
       ? existing.sentTo
       : [];
-  existing.createdAt = incoming.createdAt || new Date().toISOString();
+  existing.createdAt =
+    incoming.createdAt || existing.createdAt || new Date().toISOString();
   return existing;
 }
 
@@ -213,7 +217,8 @@ export const ALERT_STORE =
     },
 
     get unread() {
-      return this.visibleAlerts.filter((a) => !a.read && !a.systemSummary).length;
+      return this.visibleAlerts.filter((a) => !a.read && !a.systemSummary)
+        .length;
     },
 
     add(alert) {
@@ -258,7 +263,9 @@ export const ALERT_STORE =
     },
 
     clearPendingByDbIds(dbIds) {
-      const target = new Set((dbIds || []).filter((v) => v != null).map((v) => Number(v)));
+      const target = new Set(
+        (dbIds || []).filter((v) => v != null).map((v) => Number(v)),
+      );
       if (!target.size) return;
       const next = { ...this.pendingHidden };
       this.alerts.forEach((alert) => {
@@ -279,7 +286,9 @@ export const ALERT_STORE =
     },
 
     markReadByDbIds(dbIds) {
-      const target = new Set((dbIds || []).filter((v) => v != null).map((v) => Number(v)));
+      const target = new Set(
+        (dbIds || []).filter((v) => v != null).map((v) => Number(v)),
+      );
       if (!target.size) return;
       this.alerts.forEach((alert) => {
         const ids = normalizeServerIds(alert);
@@ -318,7 +327,9 @@ export const ALERT_STORE =
     },
 
     removeByDbIds(dbIds) {
-      const target = new Set((dbIds || []).filter((v) => v != null).map((v) => Number(v)));
+      const target = new Set(
+        (dbIds || []).filter((v) => v != null).map((v) => Number(v)),
+      );
       if (!target.size) return;
       this.alerts = this.alerts.filter((alert) => {
         const ids = normalizeServerIds(alert);
@@ -328,8 +339,8 @@ export const ALERT_STORE =
       this._save();
     },
 
-    upsertSummary(count) {
-      const idx = this.alerts.findIndex((a) => a.dupKey === 'summary-load');
+    upsertSummary(count, createdAt = null) {
+      const idx = this.alerts.findIndex((a) => a.dupKey === "summary-load");
       if (count <= 0) {
         if (idx >= 0) {
           const id = this.alerts[idx].id;
@@ -347,20 +358,23 @@ export const ALERT_STORE =
         this.alerts[idx].title = summaryText;
         this.alerts[idx].desc = summaryText;
         this.alerts[idx].read = true;
+        this.alerts[idx].createdAt =
+          createdAt || this.alerts[idx].createdAt || new Date().toISOString();
         moveAlertToFront(this.alerts, this.alerts[idx]);
       } else {
         this.add({
           systemSummary: true,
-          severity: 'info',
+          severity: "info",
           dbId: null,
           signalId: null,
           title: summaryText,
-          companyName: '',
-          tabLabel: '시스템 알림',
-          keyword: '',
+          companyName: "",
+          tabLabel: "시스템 알림",
+          keyword: "",
           desc: summaryText,
-          dupKey: 'summary-load',
+          dupKey: "summary-load",
           read: true,
+          createdAt: createdAt || new Date().toISOString(),
         });
       }
       this._save();
@@ -369,10 +383,14 @@ export const ALERT_STORE =
     replaceFromServer(rows, mapper) {
       this.alerts.splice(0);
       this.pendingHidden = {};
-      (rows || []).forEach((row) => {
+
+      [...(rows || [])].reverse().forEach((row) => {
         this.add(mapper(row));
       });
-      const notificationCount = this.alerts.filter((a) => !a.systemSummary).length;
+
+      const notificationCount = this.alerts.filter(
+        (a) => !a.systemSummary,
+      ).length;
       this.upsertSummary(notificationCount);
       this._save();
     },
@@ -380,11 +398,13 @@ export const ALERT_STORE =
     _save() {
       try {
         localStorage.setItem(
-          'cx_alerts',
-          JSON.stringify(this.alerts.slice(0, 100).map((alert) => ({
-            ...alert,
-            dbIds: normalizeServerIds(alert),
-          }))),
+          "cx_alerts",
+          JSON.stringify(
+            this.alerts.slice(0, 100).map((alert) => ({
+              ...alert,
+              dbIds: normalizeServerIds(alert),
+            })),
+          ),
         );
       } catch {}
     },
