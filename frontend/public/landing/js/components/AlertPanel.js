@@ -29,13 +29,14 @@ function mapServerRowToAlert(row) {
     keyword: row?.keyword || "",
     desc: row?.message || "",
     linkUrl: row?.link_url || "",
+    createdAt: row?.created_at || row?.createdAt || new Date().toISOString(),
     dupKey:
       signalId != null
         ? `signal-${signalId}`
         : dbId != null
           ? `notification-${dbId}`
           : null,
-    read: !!row?.read,
+    read: !!(row?.is_read ?? row?.read),
   };
 }
 
@@ -85,11 +86,25 @@ export const AlertPanel = defineComponent({
     const visibleAlerts = computed(() => store.visibleAlerts);
     const visibleUnreadCount = computed(() => store.unread);
     const visibleNotificationCount = computed(
-      () => visibleAlerts.value.filter((alert) => !alert.systemSummary).length,
+      () =>
+        visibleAlerts.value.filter(
+          (alert) => !alert.systemSummary && isTodayKst(alert.createdAt),
+        ).length,
     );
 
+    function getTodaySummaryCreatedAt() {
+      const todayAlerts = visibleAlerts.value
+        .filter((alert) => !alert.systemSummary && isTodayKst(alert.createdAt))
+        .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+      return todayAlerts[0]?.createdAt || null;
+    }
+
     function updateSummary() {
-      store.upsertSummary(visibleNotificationCount.value);
+      store.upsertSummary(
+        visibleNotificationCount.value,
+        getTodaySummaryCreatedAt(),
+      );
     }
 
     async function loadUnreadNotifications() {
@@ -350,6 +365,22 @@ ${a.desc}
 
     const sevCfg = (id) => ALERT_SEVERITY[id] || ALERT_SEVERITY.info;
 
+    function isTodayKst(iso) {
+      if (!iso) return false;
+
+      const d = new Date(iso);
+      if (Number.isNaN(d.getTime())) return false;
+
+      const todayKey = new Date().toLocaleDateString("en-CA", {
+        timeZone: "Asia/Seoul",
+      });
+
+      const targetKey = d.toLocaleDateString("en-CA", {
+        timeZone: "Asia/Seoul",
+      });
+
+      return todayKey === targetKey;
+    }
     function fmtDate(iso) {
       if (!iso) return "";
       const d = new Date(iso);
@@ -450,11 +481,27 @@ ${a.desc}
 
                 <div class="alp-item-title">{{alert.title}}</div>
 
-                <div class="alp-item-company">
-                  <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                    <path d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16"/>
-                  </svg>
-                  {{alert.companyName}}
+                <div class="alp-item-company-row">
+                  <div class="alp-item-company">
+                    <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                      <path d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16"/>
+                    </svg>
+                    {{alert.companyName}}
+                  </div>
+
+                  <a
+                    v-if="alert.linkUrl"
+                    :href="alert.linkUrl"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="cdt-pcard-link alp-source-link"
+                    @click.stop
+                  >
+                    <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                      <path d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+                    </svg>
+                    원문 보기
+                  </a>
                 </div>
 
                 <div v-if="alert.sentAt" class="alp-sent-info">

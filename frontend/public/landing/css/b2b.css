@@ -1077,6 +1077,25 @@
 .cdt-pcard-link:hover {
   text-decoration: underline;
 }
+
+/* 알림 카드 원문 보기 */
+.alp-item-company-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 2px;
+}
+
+.alp-item-company-row .alp-item-company {
+  margin-top: 0;
+}
+
+.alp-item-company-row .cdt-pcard-link.alp-source-link {
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  line-height: 1;
+}
 /* ═══════════════════════════════════════════════
    경쟁사 이슈 탐지 (Competitive Issue Tracking)
 ═══════════════════════════════════════════════ */
