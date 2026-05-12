@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 import os
-from typing import List
+from typing import Dict, List, Optional
 
 import firebase_admin
 from firebase_admin import credentials, messaging
@@ -27,7 +27,12 @@ def _initialize() -> None:
     firebase_admin.initialize_app(cred)
 
 
-def send_fcm_to_devices(tokens: List[str], title: str, body: str) -> None:
+def send_fcm_to_devices(
+    tokens: List[str],
+    title: str,
+    body: str,
+    data: Optional[Dict[str, str]] = None,
+) -> None:
     """
     등록된 기기 토큰 목록에 FCM 푸시 알림 일괄 발송.
     """
@@ -42,6 +47,7 @@ def send_fcm_to_devices(tokens: List[str], title: str, body: str) -> None:
             title=title,
             body=body,
         ),
+        data=data or {},
         tokens=tokens,
     )
 
