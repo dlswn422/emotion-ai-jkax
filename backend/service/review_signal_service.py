@@ -822,25 +822,11 @@ def _send_alerts(db: Session, notification_ids: List[int]) -> None:
         ).mappings().all()
 
         tokens = [r["fcm_token"] for r in device_rows if r.get("fcm_token")]
-
         if tokens:
-            for row in rows:
-                message = row["message"]
-
-                if not message:
-                    continue
-
-                send_fcm_to_devices(
-                    tokens=tokens,
-                    title=f"{row['category'] or '정보'} · {row['signal_type_label'] or '알림'}",
-                    body=message,
-                    data={
-                        "link_url": row["link_url"] or "",
-                        "notification_id": str(row["id"]),
-                    },
-                )
-
-            print(f"[FCM] 건별 푸시 {len(rows)}건 발송 요청 완료")
-            
+            send_fcm_to_devices(
+                tokens=tokens,
+                title="경영진 Alert",
+                body=summary_message,
+            )
     except Exception as e:
         print(f"[ERROR] FCM 발송 실패: {e}")
